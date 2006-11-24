@@ -440,6 +440,117 @@ fresh x = evalState (f [] x) names
     In this particular example, none of the built in traversals provided by Play are much better than Compos, so instead the <tt>compos</tt> operator has been defined in the Play framework. This shows that anything Compos can do, Play can copy at the very least. (The code from the Compos example has been updated to use <tt>Control.Monad.State</tt>, to make it more accessible)
 </p>
 
+<h3>Examples from Section 4</h3>
+
+<p>
+    The types manipulated by Secion 4 are:
+</p>
+<pre>
+data Stm = SDecl Typ Var
+         | SAss  Var Exp
+         | SBlock [Stm]
+         | SReturn Exp
+
+data Exp = EStm Stm
+         | EAdd Exp Exp
+         | EVar Var
+         | EInt Int
+
+data Var = V String
+
+data Typ = T_int | T_float
+</pre>
+<p>
+    The first thing done by the Compos paper is to translate this into a GADT, which destroys abstraction. If a data structure representing a program was also defined, then this would have to be merged into the single GADT. Play on the other hand accepts the definition as supplied.
+</p>
+<p>
+    The Play instances for this data structure are not particularly nice, this is mainly due to the decision to have <tt>EStm</tt> in the <tt>Exp</tt> data type. A much more natural definition would be either to merge <tt>Stm</tt> and <tt>Exp</tt>, or to add <tt>SExp</tt> to <tt>Stm</tt>. If either of these things were done, then the Play instances would be vastly simplified. Because of the ugliness of the Play instances, I merely list the instances defined, the code for them is available in the example.
+</p>
+<pre>
+instance Play Stm
+instance Play Exp
+instance Play Var
+
+instance PlayEx Stm Stm
+instance PlayEx Exp Exp
+instance PlayEx Stm Exp
+instance PlayEx Exp Stm
+instance PlayEx Stm Var
+instance PlayEx Exp Var
+</pre>
+<p>
+    While the instances are not very pretty, they only have to be written once, and it is hoped that the number of data structures is low, and the use of Play functions are high. In one project the ratio is about 1:50, which supports this argument.
+</p>
+
+<h3>The <tt>rename</tt> function</h3>
+
+<pre class="compos">
+rename :: Tree c -> Tree c
+rename t = case t of
+    V x -> V ("_" ++ x)
+    _   -> composOp rename t
+</pre>
+<pre>
+rename :: PlayEx x Var => x -> x
+rename = mapUnderEx $ \(V x) -> V ("_" ++ x)
+</pre>
+<p>
+    The first thing to note is the Play function is shorter, there is only one constructor in type <tt>Var</tt>. In contrast Compos has merged all constructors into one GADT, and can not benefit from this. The Compos function works over all trees, including those based on <tt>Typ</tt>, which is meaningless, since types do not contain variables. The Play class only operates on <tt>Exp</tt> and <tt>Stm</tt> types.
+</p>
+
+<h3>The <tt>warnAssign</tt> function</h3>
+
+<pre class="compos">
+warnAssign :: Tree c -> IO ()
+warnAssign t = case t of
+    SAss _ _ -> putChar (chr 7)
+    _ -> composM_ warnAssign t
+</pre>
+<pre>
+warnAssign :: PlayEx x Stm => x -> IO ()
+warnAssign x = putStr [chr 7 | SAss{} <- allOverEx x]
+</pre>
+<p>
+    Here the difference between the two approaches is large. The Compos approach threads the <tt>IO</tt> monad through the whole code. The Play approach extracts the relevant bits with a list comprehension. Hopefully this shows how analysis functions can often be implemented with <tt>allOver</tt>, rathern than a traversal.
+</p>
+
+
+<h3>The <tt>symbols</tt> function</h3>
+
+<pre class="compos">
+symbols :: Tree c -> [(Tree Var, Tree Typ)]
+symbols t = case t of
+    SDecl typ var -> [(var,typ)]
+    _ -> composOpMonoid symbols t
+</pre>
+<pre>
+symbols :: PlayEx x Stm => x -> [(Var,Typ)]
+symbols x = [(v,t) | SDecl t v <- allOverEx x]
+</pre>
+<p>
+    Here the Compos function does a traversal of the tree, however again the Play class simply extracts the right bits. This example is almost identical to the previous <tt>warnAssign</tt> using Play, however the Compos approach introduces distinctions by requiring a more ordered approach to traversal.
+</p>
+
+<h3>The <tt>constFold</tt> function</h3>
+
+<pre class="compos">
+constFold :: Tree c -> Tree c
+constFold e = case e of
+    EAdd x y -> case (constFold x, constFold y) of
+                    (EInt n, EInt m) -> EInt (n+m)
+                    (x',y') -> EAdd x' y'
+    _ -> composOp constFold e
+</pre>
+<pre>
+constFold :: PlayEx x Exp => x -> x
+constFold = mapUnderEx $ \e -> case e of
+    EAdd (EInt n) (EInt m) -> EInt (n+m)
+    x -> x
+</pre>
+<p>
+    The constant folding operation is a bottom-up traversal, requiring sub expressions to have been replaced before they are examined. Unfortunately Compos only supports top-down traversals, requiring the user to manually do a small traversal in the middle. Play supports both types of traversals, and experience has shown that bottom-up is almost always what the user wants. This allows Play to produce shorter code.
+</p>
+
 
     </body>
 </html>
