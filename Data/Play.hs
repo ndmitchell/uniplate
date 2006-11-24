@@ -33,6 +33,11 @@ mapUnderM f x = mapM (mapUnderM f) current >>= f . generate
     where (current, generate) = replaceChildren x
 
 
+mapOver :: Play on => (on -> on) -> on -> on
+mapOver f x = generate $ map (mapOver f) current
+    where (current, generate) = replaceChildren $ f x
+
+
 allOver :: Play on => on -> [on]
 allOver x = x : concatMap allOver (fst $ replaceChildren x)
 
