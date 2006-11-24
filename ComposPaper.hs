@@ -36,10 +36,10 @@ rename2 = mapUnder $ \e -> case e of
 
 -- SECTION 3
 free2 :: Exp2 -> [String]
-free2 = fold (nub . concat) $ \e -> case e of
-    EAbs2 s x -> delete s
-    EVar2 s -> const [s]
-    x -> id
+free2 = fold (nub . concat) $ \e y -> case e of
+    EAbs2 s x -> delete s y
+    EVar2 s -> [s]
+    x -> y
 
 
 
