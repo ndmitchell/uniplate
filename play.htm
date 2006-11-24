@@ -1,92 +1,97 @@
 <html>
-	<head>
-		<title>Another Pattern for Almost Compositional Functions</title>
-		<style type="text/css">
+    <head>
+        <title>Another Pattern for Almost Compositional Functions</title>
+        <style type="text/css">
 pre {
-	border: 2px solid gray;
-	padding: 1px;
-	padding-left: 5px;
-	margin-left: 10px;
-	background-color: #eee;
+    border: 2px solid gray;
+    padding: 1px;
+    padding-left: 5px;
+    margin-left: 10px;
+    background-color: #eee;
 }
 
 pre.define {
-	background-color: #ffb;
-	border-color: #cc0;
+    background-color: #ffb;
+    border-color: #cc0;
+}
+
+pre.compos {
+    font-style: italic;
 }
 
 body {
-	font-family: sans-serif;
+    font-family: sans-serif;
 }
 
 h1, h2, h3 {
-	font-family: serif;
+    font-family: serif;
 }
 
 h1 {
-	color: rgb(23,54,93);
-	border-bottom: 1px solid rgb(79,129,189);
-	padding-bottom: 2px;
-	font-variant: small-caps;
+    color: rgb(23,54,93);
+    border-bottom: 1px solid rgb(79,129,189);
+    padding-bottom: 2px;
+    font-variant: small-caps;
 }
 
 h2 {
-	color: rgb(54,95,145);
+    color: rgb(54,95,145);
 }
 
 h3 {
-	color: rgb(79,129,189);
+    color: rgb(79,129,189);
 }
-		</style>
-	</head>
-	<body>
+        </style>
+    </head>
+    <body>
 
 <h1>Another Pattern for Almost Compositional Functions</h1>
 
 <p>
-	In ICFP 2006 Bj&ouml;rn Bringert and Aarne Ranta introduced their paper, <a href="http://doi.acm.org/10.1145/1159803.1159834">"A Pattern for Almost Compositional Functions"</a>. In the year preceding this I had developed a different pattern, which I call the <i>Play</i> class. This pattern had been implemented in Yhc for the Core data type, and in Catch on several data types within the program. An undergrad pointed me at the above paper, and it was easy to see the similarities between the intentions. Since I feel my Play class offers some advantages (and some disadvantages, naturally) over the published approach, it seems natural to turn my pattern into a library and provide some documentation to cover it.
+    In ICFP 2006 Bj&ouml;rn Bringert and Aarne Ranta introduced their paper, <a href="http://doi.acm.org/10.1145/1159803.1159834">"A Pattern for Almost Compositional Functions"</a> - which I refer to as Compos (after the name of their class). In the year preceding this I had developed a different pattern, which I call the <i>Play</i> class. This pattern had been implemented in Yhc for the Core data type, and in Catch on several data types within the program. An undergrad pointed me at the above paper, and it was easy to see the similarities between the intentions. Since I feel my Play class offers some advantages (and some disadvantages, naturally) over the published approach, it seems natural to turn my pattern into a library and provide some documentation to cover it.
 </p>
 <p>
 </p>
-	This document proceeds as follows:
+    This document proceeds as follows:
 <p>
 </p>
 <ol>
-	<li>The motivation and use cases for Play</li>
-	<li>How to use the Play class</li>
-	<li>Derivation of a Play instance for your own data type</li>
-	<li>A comparison to the ICFP 2006 paper</li>
+    <li>The motivation and use cases for Play</li>
+    <li>How to use the Play class</li>
+    <li>Derivation of a Play instance for your own data type</li>
+    <li>Extension to PlayEx</li>
+    <li>A comparison to the Compos paper</li>
 </ol>
 <p>
-	If you have already read the ICFP paper, I recommend skipping to the final section. All the examples used in this document can be found in the darcs repository.
+    If you have already read the Comopos paper, I recommend skipping to the final section. All the examples used in this document can be found in the darcs repository.
 </p>
 
 
 <h2>Motivation and Use Cases</h2>
 
 <p>
-	The idea behind the Play class is that there exists a data structure, usually with a reasonable number of constructors, which is often transformed or analysed. The usual example of this would be a compiler, which has at its core an expression type. This can be seen as a form of generic programming.
+    The idea behind the Play class is that there exists a data structure, usually with a reasonable number of constructors, which is often transformed or analysed. The usual example of this would be a compiler, which has at its core an expression type. This can be seen as a form of generic programming.
 </p>
 <p>
-	The Play class has the following goals:
+    The Play class has the following goals:
 </p>
 <ul>
-	<li>Adding a new constructor should require very few changes</li>
-	<li>Traversals should have a minimal amount of boiler plate</li>
-	<li>The obvious code should "just work"</li>
-	<li>Haskell 98, where possible</li>
-	<li>Writing new types of traverals is easy</li>
-	<li>The default traversals cover most cases</li>
+    <li>Adding a new constructor should require very few changes</li>
+    <li>Traversals should have a minimal amount of boiler plate</li>
+    <li>The obvious code should "just work"</li>
+    <li>Haskell 98, where possible</li>
+    <li>Writing new types of traverals is easy</li>
+    <li>The default traversals cover most cases</li>
 </ul>
 <p>
-	The ideas behind the Play class have been used extensively, in both the Yhc compiler and the Catch tool. In Catch there are 109 traversals using the Play class (as at Nov 2006), showing that the Play class gets extensive use.
+    The ideas behind the Play class have been used extensively, in both the Yhc compiler and the Catch tool. In Catch there are 109 traversals using the Play class (as at Nov 2006), showing that the Play class gets extensive use.
 </p>
 
 
 <h2>Using Play</h2>
 
 <p>
-	These examples revolve around a small arithmetic language, given here:
+    These examples revolve around a small arithmetic language, given here:
 
 </p>
 <pre>
@@ -99,7 +104,7 @@ data Expr = Val Int
           deriving (Show, Eq)
 </pre>
 <p>
-	Assume that a Play class has already been written; so now <tt>instance Play Expr</tt> is available to us. Some examples are presented, in rough order of increasingly complexity. These examples are all available in the <tt>ExprExamples</tt> module.
+    Assume that a Play class has already been written; so now <tt>instance Play Expr</tt> is available to us. Some examples are presented, in rough order of increasingly complexity. These examples are all available in the <tt>ExprExamples</tt> module.
 </p>
 
 <h3>Checking for division by zero</h3>
@@ -108,17 +113,17 @@ data Expr = Val Int
 allOver :: Play on => on -> [on]
 </pre>
 <p>
-	If an expression is divided by zero, this causes a runtime error in our language. As part of the compiler, it's nice to give the user a warning message about this. This can be done with the following test:
+    If an expression is divided by zero, this causes a runtime error in our language. As part of the compiler, it's nice to give the user a warning message about this. This can be done with the following test:
 </p>
 <pre>
 hasDivZero :: Expr -> Bool
 hasDivZero x = not $ null [() | Div _ (Val 0) <- allOver x]
 </pre>
 <p>
-	Here the only Play method being used is <tt>allOver</tt>. Given a tree, <tt>allOver</tt> returns all the root of the tree, and all it's subtrees at all levels. This can be used to quickly flatten a tree structure into a list, for quick analysis via list comprehensions, as is done above. For each division by zero found, any value is created in the list comprehension, and then this is checked to see if anything did match. Returning the count of divide by zero errors is trivial, simply use <tt>length</tt> instead of <tt>not $ null</tt>.  Extra context could perhaps be given by printing some of the value that is being divided by zero, to help narrow down the error.
+    Here the only Play method being used is <tt>allOver</tt>. Given a tree, <tt>allOver</tt> returns all the root of the tree, and all it's subtrees at all levels. This can be used to quickly flatten a tree structure into a list, for quick analysis via list comprehensions, as is done above. For each division by zero found, any value is created in the list comprehension, and then this is checked to see if anything did match. Returning the count of divide by zero errors is trivial, simply use <tt>length</tt> instead of <tt>not $ null</tt>.  Extra context could perhaps be given by printing some of the value that is being divided by zero, to help narrow down the error.
 </p>
 <p>
-	<i>Exercise:</i> Write a function to find all literals that occur in an expression, together with their count.
+    <i>Exercise:</i> Write a function to find all literals that occur in an expression, together with their count.
 </p>
 
 <h3>Basic optimisation</h3>
@@ -127,7 +132,7 @@ hasDivZero x = not $ null [() | Div _ (Val 0) <- allOver x]
 mapUnder :: Play on => (on -> on) -> on -> on
 </pre>
 <p>
-	If we are negating a literal value, this computation can be performed in advance, so let's write a function to do this.
+    If we are negating a literal value, this computation can be performed in advance, so let's write a function to do this.
 </p>
 <pre>
 optimise :: Expr -> Expr
@@ -136,20 +141,20 @@ optimise = mapUnder $ \x -> case x of
     x -> x
 </pre>
 <p>
-	Here the Play method being used is <tt>mapUnder</tt>. This applies the given function to all the children of an expression, before applying it to the parent. This can be thought of as bottom-up traversal of the data structure. There is an equivalent <tt>mapOver</tt> defined, but generally <tt>mapUnder</tt> is used about 90% of the time. The optimise code merely pattern matches on the negation of a literal, and replaces it with the literal. Using mapUnder means that <tt>Neg (Neg (Val 1))</tt> is reduced to <tt>1</tt>, using mapOver would only perform the inner most reduction.
+    Here the Play method being used is <tt>mapUnder</tt>. This applies the given function to all the children of an expression, before applying it to the parent. This can be thought of as bottom-up traversal of the data structure. There is an equivalent <tt>mapOver</tt> defined, but generally <tt>mapUnder</tt> is used about 90% of the time. The optimise code merely pattern matches on the negation of a literal, and replaces it with the literal. Using mapUnder means that <tt>Neg (Neg (Val 1))</tt> is reduced to <tt>1</tt>, using mapOver would only perform the inner most reduction.
 
 </p>
 <p>
-	Now lets add another optimisation into the same pass, just before the <tt>x -> x</tt> line insert:
+    Now lets add another optimisation into the same pass, just before the <tt>x -> x</tt> line insert:
 </p>
 <pre>
     Add x y | x == y -> Mul x (Val 2)
 </pre>
 <p>
-	This takes an addition where two terms are equal and changes it into a multiplication, causing the nested expression to be executed only once. This shows that normal Haskell applies, the Play lets you write code as before.
+    This takes an addition where two terms are equal and changes it into a multiplication, causing the nested expression to be executed only once. This shows that normal Haskell applies, the Play lets you write code as before.
 </p>
 <p>
-	<i>Exercise:</i> Extend the optimisation to so that adding <tt>x</tt> to <tt>Mul x (Val 2)</tt> produces a multiplication by 3.
+    <i>Exercise:</i> Extend the optimisation to so that adding <tt>x</tt> to <tt>Mul x (Val 2)</tt> produces a multiplication by 3.
 </p>
 
 
@@ -159,7 +164,7 @@ optimise = mapUnder $ \x -> case x of
 mapOver :: Play on => (on -> on) -> on -> on
 </pre>
 <p>
-	It is possible to eliminate negation entirely, and perhaps this would be a useful computation to perform:
+    It is possible to eliminate negation entirely, and perhaps this would be a useful computation to perform:
 <p>
 <pre>
 noNegate :: Expr -> Expr
@@ -173,10 +178,10 @@ noNegate = mapOver $ \x -> case x of
     x -> x
 </pre>
 <p>
-	This is an example where a bottom up traversal would not work, as information is being pushed from the top downwards. Note how each line states a mathematical property, which can be proved in isolation, and that the Play class handles the traverals.
+    This is an example where a bottom up traversal would not work, as information is being pushed from the top downwards. Note how each line states a mathematical property, which can be proved in isolation, and that the Play class handles the traverals.
 </p>
 <p>
-	<i>Exercise:</i> Write a similar transformation to eliminate subtraction. These two transformations can be composed, to give a reduced expression language. Can any other expressions be eliminated?
+    <i>Exercise:</i> Write a similar transformation to eliminate subtraction. These two transformations can be composed, to give a reduced expression language. Can any other expressions be eliminated?
 </p>
 
 
@@ -186,20 +191,20 @@ noNegate = mapOver $ \x -> case x of
 fold :: Play on => ([res] -> tmp) -> (on -> tmp -> res) -> on -> res
 </pre>
 <p>
-	Now lets imagine that programmers in your language are paid by the depth of expression they produce, so lets write a function that computes the maximum depth of an expression.
+    Now lets imagine that programmers in your language are paid by the depth of expression they produce, so lets write a function that computes the maximum depth of an expression.
 </p>
 <pre>
 depth :: Expr -> Int
 depth = fold (foldr max 0) $ const (+1)
 </pre>
 <p>
-	This function performs a fold over the data structure. The <tt>foldr max</tt> is being used as maximum, with a starting value of <tt>0</tt>. The next bit simply says that for each iteration, add one to the previous depth.  An evaluator for this expression language can also be modelled as a <tt>fold</tt>, see inside the example directory to see an implementation.
+    This function performs a fold over the data structure. The <tt>foldr max</tt> is being used as maximum, with a starting value of <tt>0</tt>. The next bit simply says that for each iteration, add one to the previous depth.  An evaluator for this expression language can also be modelled as a <tt>fold</tt>, see inside the example directory to see an implementation.
 </p>
 <p>
-	Each <tt>fold</tt> collects all the values from the children of an expression, combines them using the first function, then generates a new value based on the expression. Often the combining function will simply be <tt>id</tt>.
+    Each <tt>fold</tt> collects all the values from the children of an expression, combines them using the first function, then generates a new value based on the expression. Often the combining function will simply be <tt>id</tt>.
 <p>
 <p>
-	<i>Exercise:</i> Write a function that counts the maximum depth of addition only.
+    <i>Exercise:</i> Write a function that counts the maximum depth of addition only.
 </p>
 
 <h3>Renumbering literals</h3>
@@ -208,7 +213,7 @@ depth = fold (foldr max 0) $ const (+1)
 mapUnderM :: (Monad m, Play on) => (on -> m on) -> on -> m on
 </pre>
 <p>
-	The literal values need to be replaced with a sequence of numbers, each unique. This is unlikely for an arithmetic expression, but consider bound variables in lambda calculus and it starts to become a bit more plausible:
+    The literal values need to be replaced with a sequence of numbers, each unique. This is unlikely for an arithmetic expression, but consider bound variables in lambda calculus and it starts to become a bit more plausible:
 </p>
 <pre>
 uniqueLits :: Expr -> Expr
@@ -221,22 +226,22 @@ uniqueLits x = evalState (mapUnderM f x) [0..]
         f x = return x
 </pre>
 <p>
-	Here a monadic computation is required, the program needs to keep track of what the next item in the list to use is, and replace the current item. By using the state monad, this can be done easily.
+    Here a monadic computation is required, the program needs to keep track of what the next item in the list to use is, and replace the current item. By using the state monad, this can be done easily.
 </p>
 <p>
-	<i>Exercise:</i> Allow each literal to occur only once, when a second occurance is detected, replace that literal with zero.
+    <i>Exercise:</i> Allow each literal to occur only once, when a second occurance is detected, replace that literal with zero.
 </p>
 
 <h3>Reverse notation</h3>
 
 <pre class="define">
-replaceChildren :: on -> ([on], [on] -> on)
+replaceChildren :: Play on => on -> ([on], [on] -> on)
 </pre>
 <p>
-	In general, <tt>allOver</tt> and <tt>mapUnder</tt> are used most of the time, and <tt>fold</tt> is used occasionally. The Play class is built upon the operation <tt>replaceChildren</tt>, which takes an expression, and returns a pair with the children of that expression, and a function to generate that expression with a new set of children in place. This operation can be directly exploited if required, although should be handled with caution.
+    In general, <tt>allOver</tt> and <tt>mapUnder</tt> are used most of the time, and <tt>fold</tt> is used occasionally. The Play class is built upon the operation <tt>replaceChildren</tt>, which takes an expression, and returns a pair with the children of that expression, and a function to generate that expression with a new set of children in place. This operation can be directly exploited if required, although should be handled with caution.
 </p>
 <p>
-	Let us make a function that reverses the order of all the inputs, say if the user is working in Right-to-Left mode on their computer:
+    Let us make a function that reverses the order of all the inputs, say if the user is working in Right-to-Left mode on their computer:
 </p>
 <pre>
 reverseExpr :: Expr -> Expr
@@ -246,8 +251,195 @@ reverseExpr = mapUnder f
             where (collect,generate) = replaceChildren x
 </pre>
 <p>
-	This expression does a standard <tt>mapUnder</tt>, but at each iteration calls <tt>replaceChildren</tt>, then reverses the children set before regenerating the original expression. This shows the underlying mechanism on which the library is based, and isn't recommended for average users.
+    This expression does a standard <tt>mapUnder</tt>, but at each iteration calls <tt>replaceChildren</tt>, then reverses the children set before regenerating the original expression. This shows the underlying mechanism on which the library is based, and isn't recommended for average users.
 </p>
 
-	</body>
+
+<h2>Defining a Play instance</h2>
+
+<p>
+    As shown in the reversal example (just above), the only method in the Play class is <tt>replaceChildren</tt>. The Play class is defined as:
+</p>
+<pre class="define">
+class Play on where
+    replaceChildren :: on -> ([on], [on] -> on)
+</pre>
+<p>
+    The idea is that given an item, you want to return all the children, and a function that will replace all the children. An invariant is that the list given to the second function will be the same length as that returned in the first element of the pair. Let's start by constructing the Play instance for the expression type.
+</p>
+<pre>
+instance Play Expr of
+    replaceChildren x =
+        case x of
+            Val i -> ([], \[] -> Val i)
+            Neg a -> ([a], \[a] -> Neg a)
+            Add a b -> ([a,b], \[a,b] -> Add a b)
+            ...
+</pre>
+<p>
+    A short study of the code should show how this works. The other constructors such as <tt>Mul</tt> follow the same pattern as <tt>Add</tt>. There are some additional combinators defined in the Play class to make this a bit easier.
+</p>
+<pre>
+instance Play Expr of
+    replaceChildren x =
+        case x of
+            Add x y -> playTwo Add x y
+            ...
+            Neg x   -> playOne Neg x
+            x -> playDefault x
+</pre>
+<p>
+    Here <tt>playTwo</tt> takes a constructor of two expressions, and the expressions within them. The function <tt>playOne</tt> operates similarly on one expression. The remaining <tt>playDefault</tt>, which handles <tt>Val</tt> is for expressions with no recursive element.
+</p>
+
+
+<h2>Using PlayEx</h2>
+
+<p>
+    The PlayEx class is not standard Haskell, requiring multi-parameter type classes. Where possible try and use the standard Play class.
+</p>
+<pre>
+class Play with => PlayEx on with where
+    replaceChildrenEx :: on -> ([with], [with] -> on)
+</pre>
+<p>
+    Documentation needs to be written on the PlayEx class.
+</p>
+
+
+<h2>Comparison to the Compos Paper</h2>
+
+<p>
+    The Compos paper provides a similar mechansim, so the obvious question is how they related. A summary of the advantages and disadvantages is provided, followed by reimplementations of their operations using Play and PlayEx. This code can be found in the <tt>ComposPaper</tt> file. This section is designed to be read with a copy of the Compos paper to hand, alternatives are given, but the tasks are not explained in this section.
+</p>
+<p>
+    Advantages of Play:
+</p>
+<ul>
+    <li>Haskell 98 (mainly), plus multi-parameter type classes (PlayEx only)</li>
+    <li>Does not require GADT's or rank-2 types</li>
+    <li>No need to change the data structure</li>
+    <li>Less boilerplate in the traversal</li>
+</ul>
+<p>
+    Advantages of Compos:
+</p>
+<ul>
+    <li>Easier to write traversal code</li>
+    <li>Supports GADT's</li>
+</ul>
+<p>
+    Now I compare the examples in the paper, with the equivalent using Play. The Compos variant is shown in <i>italics</i>.
+</p>
+
+
+<h3>Examples from Section 3</h3>
+
+<p>
+    First off, I replicate the data structure from their paper, along with a Play instance.
+</p>
+<pre>
+data Exp = EAbs String Exp
+         | EApp Exp Exp
+         | EVar String
+         deriving Show
+
+instance Play Exp where
+    replaceChildren x =
+        case x of
+            EAbs a c -> playOne (EAbs a) c
+            EApp c1 c2 -> playTwo EApp c1 c2
+            x -> playDefault x
+</pre>
+
+<h3>The <tt>rename</tt> function</h3>
+
+<p>
+    Now let us examine the <tt>rename</tt> function. In addition to the Compos and Play versions, I first present the version written <i>without</i> any traveral code:
+</p>
+<pre>
+rename :: Exp -> Exp
+rename e = case e of
+    EAbs x b -> EAbs ("_" ++ x) (rename b)
+    EApp c a -> EApp (rename c) (rename a)
+    EVar x   -> EVar ("_" ++ x)
+</pre>
+<p>
+    And now the two variants from the libraries:
+</p>
+<pre class="compos">
+rename :: Exp -> Exp
+rename e = case e of
+    EAbs x b -> EAbs ("_" ++ x) (rename b)
+    EVar x   -> EVar ("_" ++ x)
+    _        -> composOp rename e
+</pre>
+<pre>
+rename :: Exp -> Exp
+rename = mapUnder $ \e -> case e of
+    EAbs s x -> EAbs ("_" ++ s) x
+    EVar s -> EVar ("_" ++ s)
+    x -> x
+</pre>
+<p>
+    Note that in the Compos version there is only one function, in contrast to two in the Play version. However, in the Play version the traversal code is at the top, whereas with Compos it is the base case. Also note that in <tt>EAbs</tt> Compos has to continue the recursion, if the <tt>(rename b)</tt> call was missed then this would not work - Play takes care of this detail automatically.
+</p>
+
+
+<h3>The <tt>free</tt> function</h3>
+
+<pre class="compos">
+free :: Exp -> [String]
+free e = case e of
+    EAbs x b -> delete x (free b)
+    EVar x -> [x]
+    _ -> composOpFold [] union free e
+</pre>
+<pre>
+free :: Exp -> [String]
+free = fold (nub . concat) $ \e y -> case e of
+    EAbs s x -> delete s y
+    EVar s -> [s]
+    x -> y
+</pre>
+<p>
+    In this function the two approaches are relatively similar, in Compos the fold information is at the bottom, in Play it is at the top. Play gives slightly more freedom by allowing the combining function to combine a list in the heirarchy at a time, while Compos only lets a merge function merge two elements.
+</p>
+
+<h3>The <tt>fresh</tt> function</h3>
+
+<pre class="compos">
+fresh :: Exp -> Exp
+fresh x = evalState (f [] x) names
+    where
+        names = ["_" ++ show n | n <- [0..]]
+        f vs t = case t of
+            EAbs x b -> do
+                y:fs <- get
+                put fs
+                liftM (EAbs y) (f ((x,y):vs) b)
+            EVar x ->
+                return (EVar (fromMaybe x (lookup x vs)))
+            _ -> composOpM (f vs) t
+</pre>
+<pre>
+fresh :: Exp -> Exp
+fresh x = evalState (f [] x) names
+    where
+        names = ["_" ++ show n | n <- [0..]]
+        f vs t = case t of
+            EAbs x b -> do
+                y:fs <- get
+                put fs
+                liftM (EAbs y) (f ((x,y):vs) b)
+            EVar x ->
+                return (EVar (fromMaybe x (lookup x vs)))
+            _ -> composM (f vs) t
+</pre>
+<p>
+    In this particular example, none of the built in traversals provided by Play are much better than Compos, so instead the <tt>compos</tt> operator has been defined in the Play framework. This shows that anything Compos can do, Play can copy at the very least. (The code from the Compos example has been updated to use <tt>Control.Monad.State</tt>, to make it more accessible)
+</p>
+
+
+    </body>
 </html>
