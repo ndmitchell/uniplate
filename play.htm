@@ -1,0 +1,176 @@
+<html>
+	<head>
+		<title>Another Pattern for Almost Compositional Functions</title>
+		<style type="text/css">
+pre {
+	border: 2px solid gray;
+	padding: 1px;
+	padding-left: 5px;
+	margin-left: 10px;
+	background-color: #eee;
+}
+
+tt, pre {
+	font-family: 'Lucida Console', 'Courier New', monospace;
+	text-size: 11pt;
+}
+
+body {
+	font-family: sans-serif;
+}
+
+h1, h2, h3 {
+	font-family: serif;
+}
+
+h1 {
+	color: rgb(23,54,93);
+	border-bottom: 1px solid rgb(79,129,189);
+	padding-bottom: 2px;
+	font-variant: small-caps;
+}
+
+h2 {
+	color: rgb(54,95,145);
+}
+
+h3 {
+	color: rgb(79,129,189);
+}
+		</style>
+	</head>
+	<body>
+
+<h1>Another Pattern for Almost Compositional Functions</h1>
+
+<p>
+	In ICFP 2006 Björn Bringert and Aarne Ranta introduced their paper, “A Pattern for Almost Compositional Functions”. In the year preceding this I had developed a different pattern, which I call the Play class. This pattern had been implemented in Yhc for the Core data type, and in Catch on several data types within the program. An undergrad pointed me at the above paper, and it was easy to see the similarities between the intentions. Since I feel my Play class offers some advantages (and some disadvantages, naturally) over the published approach, it seems natural to turn my pattern into a library and provide some documentation to cover it.
+</p>
+<p>
+</p>
+	This document proceeds as follows:
+<p>
+</p>
+<ol>
+
+	<li>The motivation and use cases for Play</li>
+	<li>Derivation of a Play instance for your own data type</li>
+	<li>A comparison to the ICFP 2006 paper</li>
+</ol>
+<p>
+	If you have already read the ICFP paper, I recommend skipping to the final section. Section 3 also contains a small number of examples, which may be useful to people.
+</p>
+
+
+<h2>Motivation and Use Cases</h2>
+
+<p>
+	The idea behind the Play class is that there exists a data structure, usually with a reasonable number of constructors, which is often transformed or analysed. The usual example of this would be a compiler, which has at its core an expression type.
+</p>
+<p>
+	The Play class has the following goals:
+</p>
+<ul>
+	<li>Adding a new constructor should require very few changes</li>
+	<li>Traversals should have a minimal amount of boiler plate</li>
+	<li>The obvious code should "just work"</li>
+
+	<li>Haskell 98, where possible</li>
+</ul>
+<p>
+	When judged against these goals, the Play class holds up reasonably well.
+</p>
+
+
+<h2>Using <tt>Play</tt></h2>
+
+<p>
+	These examples revolve around a small arithmetic language, given here:
+
+</p>
+<pre>
+data Expr = Val Int
+          | Add Expr Expr
+          | Sub Expr Expr
+          | Div Expr Expr
+          | Mul Expr Expr
+          | Neg Expr
+          deriving (Show, Eq)
+</pre>
+<p>
+	Assume that a Play class has already been written; so now <tt>instance Play Expr</tt> is available to us. Some examples are presented, in rough order of increasingly complexity. These examples are all available in the <tt>ExprExamples</tt> module.
+</p>
+
+<h3>Checking for division by zero</h3>
+
+<p>
+	If an expression is divided by zero, this causes a runtime error in our language. As part of the compiler, it’s nice to give the user a warning message about this. This can be done with the following test:
+</p>
+<pre>
+hasDivZero :: Expr -> Bool
+hasDivZero x = not $ null [() | Div _ (Val 0) <- allOver x]
+</pre>
+<p>
+	Here the only Play method being used is <tt>allOver</tt>. Given a tree, “allOver” returns all the root of the tree, and all it’s subtrees at all levels. This can be used to quickly flatten a tree structure into a list, for quick analysis via list comprehensions, as is done above. For each division by zero found, any value is created in the list comprehension, and then this is checked to see if anything did match. Returning the count of divide by zero errors is trivial, simply use length instead of not $ null.  Extra context could perhaps be given by printing some of the value that is being divided by zero, to help narrow down the error.
+</p>
+
+<h3>Basic optimisation</h3>
+
+<p>
+	If we are negating a literal value, this computation can be performed in advance, so let’s write a function to do this.
+</p>
+<pre>
+optimise :: Expr -> Expr
+optimise = mapUnder $ \x -> case x of
+    Neg (Val i) -> Val (negate i)
+    x -> x
+</pre>
+<p>
+	Here the Play method being used is “mapUnder”. This applies the given function to all the children of an expression, before applying it to the parent. This can be thought of as bottom-up traversal of the data structure. There is an equivalent “mapOver” defined, but generally “mapUnder” is used about 90% of the time. The optimise code merely pattern matches on the negation of a literal, and replaces it with the literal. Using mapUnder means that “Neg (Neg (Val 1))” is reduced to “1”, using mapOver would only perform the inner most reduction.
+
+</p>
+<p>
+	Now lets add another optimisation into the same pass, just before the “x -> x” line insert:
+</p>
+<pre>
+    Add x y | x == y -> Mul x (Val 2)
+</pre>
+<p>
+	This takes an addition where two terms are equal and changes it into a multiplication, causing the nested expression to be executed only once. This shows that normal Haskell applies, the Play lets you write code as before.
+</p>
+
+<h3>Depth of an expression</h3>
+
+<p>
+	Now lets imagine that programmers in your language are paid by the depth of expression they produce, so lets write a function that computes the maximum depth of an expression.
+</p>
+<pre>
+depth :: Expr -> Int
+depth = fold (foldr max 0) $ \_ d -> d+1
+</pre>
+<p>
+	This function performs a fold over the data structure. The foldr max is being used as maximum, with a starting value of 0. The next bit simply says that for each iteration, add one to the previous depth.  An evaluator for this expression language is also modelled as a fold, see inside the example directory to see an implementation.
+</p>
+
+<h3>Reverse notation</h3>
+
+<p>
+	In general, allOver and mapUnder are used most of the time, and fold is used occasionally. The Play class is build upon the operation replaceChildren, which takes an expression, and returns a pair with the children of that expression, and a function to generate that expression with a new set of children in place. This operation can be directly exploited if required, although should be handled with caution.
+</p>
+<p>
+	Let’s make a function that reverses the order of all the inputs, say if the user is working in Right-to-Left mode on their computer:
+</p>
+<pre>
+reverseExpr :: Expr -> Expr
+reverseExpr = mapUnder f
+    where
+        f x = generate $ reverse collect
+            where (collect,generate) = replaceChildren x
+</pre>
+<p>
+
+	This expression does a standard mapUnder, but at each iteration calls replaceChildren, then reverses the children set before regenerating the original expression. This shows the underlying mechanism on which the library is based, and isn’t recommended for average users.
+</p>
+
+	</body>
+</html>
