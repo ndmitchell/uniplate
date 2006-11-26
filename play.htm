@@ -32,6 +32,11 @@ h1 {
     border-bottom: 1px solid rgb(79,129,189);
     padding-bottom: 2px;
     font-variant: small-caps;
+    text-align: center;
+}
+
+a {
+    color: rgb(54,95,145);
 }
 
 h2 {
@@ -46,6 +51,10 @@ h3 {
     <body>
 
 <h1>Another Pattern for Almost Compositional Functions</h1>
+
+<p style="text-align:right;margin-bottom:25px;">
+	by <a href="http://www.cs.york.ac.uk/~ndm/">Neil Mitchell</a>
+</p>
 
 <p>
     In ICFP 2006 Bj&ouml;rn Bringert and Aarne Ranta introduced their paper, <a href="http://doi.acm.org/10.1145/1159803.1159834">"A Pattern for Almost Compositional Functions"</a> - which I refer to as Compos (after the name of their class). In the year preceding this I had developed a different pattern, which I call the <i>Play</i> class. This pattern had been implemented in Yhc for the Core data type, and in Catch on several data types within the program. An undergrad pointed me at the above paper, and it was easy to see the similarities between the intentions. Since I feel my Play class offers some advantages (and some disadvantages, naturally) over the published approach, it seems natural to turn my pattern into a library and provide some documentation to cover it.
