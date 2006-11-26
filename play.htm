@@ -286,10 +286,10 @@ class Play on where
 instance Play Expr of
     replaceChildren x =
         case x of
-            Val i -> ([], \[] -> Val i)
-            Neg a -> ([a], \[a] -> Neg a)
             Add a b -> ([a,b], \[a,b] -> Add a b)
             ...
+            Neg a -> ([a], \[a] -> Neg a)
+            Val i -> ([], \[] -> Val i)
 </pre>
 <p>
     A short study of the code should show how this works. The other constructors such as <tt>Mul</tt> follow the same pattern as <tt>Add</tt>. There are some additional combinators defined in the Play class to make this a bit easier.
