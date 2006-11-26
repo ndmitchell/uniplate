@@ -524,6 +524,12 @@ warnAssign t = case t of
 </pre>
 <pre>
 warnAssign :: PlayEx x Stm => x -> IO ()
+warnAssign = mapUnderExM_ $ \x -> case x of
+	SAss _ _ -> putChar (chr 7)
+	_ -> return ()
+</pre>
+<pre>
+warnAssign :: PlayEx x Stm => x -> IO ()
 warnAssign x = putStr [chr 7 | SAss{} <- allOverEx x]
 </pre>
 <p>
