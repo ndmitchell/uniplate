@@ -1,0 +1,11 @@
+Name:           Play
+Version:        0.1
+License:        BSD3
+Author:         Neil Mitchell
+Homepage:       http://www-users.cs.york.ac.uk/~ndm/projects/libraries.php
+Category:       Data
+Build-Depends:  base
+Synopsis:       Library for playing with data structures.
+Exposed-modules:
+        Data.Play
+        Data.PlayEx
