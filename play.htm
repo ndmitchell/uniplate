@@ -57,7 +57,7 @@ h3 {
 </p>
 
 <p>
-    In ICFP 2006 Bj&ouml;rn Bringert and Aarne Ranta introduced their paper, <a href="http://doi.acm.org/10.1145/1159803.1159834">"A Pattern for Almost Compositional Functions"</a> - which I refer to as Compos (after the name of their class). In the year preceding this I had developed a different pattern, which I call the <i>Play</i> class. This pattern had been implemented in Yhc for the Core data type, and in Catch on several data types within the program. An undergrad pointed me at the above paper, and it was easy to see the similarities between the intentions. Since I feel my Play class offers some advantages (and some disadvantages, naturally) over the published approach, it seems natural to turn my pattern into a library and provide some documentation to cover it.
+    In ICFP 2006 Bj&ouml;rn Bringert and Aarne Ranta introduced their paper, <a href="http://doi.acm.org/10.1145/1159803.1159834">"A Pattern for Almost Compositional Functions"</a> - which I refer to as Compos (after the name of their class). In the year preceding this I had developed a different pattern, which I call the <i>Play</i> class. This pattern had been implemented in Yhc for the Core data type, and in Catch on several data types within the program. An undergrad pointed me at the above paper, and it was easy to see the similarities between the intentions. Since I feel my Play class offers some advantages (and some disadvantages, naturally) over the published approach, it seems sensible to turn my pattern into a library and provide some documentation to cover it.
 </p>
 <p>
 </p>
@@ -72,8 +72,11 @@ h3 {
     <li>A comparison to the Compos paper</li>
 </ol>
 <p>
-    If you have already read the Comopos paper, I recommend skipping to the final section. All the examples used in this document can be found in the darcs repository.
+    All the examples used in this document can be found in the darcs repository, under the <tt>Examples</tt> directory.
 </p>
+<pre>
+darcs get --partial <a href="http://www.cs.york.ac.uk/fp/darcs/play">http://www.cs.york.ac.uk/fp/darcs/play</a>
+</pre>
 
 <h3>Acknowledgements</h3>
 
@@ -110,6 +113,8 @@ h3 {
 
 </p>
 <pre>
+import Data.Play
+
 data Expr = Val Int
           | Add Expr Expr
           | Sub Expr Expr
@@ -119,7 +124,7 @@ data Expr = Val Int
           deriving (Show, Eq)
 </pre>
 <p>
-    Assume that a Play class has already been written; so now <tt>instance Play Expr</tt> is available to us. Some examples are presented, in rough order of increasingly complexity. These examples are all available in the <tt>ExprExamples</tt> module.
+    Assume that a Play class has already been written; so now <tt>instance Play Expr</tt> is available to us. Some examples are presented, in rough order of increasingly complexity. These examples are all available in the <tt>Examples/Expr.hs</tt> file.
 </p>
 
 <h3>Checking for division by zero</h3>
@@ -311,14 +316,106 @@ instance Play Expr of
 <h2>Using PlayEx</h2>
 
 <p>
-    The PlayEx class is not standard Haskell, requiring multi-parameter type classes. Where possible try and use the standard Play class.
+    The PlayEx class is not standard Haskell, requiring multi-parameter type classes. Where possible try and use the standard Play class. There are two mechanisms for writing <tt>PlayEx</tt> instances, one requires multi-parameter type classes, the other requires undecidable instances, but is a lot simpler.
 </p>
 <pre>
 class Play with => PlayEx on with where
     replaceChildrenEx :: on -> ([with], [with] -> on)
 </pre>
 <p>
-    Documentation needs to be written on the PlayEx class.
+    The <tt>replaceChildrenEx</tt> method operates much like the <tt>replaceChildren</tt>, except it returns the list of elements which match first. When the two types are different this operations much like the original, but when <tt>on</tt> and <tt>with</tt> represent the same type, the result is just the single element list.
+</p>
+
+<h3>Using the operations from PlayEx</h3>
+
+<p>
+    To see various operations being used from the PlayEx class, take a look at <tt>Examples/ComposPaper.hs</tt>. Typically the operations are just the same as Play, with Ex on the end. To use the Ex methods either import Data.PlayMPTC or Data.PlaySYB - depending on how the instances are to be written.
+</p>
+<pre class="define">
+mapUnderEx :: PlayEx on with => (with -> with) -> on -> on
+mapUnderExM :: (Monad m, PlayEx on with) => (with -> m with) -> on -> m on
+allOverEx :: PlayEx on with => on -> [with]
+</pre>
+
+<h3>Defining PlayEx manually</h3>
+
+<p>
+    To see an example of this style of definition, see <tt>Examples/ComposBasic.hs</tt>. Here the useful combinations for definitions are:
+</p>
+<pre class="define">
+playExDefault :: (Play on, PlayEx on with) => on -> ([with], [with] -> on)
+playSelf :: a -> ([a], [a] -> a)
+playMore :: PlayEx a b => (a -> c) -> a -> ([b],[b] -> c)
+</pre>
+<p>
+    The <tt>playSelf</tt> function simply operates on values of the same data type, so typically a defintion will be created such as:
+</p>
+<pre>
+instance PlayEx Expr Expr where
+    replaceChildrenEx = playSelf
+</pre>
+<p>
+    The <tt>playExDefault</tt> takes on the same role as <tt>playDefault</tt> - when there are remaining definitions without any further interesting elements in. The <tt>playMore</tt> is designed to continue on the recursion, where elements on interest may lay within other elements.
+</p>
+<p>
+    Defining a PlayEx class using these combinations and direct operations is quite hard, and quite error prone. It is not recommend unless there is no alternative due to implementation restrictions. Note however than even if a PlayEx class is defined with the more powerful tools, an equivalent requiring only MPTC's does exist, so your code is not tied to the extensions forever.
+</p>
+
+<h3>Using the PlayEx combinators</h3>
+
+<p>
+    To define the <tt>PlayEx</tt> class, there are three combinatiors that can be used. These automate much of the definition:
+</p>
+<pre class="define">
+play :: on -> ([with],[with] -> on)
+(/\) :: PlayEx item with => ([with], [with] -> item -> on) -> item -> ([with], [with] -> on)
+(/\!) :: ([with], [with] -> item -> on) -> item -> ([with], [with] -> on)
+</pre>
+<p>
+    Note, the above are presented with type signatures for completeness. They are intended to be used mechanically, without excessive thought.
+</p>
+<p>
+    To define a PlayEx instance for the Expr type introduced earlier:
+</p>
+<pre>
+instance PlayEx Expr a where
+    replaceChildrenEx x =
+        case x of
+            Val a -> play Val /\! a
+            Add a b -> play Add /\ a /\ b
+            Sub a b -> play Sub /\ a /\ b
+            ...
+            Neg a -> play Neg /\ a
+</pre>
+<p>
+    The definition follows mechanically. The only choice a user makes is whether to use the <tt>(/\)</tt> operator (which recurses into the child on the right), or the <tt>(/\!)</tt> operator, which doesn't. For example, here we have decided not to traverse inside the <tt>Int</tt> of <tt>Val</tt>. This can be changed, and would require a PlayEx instance for <tt>Int</tt>.
+</p>
+<p>
+    If using this style of definition, a special instance must be defined for the self case:
+</p>
+<pre>
+instance PlayEx Expr Expr where
+    replaceChildrenEx = playSelf
+</pre>
+<p>
+    Unfortunately this requires undecidable instances. A Play instance still needs to be written for each definition.
+</p>
+
+<h3>Using Scrap Your Boilerplate instances</h3>
+
+<p>
+    To define Play and PlayEx instances for all types, in all combinations, simply:
+</p>
+<pre>
+import Data.PlaySYB
+
+data Expr ... deriving (Typeable, Data)
+</pre>
+<p>
+    The disadvatages of this are the lack of type safety - you can now do entirely meaningless operations, which the earlier definitions would have spotted as being an error. This code will also only work where <tt>Data.Generics</tt> is supported, namely GHC at the present time.
+</p>
+<p>
+    The clear advantage is that there is almost no work to creating Play instances. While the SYB instances are more powerful, it is hoped that the Play instances are more intuative and match closer to the operations people perform on their code.
 </p>
 
 
@@ -480,7 +577,7 @@ data Typ = T_int | T_float
     The first thing done by the Compos paper is to translate this into a GADT, which destroys abstraction. If a data structure representing a program was also defined, then this would have to be merged into the single GADT. Play on the other hand accepts the definition as supplied.
 </p>
 <p>
-    The Play instances for this data structure are not particularly nice, this is mainly due to the decision to have <tt>EStm</tt> in the <tt>Exp</tt> data type. A much more natural definition would be either to merge <tt>Stm</tt> and <tt>Exp</tt>, or to add <tt>SExp</tt> to <tt>Stm</tt>. If either of these things were done, then the Play instances would be vastly simplified. Because of the ugliness of the Play instances, I merely list the instances defined, the code for them is available in the example.
+    The manual PlayEx instances for this data structure are not particularly nice, this is mainly due to the decision to have <tt>EStm</tt> in the <tt>Exp</tt> data type. A much more natural definition would be either to merge <tt>Stm</tt> and <tt>Exp</tt>, or to add <tt>SExp</tt> to <tt>Stm</tt>. If either of these things were done, then the Play instances would be vastly simplified. Because of the ugliness of the manual Play instances, I merely list the instances defined, the code for them is available in the example.
 </p>
 <pre>
 instance Play Stm
@@ -495,7 +592,39 @@ instance PlayEx Stm Var
 instance PlayEx Exp Var
 </pre>
 <p>
-    While the instances are not very pretty, they only have to be written once, and it is hoped that the number of data structures is low, and the use of Play functions are high. In one project the ratio is about 1:50, which supports this argument.
+    Of course, it is possible to write the Play instances using the PlayEx combinators (if we are willing to pay for undecidable instances), and for Exp this is shown:
+</p>
+<pre>
+instance Play Exp where
+    replaceChildren x =
+        case x of
+            EStm s -> playMore EStm s
+            EAdd a b -> playTwo EAdd a b
+            x -> playDefault x
+
+instance PlayEx Exp Exp where; replaceChildrenEx = playSelf
+
+instance Play a => PlayEx Exp a where
+    replaceChildrenEx x =
+        case x of
+            EStm a -> play EStm /\ a
+            EAdd a b -> play EAdd /\ a /\ b
+            EVar a -> play EVar /\ a
+            EInt a -> play EInt /\! a
+</pre>
+<p>
+    These instances are more work than Compos, in particlar two copies have to be written compared to Compos, but they are at least relatively straight forward. If this is still too much work then:
+</p>
+<pre>
+data Stm = ... deriving (Data,Typeable)
+data Exr = ... deriving (Data,Typeable)
+data Var = ... deriving (Data,Typeable)
+</pre>
+<p>
+    This permits the use of the SYB definitions, at the cost of some type safety. No instances need to be written at all.
+</p>
+<p>
+    While the choice of how to write the underlying functions is much more confusing with Play, compared to Compos, there is a good deal of flexibility. Depending on what features a user wishes to leverage, progressively shorter Play definitions can be specified. Hopefully the cost of writing instances will be low, compared to the use of Play functions. In one project the ratio is about 1:50, which supports this argument.
 </p>
 
 <h3>The <tt>rename</tt> function</h3>
@@ -528,12 +657,15 @@ warnAssign = mapUnderExM_ $ \x -> case x of
 	SAss _ _ -> putChar (chr 7)
 	_ -> return ()
 </pre>
+<p>
+    Here the traversals are very similar, both threading a Monad through the code. This example shows how monadic actions can be threading through a traversal, however, this is not usually necessary. Using the Play class, a more natural traversal emerges:
+</p>
 <pre>
 warnAssign :: PlayEx x Stm => x -> IO ()
 warnAssign x = putStr [chr 7 | SAss{} <- allOverEx x]
 </pre>
 <p>
-    Here the difference between the two approaches is large. The Compos approach threads the <tt>IO</tt> monad through the whole code. The Play approach extracts the relevant bits with a list comprehension. Hopefully this shows how analysis functions can often be implemented with <tt>allOver</tt>, rathern than a traversal.
+    Here the Play class is very concise. The Play approach extracts the relevant bits with a list comprehension. Hopefully this shows how analysis functions can often be implemented with <tt>allOver</tt>, rathern than a traversal. The Compos version could be written using a fold, which would reduce it's complexity, although would still be more complex than the Compos version.
 </p>
 
 
