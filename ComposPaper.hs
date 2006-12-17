@@ -1,3 +1,4 @@
+{-# OPTIONS_GHC -fglasgow-exts -fallow-incoherent-instances #-}
 
 module ComposPaper where
 
