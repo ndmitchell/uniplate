@@ -15,7 +15,7 @@ pre.define {
     border-color: #cc0;
 }
 
-pre.compos {
+pre.compos, pre.syb {
     font-style: italic;
 }
 
@@ -709,7 +709,101 @@ constFold = mapUnderEx $ \e -> case e of
 <h3>Section 7.1.1</h3>
 
 <p>
-    The examples in Section 7.1.1 require lots of data types and lots of different styles of traversal. As such the Play class would not really be appropriate for this type of task - the instances would take too long to write. Using either Scrap Your Boilerplate, or Compos would be a better alternative.
+    The examples in Section 7.1.1 require lots of data types and lots of different styles of traversal. As such manual Play instances would not really be appropriate for this type of task - the instances would take too long to write. If we use the SYB instances, by importing <tt>Data.PlaySYB</tt> then we can start and take a look at the traversals. For this section, the SYB instance is presented first, followed by the Compos one, followed by the Play one.
+</p>
+<p>
+    For completeness the data definition is reproduced here. For SYB and Play, deriving clauses have to be added. For Compos the whole thing is replaced by a GADT. All the code for Play is in the file <tt>Examples/SYB.hs</tt>.
+</p>
+<pre>
+data Company = C [Dept]
+data Dept = D Name Manager [Unit]
+data Unit = PU Employee | DU Dept
+data Employee = E Person Salary
+data Person = P Name Address
+data Salary = S Float
+type Manager = Employee
+type Name = String
+type Address = String
+</pre>
+
+<h3>The <tt>increase</tt> function</h3>
+
+<pre class="syb">
+increase :: Data a => Float -> a -> a
+increase k = everywhere (mkT (incS k))
+
+incS :: Float -> Salary -> Salary
+incS k (S s) = S (s * (1+k))
+</pre>
+<pre class="compos">
+increase :: Float -> Tree c -> Tree c
+increase k c = case c of
+    S s -> S (s * (1+k))
+    _ -> composOp (increase k) c
+</pre>
+<pre>
+increase :: PlayEx x Salary => Float -> x -> x
+increase k = mapUnderEx (\(S s) -> S (s * (1+k)))
+</pre>
+<p>
+    Here the Play uses seems to be the most intuative. It requires no rank-2 types, no GADT's, and yet still provides the shortest code. The SYB approach requires separate functions to get the type classes working, and use of rather complex intermediates such as <tt>mkT</tt>. The Compos function is clearly much simpler, but by merging all the data constructors has to perform a case on the value. By keeping the original structure intact, Play can simply state the property.
+</p>
+
+<h3>The <tt>incrOne</tt> function</h3>
+
+<pre class="syb">
+incrOne :: Data a => Name -> Float -> a -> a
+incrOne n k a | isDept n a = increase k a
+              | otherwise = gmapT (incrOne n k) a
+
+isDept :: Data a => Name -> a -> Bool
+isDept n = False ‘mkQ‘ isDeptD n
+
+isDeptD :: Name -> Dept -> Bool
+isDeptD n (D n2 _ _) = n==n2
+</pre>
+<pre class="compos">
+incrOne :: Name -> Float -> Tree c -> Tree c
+incrOne d k c = case c of
+    D n _ _ | n == d -> increase k c
+    _ -> composOp (incrOne d k) c
+</pre>
+<pre>
+incrOne :: PlayEx x Dept => String -> Float -> x -> x
+incrOne name k = mapUnderEx (\d@(D n _ _) -> if name == n then increase k d else d)
+</pre>
+<p>
+    Here SYB has grown substantially more complex, to accomodate the invariant. Compos still retains the same structure as before, and Play remains shorter - although the inherent complexity is the same as the Compos solution, in this instance.
+</p>
+
+<h3>The <tt>salaryBill</tt> function</h3>
+
+<pre class="syb">
+salaryBill :: Company -> Float
+salaryBill = everything (+) (0 ‘mkQ‘ billS)
+
+billS :: Salary -> Float
+billS (S f) = f
+</pre>
+<pre class="compos">
+salaryBill :: Tree c -> Float
+salaryBill c = case c of
+    S s -> s
+    _ -> composOpFold 0 (+) salaryBill c
+</pre>
+<pre>
+salaryBill :: PlayEx x Salary => x -> Float
+salaryBill x = sum [x | S x <- allOverEx x]
+</pre>
+<p>
+    Here the Play instance wins by being able to use a list comprehension to select the salary value out of a Salary object. The Play class is the only one that is able to use the standard Haskell <tt>sum</tt> function, not requiring an explicit fold to be performed. In this case it could easily be argued that <tt>billS</tt> is probably a general function, so the cost of writting it is not really correctly attributed to the SYB approach. If <tt>billS</tt> is a generally defined function, then you can rewrite the Play example as:
+</p>
+<pre>
+salaryBill2 :: PlayEx x Salary => x -> Float
+salaryBill2 = sum . map billS . allOverEx
+</pre>
+<p>
+    This solution is nice in that it is a very specification orientated view of the problem. Take all the salaries, get their value, and sum them.
 </p>
 
 
