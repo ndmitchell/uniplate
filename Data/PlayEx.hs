@@ -52,3 +52,22 @@ instance (Play with, PlayEx on with) => PlayEx [on] with where
 
             (currents, generates) = unzip $ map replaceChildrenEx x
 
+
+
+play :: on -> ([with],[with] -> on)
+play f = ([], \[] -> f)
+
+
+(/\) :: PlayEx item with => ([with], [with] -> item -> on) -> item -> ([with], [with] -> on)
+(/\) f item = (collect2,generate2)
+    where
+        (collectL,generateL) = f
+        (collectR,generateR) = replaceChildrenEx item
+        collect2 = collectL ++ collectR
+        generate2 xs = generateL a (generateR b)
+            where (a,b) = splitAt (length collect2) xs
+
+
+(/\!) :: ([with], [with] -> item -> on) -> item -> ([with], [with] -> on)
+(/\!) (collect,generate) item = (collect,\xs -> generate xs item)
+

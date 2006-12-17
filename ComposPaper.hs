@@ -85,6 +85,8 @@ stm_1 = SBlock [SDecl T_int (V "x")
                ]
 
 
+-- THE BASIC PLAY INSTANCES
+
 instance Play Stm where
     replaceChildren x =
         case x of
@@ -104,6 +106,9 @@ instance Play Exp where
 instance Play Var where
     replaceChildren = playDefault
 
+
+{-
+PLAY INSTANCES RAW
 
 instance PlayEx Stm Stm where
     replaceChildrenEx = playSelf
@@ -139,8 +144,36 @@ instance PlayEx Exp Var where
             EStm x -> playMore EStm x
             EVar x -> playOne EVar x
             x -> playExDefault x
+-}
 
-            
+
+-- COMBINATOR BASED PLAY INSTANCES
+instance PlayEx Stm Stm where; replaceChildrenEx = playSelf
+instance PlayEx Exp Exp where; replaceChildrenEx = playSelf
+instance PlayEx Var Var where; replaceChildrenEx = playSelf
+
+instance Play a => PlayEx Exp a where
+    replaceChildrenEx x =
+        case x of
+            EStm a -> play EStm /\ a
+            EAdd a b -> play EAdd /\ a /\ b
+            EVar a -> play EVar /\ a
+            EInt a -> play EInt /\! a
+
+
+instance Play a => PlayEx Stm a where
+    replaceChildrenEx x =
+        case x of
+            SDecl a b -> play SDecl /\! a /\ b
+            SAss a b -> play SAss /\ a /\ b
+            SBlock a -> play SBlock /\ a
+            SReturn x -> play SReturn /\ x
+
+instance Play a => PlayEx Var a where
+    replaceChildrenEx = playDefault
+
+
+-- MANIPULATIONS           
 
 rename :: PlayEx x Var => x -> x
 rename = mapUnderEx $ \(V x) -> V ("_" ++ x)
