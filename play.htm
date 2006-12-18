@@ -316,15 +316,23 @@ instance Play Expr of
 <h2>Using PlayEx</h2>
 
 <p>
-    The PlayEx class is not standard Haskell, requiring multi-parameter type classes. Where possible try and use the standard Play class. There are two mechanisms for writing <tt>PlayEx</tt> instances, one requires multi-parameter type classes, the other requires undecidable instances, but is a lot simpler.
+    The PlayEx class is not standard Haskell, requiring multi-parameter type classes. Where possible try and use the standard Play class. The PlayEx class is necessary when working with a data structure that has multiple types within it.
 </p>
-<pre>
+<pre class="define">
 class Play with => PlayEx on with where
     replaceChildrenEx :: on -> ([with], [with] -> on)
 </pre>
 <p>
-    The <tt>replaceChildrenEx</tt> method operates much like the <tt>replaceChildren</tt>, except it returns the list of elements which match first. When the two types are different this operations much like the original, but when <tt>on</tt> and <tt>with</tt> represent the same type, the result is just the single element list.
+    The <tt>replaceChildrenEx</tt> method operates much like the <tt>replaceChildren</tt>, except for the different types.  When the types of <tt>on</tt> and <tt>with</tt> are different, <tt>replaceChildrenEx</tt> returns the closest children of the requested type. When the types are the same, this function returns the root element, not it's children.
 </p>
+<p>
+    There are three mechanisms for writing <tt>PlayEx</tt> instances:
+</p>
+<ul>
+    <li>Manually - this is quite complex, requires a large number of instance definitions, but needs only multi-parameter type classes, and has a high degree of type safety.</li>
+    <li>Combinators - this is reasonably straightforward, requires s moderate number of instance definitions, but needs undecidable instances.</li>
+    <li>Scrap Your Boilerplate - this requires SYB support in the compiler (currently GHC only), requires no instance definitions, and has relatively low type safety.</li>
+</ul>
 
 <h3>Using the operations from PlayEx</h3>
 
@@ -415,7 +423,7 @@ data Expr ... deriving (Typeable, Data)
     The disadvatages of this are the lack of type safety - you can now do entirely meaningless operations, which the earlier definitions would have spotted as being an error. This code will also only work where <tt>Data.Generics</tt> is supported, namely GHC at the present time.
 </p>
 <p>
-    The clear advantage is that there is almost no work to creating Play instances. While the SYB instances are more powerful, it is hoped that the Play instances are more intuative and match closer to the operations people perform on their code.
+    The clear advantage is that there is almost no work to creating Play instances.
 </p>
 
 
@@ -438,7 +446,7 @@ data Expr ... deriving (Typeable, Data)
     Advantages of Compos:
 </p>
 <ul>
-    <li>Easier to write traversal code</li>
+    <li>Easier to write traversal code (unless using PlaySYB)</li>
     <li>Supports GADT's</li>
 </ul>
 <p>
@@ -746,7 +754,7 @@ increase :: PlayEx x Salary => Float -> x -> x
 increase k = mapUnderEx (\(S s) -> S (s * (1+k)))
 </pre>
 <p>
-    Here the Play uses seems to be the most intuative. It requires no rank-2 types, no GADT's, and yet still provides the shortest code. The SYB approach requires separate functions to get the type classes working, and use of rather complex intermediates such as <tt>mkT</tt>. The Compos function is clearly much simpler, but by merging all the data constructors has to perform a case on the value. By keeping the original structure intact, Play can simply state the property.
+    Here the Play uses seems to be the most intuative. It requires no rank-2 types, no GADT's, and yet still provides the shortest code. The SYB approach requires separate functions to get the type classes working, and use of rather complex intermediates such as <tt>mkT</tt> and <tt>everywhere</tt>. The Compos function appears to be much simpler than SYB, but by merging all the data constructors has to perform a case on the value. By keeping the original structure intact, Play can simply state the property.
 </p>
 
 <h3>The <tt>incrOne</tt> function</h3>
@@ -773,7 +781,7 @@ incrOne :: PlayEx x Dept => String -> Float -> x -> x
 incrOne name k = mapUnderEx (\d@(D n _ _) -> if name == n then increase k d else d)
 </pre>
 <p>
-    Here SYB has grown substantially more complex, to accomodate the invariant. Compos still retains the same structure as before, and Play remains shorter - although the inherent complexity is the same as the Compos solution, in this instance.
+    Here SYB has grown substantially more complex, to accomodate the invariant, requiring two different utility functions. Compos still retains the same structure as before, requiring a case to distinguish between the types of constructor. Play remains shorter - although in this case the complexity is roughly the same as the Compos solution.
 </p>
 
 <h3>The <tt>salaryBill</tt> function</h3>
