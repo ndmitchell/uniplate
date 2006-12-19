@@ -1,5 +1,8 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+        "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html>
     <head>
+        <meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
         <title>Play With Your Boilerplate</title>
         <style type="text/css">
 pre {
@@ -60,9 +63,7 @@ h3 {
     In ICFP 2006 Bj&ouml;rn Bringert and Aarne Ranta introduced their paper, <a href="http://doi.acm.org/10.1145/1159803.1159834">"A Pattern for Almost Compositional Functions"</a> - which I refer to as Compos (after the name of their class). In the year preceding this I had developed a different pattern, which I call the <i>Play</i> class. This pattern had been implemented in Yhc for the Core data type, and in Catch on several data types within the program. An undergrad pointed me at the above paper, and it was easy to see the similarities between the intentions. Since I feel my Play class offers some advantages (and some disadvantages, naturally) over the published approach, it seems sensible to turn my pattern into a library and provide some documentation to cover it.
 </p>
 <p>
-</p>
     This document proceeds as follows:
-<p>
 </p>
 <ol>
     <li>The motivation and use cases for Play</li>
@@ -185,7 +186,7 @@ mapOver :: Play on => (on -> on) -> on -> on
 </pre>
 <p>
     It is possible to eliminate negation entirely, and perhaps this would be a useful computation to perform:
-<p>
+</p>
 <pre>
 noNegate :: Expr -> Expr
 noNegate = mapOver $ \x -> case x of
@@ -222,7 +223,7 @@ depth = fold (foldr max 0) $ const (+1)
 </p>
 <p>
     Each <tt>fold</tt> collects all the values from the children of an expression, combines them using the first function, then generates a new value based on the expression. Often the combining function will simply be <tt>id</tt>.
-<p>
+</p>
 <p>
     <i>Exercise:</i> Write a function that counts the maximum depth of addition only.
 </p>
@@ -765,7 +766,7 @@ incrOne n k a | isDept n a = increase k a
               | otherwise = gmapT (incrOne n k) a
 
 isDept :: Data a => Name -> a -> Bool
-isDept n = False ‘mkQ‘ isDeptD n
+isDept n = False `mkQ` isDeptD n
 
 isDeptD :: Name -> Dept -> Bool
 isDeptD n (D n2 _ _) = n==n2
@@ -788,7 +789,7 @@ incrOne name k = mapUnderEx (\d@(D n _ _) -> if name == n then increase k d else
 
 <pre class="syb">
 salaryBill :: Company -> Float
-salaryBill = everything (+) (0 ‘mkQ‘ billS)
+salaryBill = everything (+) (0 `mkQ` billS)
 
 billS :: Salary -> Float
 billS (S f) = f
