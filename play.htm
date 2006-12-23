@@ -59,8 +59,14 @@ h3 {
     by <a href="http://www.cs.york.ac.uk/~ndm/">Neil Mitchell</a>
 </p>
 
+<p style="margin-left:10%;margin-right:10%;margin-bottom:25px;text-align:justify;">
+    Generic traversals and queries are often referred to as boilerplate code - they remain relatively similar as the action performed by the code changes, and can often outnumber the actual intent of the code in terms of lines. While other generic traversal schemes have shown how powerful new features can be added to compilers, and how the type system can be manipulated into accepting these operations, this document focuses on a conceptually simpler generic concept. The <i>Play</i> class is introduced, which abstracts over common traversals and queries in a simple manner.
+</p>
 <p>
-    In ICFP 2006 Bj&ouml;rn Bringert and Aarne Ranta introduced their paper, <a href="http://doi.acm.org/10.1145/1159803.1159834">"A Pattern for Almost Compositional Functions"</a> - which I refer to as Compos (after the name of their class). In the year preceding this I had developed a different pattern, which I call the <i>Play</i> class. This pattern had been implemented in Yhc for the Core data type, and in Catch on several data types within the program. An undergrad pointed me at the above paper, and it was easy to see the similarities between the intentions. Since I feel my Play class offers some advantages (and some disadvantages, naturally) over the published approach, it seems sensible to turn my pattern into a library and provide some documentation to cover it.
+    There have been several attempts at generic traversal/query methods in Haskell. One initial paper was <a href="http://doi.acm.org/10.1145/604174.604179">"Scrap your boilerplate: a practical design pattern for generic programming"</a> (<a href="http://www.cs.vu.nl/boilerplate/tldi03.pdf">free copy</a>) - which I will refer to as SYB. Another mechanism is <a href="http://doi.acm.org/10.1145/1159803.1159834">"A Pattern for Almost Compositional Functions"</a> (<a href="http://www.cs.chalmers.se/%7Ebringert/publ/composOp/composOp.pdf">free copy</a>) - which I refer to as Compos (after the name of their class).
+</p>
+<p>
+    The principle advantage of the Play class over these two papers is that it requires no type system extensions, compared to rank-2 types for SYB and GADT's for Compos. The simplicity of the types required means that the user is free to concentrate on the operations within the class, without requiring thought as to the type trickery required. The Play pattern has been implemented in Yhc for the Core data type, and in Catch on several data types within the program.
 </p>
 <p>
     This document proceeds as follows:
@@ -70,6 +76,7 @@ h3 {
     <li>How to use the Play class</li>
     <li>Derivation of a Play instance for your own data type</li>
     <li>Extension to PlayEx</li>
+    <li>A comparison to the SYB paper</li>
     <li>A comparison to the Compos paper</li>
 </ol>
 <p>
@@ -448,6 +455,37 @@ data Expr ... deriving (Typeable, Data)
 </p>
 <p>
     The clear advantage is that there is almost no work to creating Play instances.
+</p>
+
+
+<h2>Comparison to the SYB Paper</h2>
+
+<p>
+    Many of the examples from the original SYB paper are recapped in the Compos paper, so have been covered in the next section. This section focuses on the underlying traversal mechanism employed by both types.
+</p>
+<center>
+    <img src="img/syb_vs_play.png" />
+</center>
+<p>
+    Both traversals are based on the idea of finding the immediate children of a node. The difference is that Play considers a child to be one of the same type, which may not be immediately below the node. In contrast SYB considers all the immediate children. The above diagram shows the difference, where the orange nodes are all of the same type, and those with a black border are considered children.
+</p>
+<p>
+    While the SYB approach is clearly more logical in an untyped language, in a typed language it requires a considerable amount of trickery to get the types correct. The primary SYB traversal function is:
+</p>
+<pre>
+gfoldl :: (forall a b. Term a => w (a -> b)
+                              -> a -> w b)
+       -> (forall g. g -> w g)
+       -> a -> w a
+</pre>
+<p>
+    In the original SYB paper the authors note "Trying to understand the type of <tt>gfoldl</tt> directly can lead to brain damage." When compared to the type of <tt>replaceChildren</tt>, it is easy to see which is simpler at the type level.
+</p>
+<pre>
+replaceChildren :: on -> ([on], [on] -> on)
+</pre>
+<p>
+    The basic difference between SYB and Play is the choice of the notion of children. It is reasonably easy to see that SYB is more powerful - there are many nodes in the above example that Play cannot reach. However in a typed language this has come at the cost of substantial type based thought. Play on the other hand simplified things with its alternative definition of child.
 </p>
 
 
