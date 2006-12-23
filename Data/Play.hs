@@ -38,6 +38,14 @@ mapOver f x = generate $ map (mapOver f) current
     where (current, generate) = replaceChildren $ f x
 
 
+mapOverM :: (Monad m, Play on) => (on -> m on) -> on -> m on
+mapOverM f x = do
+        x2 <- f x
+        let (current, generate) = replaceChildren x2
+        current2 <- mapM (mapOverM f) current
+        return $ generate current2
+
+
 allOver :: Play on => on -> [on]
 allOver x = x : concatMap allOver (fst $ replaceChildren x)
 
