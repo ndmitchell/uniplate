@@ -2,6 +2,7 @@
 module Data.Play where
 
 import Control.Monad
+import Data.List(inits,tails)
 
 
 -- THE CLASS
@@ -48,15 +49,12 @@ allOver x = x : concatMap allOver (fst $ replaceChildren x)
 
 
 allOverContext :: Play on => on -> [(on, on -> on)]
-allOverContext x = (x,id) : concatMap f (allSlices current)
-    where
-        (current, generate) = replaceChildren x
-        
-        f (pre,x,post) = [(a, \i -> generate (pre++[b i]++post)) | (a,b) <- allOverContext x]
-        
-        allSlices :: [a] -> [([a], a, [a])]
-        allSlices [] = []
-        allSlices (x:xs) = ([],x,xs) : map (\(a,b,c) -> (x:a,b,c)) (allSlices xs)
+allOverContext x = (x,id) : f current
+  where
+    (current, generate) = replaceChildren x
+    f xs = [ (y, \i -> generate (pre ++ [context i] ++ post))
+           | (pre,b:post) <- zip (inits xs) (tails xs)
+           , (y, context) <- allOverContext b]
 
 
 fold :: Play on => ([res] -> tmp) -> (on -> tmp -> res) -> on -> res
