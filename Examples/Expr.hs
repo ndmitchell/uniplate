@@ -84,3 +84,7 @@ reverseExpr = mapUnder f
     where
         f x = generate $ reverse collect
             where (collect,generate) = replaceChildren x
+
+
+mutate :: Expr -> [Expr]
+mutate x = concat [[gen $ Val $ i-1, gen $ Val $ i+1] | (Val i, gen) <- allOverContext x]

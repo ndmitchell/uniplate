@@ -56,7 +56,7 @@ h3 {
 <h1>Play With Your Boilerplate</h1>
 
 <p style="text-align:right;margin-bottom:25px;">
-	by <a href="http://www.cs.york.ac.uk/~ndm/">Neil Mitchell</a>
+    by <a href="http://www.cs.york.ac.uk/~ndm/">Neil Mitchell</a>
 </p>
 
 <p>
@@ -78,11 +78,14 @@ h3 {
 <pre>
 darcs get --partial <a href="http://www.cs.york.ac.uk/fp/darcs/play">http://www.cs.york.ac.uk/fp/darcs/play</a>
 </pre>
+<p>
+    If you only wish to read a small fraction of this document, can I suggest you pay particular attention to <tt>mapUnder</tt> and <tt>allOver</tt> - these are by far the most common transformational patterns.
+</p>
 
 <h3>Acknowledgements</h3>
 
 <p>
-	Thanks to Bj&ouml;rn Bringert for feedback on an earlier version of this document, Eric Mertens for various ideas and code snippets, and to Matt Naylor and Tom Shackell for helpful discussions.
+    Thanks to Bj&ouml;rn Bringert for feedback on an earlier version of this document, Eric Mertens for various ideas and code snippets, and to Matt Naylor and Tom Shackell for helpful discussions.
 </p>
 
 
@@ -251,6 +254,26 @@ uniqueLits x = evalState (mapUnderM f x) [0..]
 </p>
 <p>
     <i>Exercise:</i> Allow each literal to occur only once, when a second occurance is detected, replace that literal with zero.
+</p>
+
+<h3>Generating mutants</h3>
+
+<pre class="define">
+allOverContext :: Play on => on -> [(on, on -> on)]
+</pre>
+<p>
+    The person who is inputting the expression thinks they made a mistake, they suspect they got one of the values wrong by plus or minus one. Generate all the expressions they might have written.
+</p>
+<pre>
+mutate :: Expr -> [Expr]
+mutate x = concat [[gen $ Val $ i-1, gen $ Val $ i+1]
+                  | (Val i, gen) <- allOverContext x]
+</pre>
+<p>
+   The <tt>mapUnder</tt> function is useful for doing an operation to all nodes in a tree, but sometimes you only want to apply a transformation once. This is less common, but is sometimes required. The idea is that the context provides the information required to recreate the original expression, but with this node altered.
+</p>
+<p>
+    <i>Exercise:</i> Replace one multiplication with addition, if there are no multiplications return the original expression.
 </p>
 
 <h3>Reverse notation</h3>
@@ -663,8 +686,8 @@ warnAssign t = case t of
 <pre>
 warnAssign :: PlayEx x Stm => x -> IO ()
 warnAssign = mapUnderExM_ $ \x -> case x of
-	SAss _ _ -> putChar (chr 7)
-	_ -> return ()
+    SAss _ _ -> putChar (chr 7)
+    _ -> return ()
 </pre>
 <p>
     Here the traversals are very similar, both threading a Monad through the code. This example shows how monadic actions can be threading through a traversal, however, this is not usually necessary. Using the Play class, a more natural traversal emerges:
