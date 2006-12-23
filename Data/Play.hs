@@ -47,6 +47,18 @@ allOver :: Play on => on -> [on]
 allOver x = x : concatMap allOver (fst $ replaceChildren x)
 
 
+allOverContext :: Play on => on -> [(on, on -> on)]
+allOverContext x = (x,id) : concatMap f (allSlices current)
+    where
+        (current, generate) = replaceChildren x
+        
+        f (pre,x,post) = [(a, \i -> generate (pre++[b i]++post)) | (a,b) <- allOverContext x]
+        
+        allSlices :: [a] -> [([a], a, [a])]
+        allSlices [] = []
+        allSlices (x:xs) = ([],x,xs) : map (\(a,b,c) -> (x:a,b,c)) (allSlices xs)
+
+
 fold :: Play on => ([res] -> tmp) -> (on -> tmp -> res) -> on -> res
 fold merge gen x = gen x $ merge $ map (fold merge gen) current
     where current = fst $ replaceChildren x
