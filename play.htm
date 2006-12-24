@@ -463,9 +463,9 @@ data Expr ... deriving (Typeable, Data)
 <p>
     Many of the examples from the original SYB paper are recapped in the Compos paper, so have been covered in the next section. This section focuses on the underlying traversal mechanism employed by both types.
 </p>
-<center>
-    <img src="img/syb_vs_play.png" />
-</center>
+<p style="text-align:center;">
+    <img src="img/syb_vs_play.png" alt="SYB vs Play, notion of children" />
+</p>
 <p>
     Both traversals are based on the idea of finding the immediate children of a node. The difference is that Play considers a child to be one of the same type, which may not be immediately below the node. In contrast SYB considers all the immediate children. The above diagram shows the difference, where the orange nodes are all of the same type, and those with a black border are considered children.
 </p>
