@@ -62,6 +62,11 @@ fold merge gen x = gen x $ merge $ map (fold merge gen) current
     where current = fst $ replaceChildren x
 
 
+compos :: Play on => (on -> on) -> on -> on
+compos f x = generate $ map f current
+    where (current, generate) = replaceChildren x
+
+    
 composM :: (Monad m, Play on) => (on -> m on) -> on -> m on
 composM f x = liftM generate $ mapM f current
     where (current, generate) = replaceChildren x
