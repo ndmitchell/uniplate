@@ -20,28 +20,37 @@ main = getArgs >>= main2
 
 main2 [x] = case x of
     "gen" -> generate 100 >>= print
-    "t1" -> exec1
+    "t1" -> exec1 tasks1
+    "t2" -> exec1 tasks2
 
 
 
-task1s = [("Compos", Compos.task1 . unwrapC)
+tasks1 = [("Compos", Compos.task1 . unwrapC)
          ,("Raw", Raw.task1 . unwrapN)
-         ,("Play", Play.task1 . unwrapN)
+         ,("Play Over", Play.task1_over . unwrapN)
+         ,("Play Fold", Play.task1_fold . unwrapN)
          ,("PlaySYB", PlaySYB.task1 . unwrapN)
+         ]
+
+tasks2 = [("Compos", rewrapC . Compos.task2 . unwrapC)
+         ,("Raw", rewrapN . Raw.task2 . unwrapN)
+         ,("Play Compos", rewrapN . Play.task2_compos . unwrapN)
+         ,("Play Under" , rewrapN . Play.task2_under  . unwrapN)
+         ,("Play Over"  , rewrapN . Play.task2_over   . unwrapN)
          ]
 
 
 
-exec1 :: IO ()
-exec1 | ans == ans = mapM_ f task1s
+exec1 :: Eq a => [(String, Expr -> a)] -> IO ()
+exec1 tsks | ans == ans = mapM_ f tsks
     where
-        tests = concat $ replicate 1000 testset
+        tests = concat $ replicate 100 testset
     
-        ans = map (snd $ head task1s) tests
+        ans = map (snd $ head tsks) tests
         
         f (name, action) = do
             start <- getCPUTime
             when (ans /= map action tests) $ putStrLn $ "FAILED TO MATCH in " ++ name
             end <- getCPUTime
-            putStrLn $ name ++ " took " ++ show (end - start)
+            putStrLn $ name ++ " took \t" ++ show ((end - start) `div` 1000000)
 

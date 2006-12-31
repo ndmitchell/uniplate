@@ -9,7 +9,7 @@ task1 :: NExpr -> Int
 task1 x = sum [i | NVal i <- allOver x, i > 0]
 
 
-task2_action (NNeg x) = x
+task2_action (NNeg x) = task2_action x
 task2_action (NMul x y) = NAdd x y
 task2_action x = x
 
