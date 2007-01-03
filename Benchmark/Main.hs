@@ -29,7 +29,8 @@ tasks1 = [("Compos", Compos.task1 . unwrapC)
          ,("Raw", Raw.task1 . unwrapN)
          ,("Play Over", Play.task1_over . unwrapN)
          ,("Play Fold", Play.task1_fold . unwrapN)
-         ,("PlaySYB", PlaySYB.task1 . unwrapN)
+         ,("Slay Over", PlaySYB.task1_over . unwrapN)
+         ,("Slay Fold", PlaySYB.task1_fold . unwrapN)
          ]
 
 tasks2 = [("Compos", rewrapC . Compos.task2 . unwrapC)
@@ -37,6 +38,9 @@ tasks2 = [("Compos", rewrapC . Compos.task2 . unwrapC)
          ,("Play Compos", rewrapN . Play.task2_compos . unwrapN)
          ,("Play Under" , rewrapN . Play.task2_under  . unwrapN)
          ,("Play Over"  , rewrapN . Play.task2_over   . unwrapN)
+         ,("Slay Compos", rewrapN . PlaySYB.task2_compos . unwrapN)
+         ,("Slay Under" , rewrapN . PlaySYB.task2_under  . unwrapN)
+         ,("Slay Over"  , rewrapN . PlaySYB.task2_over   . unwrapN)
          ]
 
 

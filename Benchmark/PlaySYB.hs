@@ -1,12 +1,19 @@
 
-module PlaySYB(task1, task2_under, task2_over, task2_compos) where
+module PlaySYB(task1_over, task1_fold, task2_under, task2_over, task2_compos) where
 
 import Data.PlaySYB
 import Data
+import Data.List(foldl')
 
 
-task1 :: NExpr -> Int
-task1 x = sum [i | NVal i <- allOver x, i > 0]
+task1_over :: NExpr -> Int
+task1_over x = sum [i | NVal i <- allOver x, i > 0]
+
+
+task1_fold :: NExpr -> Int
+task1_fold = fold (foldl' (+) 0) $ \x a -> case x of
+    NVal i | i > 0 -> i
+    _ -> a
 
 
 task2_action (NNeg x) = task2_action x
