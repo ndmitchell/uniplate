@@ -12,6 +12,7 @@ import Data
 import qualified Compos
 import qualified Raw
 import qualified PlaySYB
+import qualified SYB
 import qualified Play
 
 
@@ -31,6 +32,7 @@ tasks1 = [("Compos", Compos.task1 . unwrapC)
          ,("Play Fold", Play.task1_fold . unwrapN)
          ,("Slay Over", PlaySYB.task1_over . unwrapN)
          ,("Slay Fold", PlaySYB.task1_fold . unwrapN)
+         ,("SYB", SYB.task1 . unwrapN)
          ]
 
 tasks2 = [("Compos", rewrapC . Compos.task2 . unwrapC)
@@ -41,6 +43,7 @@ tasks2 = [("Compos", rewrapC . Compos.task2 . unwrapC)
          ,("Slay Compos", rewrapN . PlaySYB.task2_compos . unwrapN)
          ,("Slay Under" , rewrapN . PlaySYB.task2_under  . unwrapN)
          ,("Slay Over"  , rewrapN . PlaySYB.task2_over   . unwrapN)
+         ,("SYB"  , rewrapN . SYB.task2 . unwrapN)
          ]
 
 
