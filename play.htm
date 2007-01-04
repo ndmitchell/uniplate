@@ -18,9 +18,15 @@ pre.define {
     border-color: #cc0;
 }
 
-pre.compos, pre.syb {
-    font-style: italic;
+pre.compos, pre.syb, pre.play {
+    background-position: top right;
+    background-repeat: no-repeat;
 }
+
+pre.compos {background-image: url(img/compos.png);}
+pre.play {background-image: url(img/play.png);}
+pre.syb {background-image: url(img/syb.png);}
+
 
 body {
     font-family: sans-serif;
@@ -557,7 +563,7 @@ rename e = case e of
     EVar x   -> EVar ("_" ++ x)
     _        -> composOp rename e
 </pre>
-<pre>
+<pre class="play">
 rename :: Exp -> Exp
 rename = mapUnder $ \e -> case e of
     EAbs s x -> EAbs ("_" ++ s) x
@@ -578,7 +584,7 @@ free e = case e of
     EVar x -> [x]
     _ -> composOpFold [] union free e
 </pre>
-<pre>
+<pre class="play">
 free :: Exp -> [String]
 free = fold (nub . concat) $ \e y -> case e of
     EAbs s x -> delete s y
@@ -605,7 +611,7 @@ fresh x = evalState (f [] x) names
                 return (EVar (fromMaybe x (lookup x vs)))
             _ -> composOpM (f vs) t
 </pre>
-<pre>
+<pre class="play">
 fresh :: Exp -> Exp
 fresh x = evalState (f [] x) names
     where
@@ -705,7 +711,7 @@ rename t = case t of
     V x -> V ("_" ++ x)
     _   -> composOp rename t
 </pre>
-<pre>
+<pre class="play">
 rename :: PlayEx x Var => x -> x
 rename = mapUnderEx $ \(V x) -> V ("_" ++ x)
 </pre>
@@ -721,7 +727,7 @@ warnAssign t = case t of
     SAss _ _ -> putChar (chr 7)
     _ -> composM_ warnAssign t
 </pre>
-<pre>
+<pre class="play">
 warnAssign :: PlayEx x Stm => x -> IO ()
 warnAssign = mapUnderExM_ $ \x -> case x of
     SAss _ _ -> putChar (chr 7)
@@ -730,7 +736,7 @@ warnAssign = mapUnderExM_ $ \x -> case x of
 <p>
     Here the traversals are very similar, both threading a Monad through the code. This example shows how monadic actions can be threading through a traversal, however, this is not usually necessary. Using the Play class, a more natural traversal emerges:
 </p>
-<pre>
+<pre class="play">
 warnAssign :: PlayEx x Stm => x -> IO ()
 warnAssign x = putStr [chr 7 | SAss{} <- allOverEx x]
 </pre>
@@ -747,7 +753,7 @@ symbols t = case t of
     SDecl typ var -> [(var,typ)]
     _ -> composOpMonoid symbols t
 </pre>
-<pre>
+<pre class="play">
 symbols :: PlayEx x Stm => x -> [(Var,Typ)]
 symbols x = [(v,t) | SDecl t v <- allOverEx x]
 </pre>
@@ -765,7 +771,7 @@ constFold e = case e of
                     (x',y') -> EAdd x' y'
     _ -> composOp constFold e
 </pre>
-<pre>
+<pre class="play">
 constFold :: PlayEx x Exp => x -> x
 constFold = mapUnderEx $ \e -> case e of
     EAdd (EInt n) (EInt m) -> EInt (n+m)
@@ -811,7 +817,7 @@ increase k c = case c of
     S s -> S (s * (1+k))
     _ -> composOp (increase k) c
 </pre>
-<pre>
+<pre class="play">
 increase :: PlayEx x Salary => Float -> x -> x
 increase k = mapUnderEx (\(S s) -> S (s * (1+k)))
 </pre>
@@ -838,7 +844,7 @@ incrOne d k c = case c of
     D n _ _ | n == d -> increase k c
     _ -> composOp (incrOne d k) c
 </pre>
-<pre>
+<pre class="play">
 incrOne :: PlayEx x Dept => String -> Float -> x -> x
 incrOne name k = mapUnderEx (\d@(D n _ _) -> if name == n then increase k d else d)
 </pre>
@@ -861,14 +867,14 @@ salaryBill c = case c of
     S s -> s
     _ -> composOpFold 0 (+) salaryBill c
 </pre>
-<pre>
+<pre class="play">
 salaryBill :: PlayEx x Salary => x -> Float
 salaryBill x = sum [x | S x <- allOverEx x]
 </pre>
 <p>
     Here the Play instance wins by being able to use a list comprehension to select the salary value out of a Salary object. The Play class is the only one that is able to use the standard Haskell <tt>sum</tt> function, not requiring an explicit fold to be performed. In this case it could easily be argued that <tt>billS</tt> is probably a general function, so the cost of writting it is not really correctly attributed to the SYB approach. If <tt>billS</tt> is a generally defined function, then you can rewrite the Play example as:
 </p>
-<pre>
+<pre class="play">
 salaryBill2 :: PlayEx x Salary => x -> Float
 salaryBill2 = sum . map billS . allOverEx
 </pre>
