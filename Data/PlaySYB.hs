@@ -9,6 +9,9 @@ import Control.Monad.State
 
 instance (Data a, Typeable a) => Play a where
     replaceChildren = collect_generate
+    
+    getChildren = concat . gmapQ getChildrenEx
+    
 
 
 instance (Data a, Play b, Typeable a, Typeable b) => PlayEx a b where
