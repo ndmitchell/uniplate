@@ -61,8 +61,7 @@ allOverContext x = (x,id) : f current
 
 
 fold :: Play on => ([res] -> tmp) -> (on -> tmp -> res) -> on -> res
-fold merge gen x = gen x $ merge $ map (fold merge gen) current
-    where current = fst $ replaceChildren x
+fold merge gen x = gen x $ merge $ map (fold merge gen) $ getChildren x
 
 
 compos :: Play on => (on -> on) -> on -> on
