@@ -29,6 +29,9 @@ instance (Data a, Play b, Typeable a, Typeable b) => PlayEx a b where
                        Nothing -> concat $ gmapQ getChildrenEx x
 
 
+{-
+OLD VERSION USING TWO SEPARATE TRAVERSALS
+
 collect_generate :: (Data on, Play with, Typeable on, Typeable with) => on -> ([with],[with] -> on)
 collect_generate item = (collect, generate)
     where
@@ -43,4 +46,18 @@ collect_generate item = (collect, generate)
                         return $ gen as
                     where
                         (col,gen) = replaceChildrenEx x
+-}
 
+
+newtype C x a = C {fromC :: ([x], [x] -> a)}
+
+
+collect_generate :: (Data on, Play with, Typeable on, Typeable with) => on -> ([with],[with] -> on)
+collect_generate item = fromC $ gfoldl combine create item
+    where
+        -- forall a b . Data a => C with (a -> b) -> a -> C with b
+        combine (C (c,g)) x = C (c2 ++ c, \i -> let (a,b) = splitAt (length c2) i in g b (g2 a))
+            where (c2,g2) = replaceChildrenEx x
+        
+        -- forall g . g -> C with g
+        create x = C ([], \[] -> x)
