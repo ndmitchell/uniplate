@@ -8,6 +8,9 @@ import Data.List(inits,tails)
 -- THE CLASS
 class Play on where
     replaceChildren :: on -> ([on], [on] -> on)
+    
+    getChildren :: on -> [on]
+    getChildren = fst . replaceChildren
 
 
 playDefault :: a -> ([b], [b] -> a)
@@ -45,7 +48,7 @@ mapOverM f x = do (current, generate) <- liftM replaceChildren $ f x
 
 
 allOver :: Play on => on -> [on]
-allOver x = x : concatMap allOver (fst $ replaceChildren x)
+allOver x = x : concatMap allOver (getChildren x)
 
 
 allOverContext :: Play on => on -> [(on, on -> on)]
