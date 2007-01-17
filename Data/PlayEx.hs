@@ -8,6 +8,9 @@ import Control.Monad
 
 class Play with => PlayEx on with where
     replaceChildrenEx :: on -> ([with], [with] -> on)
+    
+    getChildrenEx :: on -> [with]
+    getChildrenEx = fst . replaceChildrenEx
 
 
 playExDefault :: (Play on, PlayEx on with) => on -> ([with], [with] -> on)
@@ -40,7 +43,7 @@ mapUnderExM f x = liftM generate $ mapM (mapUnderM f) current
 
 
 allOverEx :: PlayEx on with => on -> [with]
-allOverEx = concatMap allOver . fst . replaceChildrenEx
+allOverEx = concatMap allOver . getChildrenEx
 
 
 play :: on -> ([with],[with] -> on)
