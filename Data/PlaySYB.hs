@@ -32,10 +32,7 @@ instance (Data a, Play b, Typeable a, Typeable b) => PlayEx a b where
 collect_generate :: (Data on, Play with, Typeable on, Typeable with) => on -> ([with],[with] -> on)
 collect_generate item = (collect, generate)
     where
-        collect = execState (gmapM f item) []
-            where
-                f x = modify (++ extra) >> return x
-                    where extra = fst $ replaceChildrenEx x
+        collect = concat $ gmapQ getChildrenEx item
 
         generate xs = evalState (gmapM f item) xs
             where
