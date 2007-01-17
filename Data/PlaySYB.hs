@@ -66,11 +66,10 @@ collect_generate :: (Data on, Play with, Typeable on, Typeable with) => on -> CC
 collect_generate item = fromC $ gfoldl combine create item
     where
         -- forall a b . Data a => C with (a -> b) -> a -> C with b
-        combine (C (c,g)) x = C (c2 ++ c, regen)
+        combine (C (c,g)) x = case collect_generate_self x of
+                                  (c2, g2) -> C (c2 ++ c, regen g2)
             where
-                (c2,g2) = collect_generate_self x
-                
-                regen i = case g2 i of
+                regen g2 i = case g2 i of
                             (x2,i2) -> case g i2 of
                                 (y2,i3) -> (y2 x2, i3)
         
