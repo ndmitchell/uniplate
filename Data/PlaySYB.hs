@@ -62,7 +62,7 @@ collect_generate item = fromC $ gfoldl combine create item
     where
         -- forall a b . Data a => C with (a -> b) -> a -> C with b
         combine (C (c,g)) x = C (c2 ++ c, \i -> let (a,b) = splitAt (length c2) i in g b (g2 a))
-            where (c2,g2) = replaceChildrenEx x
+            where (c2,g2) = collect_generate_self x
         
         -- forall g . g -> C with g
         create x = C ([], \[] -> x)
