@@ -4,6 +4,7 @@ module Data.PlaySYB(module Data.PlayEx, module Data.PlaySYB) where
 
 import Data.PlayEx
 import Data.Generics
+import Data.Maybe
 import Control.Monad.State
 
 
@@ -15,20 +16,17 @@ instance (Data a, Typeable a) => Play a where
 
 
 instance (Data a, Play b, Typeable a, Typeable b) => PlayEx a b where
-    replaceChildrenEx item = (collect, generate)
+    replaceChildrenEx x = res
         where
-            equal = typeOf collect == typeOf [item]
-            coerce x = let Just y = cast x in y
-            collect = if equal then [coerce item] else collect2
-            generate = if equal then \[x] -> coerce x else generate2
-            
-            (collect2,generate2) = collect_generate item
+            res = case asTypeOf (cast x) (Just $ head $ fst res) of
+                       Just y -> ([y], \[x] -> fromJust (cast x))
+                       Nothing -> collect_generate x
 
     getChildrenEx x = res
         where
-            res = case asTypeOf (cast x) (Just (head res)) of
-                       Nothing -> concat $ gmapQ getChildrenEx x
+            res = case asTypeOf (cast x) (Just $ head res) of
                        Just y -> [y]
+                       Nothing -> concat $ gmapQ getChildrenEx x
 
 
 collect_generate :: (Data on, Play with, Typeable on, Typeable with) => on -> ([with],[with] -> on)
