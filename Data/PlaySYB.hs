@@ -45,11 +45,12 @@ collect_generate item = (collect, generate)
 -}
 
 
-newtype C x a = C {fromC :: ([x], [x] -> a)}
+newtype C x a = C {fromC :: CC x a}
+
+type CC x a = ([x], [x] -> a)
 
 
-
-collect_generate_self :: (Data on, Play with, Typeable on, Typeable with) => on -> ([with], [with] -> on)
+collect_generate_self :: (Data on, Play with, Typeable on, Typeable with) => on -> CC with on
 collect_generate_self x = res
         where
             res = case asTypeOf (cast x) (Just $ head $ fst res) of
@@ -57,7 +58,7 @@ collect_generate_self x = res
                        Nothing -> collect_generate x
 
 
-collect_generate :: (Data on, Play with, Typeable on, Typeable with) => on -> ([with], [with] -> on)
+collect_generate :: (Data on, Play with, Typeable on, Typeable with) => on -> CC with on
 collect_generate item = fromC $ gfoldl combine create item
     where
         -- forall a b . Data a => C with (a -> b) -> a -> C with b
