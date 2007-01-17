@@ -16,11 +16,7 @@ instance (Data a, Typeable a) => Play a where
 
 
 instance (Data a, Play b, Typeable a, Typeable b) => PlayEx a b where
-    replaceChildrenEx x = res
-        where
-            res = case asTypeOf (cast x) (Just $ head $ fst res) of
-                       Just y -> ([y], \[x] -> fromJust (cast x))
-                       Nothing -> collect_generate x
+    replaceChildrenEx = collect_generate_self
 
     getChildrenEx x = res
         where
@@ -52,7 +48,16 @@ collect_generate item = (collect, generate)
 newtype C x a = C {fromC :: ([x], [x] -> a)}
 
 
-collect_generate :: (Data on, Play with, Typeable on, Typeable with) => on -> ([with],[with] -> on)
+
+collect_generate_self :: (Data on, Play with, Typeable on, Typeable with) => on -> ([with], [with] -> on)
+collect_generate_self x = res
+        where
+            res = case asTypeOf (cast x) (Just $ head $ fst res) of
+                       Just y -> ([y], \[x] -> fromJust (cast x))
+                       Nothing -> collect_generate x
+
+
+collect_generate :: (Data on, Play with, Typeable on, Typeable with) => on -> ([with], [with] -> on)
 collect_generate item = fromC $ gfoldl combine create item
     where
         -- forall a b . Data a => C with (a -> b) -> a -> C with b
