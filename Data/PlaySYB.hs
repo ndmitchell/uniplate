@@ -24,6 +24,12 @@ instance (Data a, Play b, Typeable a, Typeable b) => PlayEx a b where
             
             (collect2,generate2) = collect_generate item
 
+    getChildrenEx x = res
+        where
+            res = case asTypeOf (cast x) (Just (head res)) of
+                       Nothing -> concat $ gmapQ getChildrenEx x
+                       Just y -> [y]
+
 
 collect_generate :: (Data on, Play with, Typeable on, Typeable with) => on -> ([with],[with] -> on)
 collect_generate item = (collect, generate)
