@@ -48,7 +48,14 @@ mapOverM f x = do (current, generate) <- liftM replaceChildren $ f x
 
 
 allOver :: Play on => on -> [on]
-allOver x = x : concatMap allOver (getChildren x)
+allOver x = allOverRest x []
+    where
+        allOverRest :: Play on => on -> [on] -> [on]
+        allOverRest x rest = x : concat2 (map allOverRest $ getChildren x) rest
+        
+        concat2 :: [[a] -> [a]] -> [a] -> [a]
+        concat2 [] rest = rest
+        concat2 (x:xs) rest = x (concat2 xs rest)
 
 
 allOverContext :: Play on => on -> [(on, on -> on)]
