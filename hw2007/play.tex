@@ -132,19 +132,93 @@ Of course, this isn't the first technique for removing the boilerplate, the area
 
 \subsection{Road map}
 
-\S\ref{sec:combinators} introduces the traversal combinators that we propose, along with short examples. \S\ref{sec:implementation} discusses how these combinators are implemented in terms of a single primitive. \S\ref{sec:multiplay} shows how to extend this approach to more complex data types, at the cost of requiring multi-parameter type classes. \S\ref{sec:syb} gives an implementation of our class in terms of the built in compiler support in GHC. \S\ref{sec:comparison} compares our approach with others, including the ``paradise'' benchmark. \S\ref{sec:performance} gives performance measurements of the various traversal mechanisms. \S\ref{sec:conclusion} makes concluding remarks and suggests directions for future work.
+\S\ref{sec:combinators} introduces the traversal combinators that we propose, along with short examples. \S\ref{sec:implementation} discusses how these combinators are implemented in terms of a single primitive. \S\ref{sec:multiplay} shows how to extend this approach to more complex data types, at the cost of requiring multi-parameter type classes. \S\ref{sec:rules} lists some properties of our system, and how they can be used for optimisation. \S\ref{sec:syb} gives an implementation of our class in terms of the built in compiler support in GHC. \S\ref{sec:comparison} compares our approach with others, including the ``paradise'' benchmark. \S\ref{sec:performance} gives performance measurements of the various traversal mechanisms. \S\ref{sec:conclusion} makes concluding remarks and suggests directions for future work.
 
 
+\section{Queries and Traversals}
 
+We define various queries and traversals, using the \C{Expr} type defined in the introduction as an example throughout. All the traversals rely on the class \C{Play}, an instance of which is defined for \C{Expr}. This instance and definition are defined in \S\ref{sec:implementation}.
 
+\subsection{Queries}
 
-% \category{CR-number}{subcategory}{third-level}
+This library provides a single method for implementing queries, the \C{allOver} method.
 
-% \terms
-% term1, term2
+\begin{code}
+allOver :: Play on => on -> [on]
+\end{code}
 
-% \keywords
-% keyword1, keyword2
+This function takes a data structure, and returns a list of all data structures of the appropriate type found within it. Given a tree, allOver returns all the root of the tree, and all it's subtrees at all levels. This can be used to quickly flatten a tree structure into a list, for quick analysis via list comprehensions, as is done above. For example:
+
+\begin{code}
+allOver (Add (Neg (Var "x")) (Val 12)) =
+    [Add (Neg (Var "x")) (Val 12), Neg (Var "x"), Var "x", Val 12]
+\end{code}
+
+One use of this mechanism for querying was given in the introduction. For another example, consider the task of checking for division by a literal 0 -- as this will cause a runtime error.
+
+\begin{code}
+countDivZero :: Expr -> Int
+countDivZero x = length [() | Div _ (Val 0) <- allOver x]
+\end{code}
+
+Extra context could perhaps be given by printing some of the value that is being divided by zero, to help narrow down the error. Using the \C{allOver} function, all queries can be expressed very quickly and directly.
+
+\subsection{Bottom Up Traversals}
+
+The bottom up traversal is by far the most useful type of traversal.
+
+\begin{code}
+mapUnder :: Play on => (on -> on) -> on -> on
+\end{code}
+
+Let's now try and write a basic optimiser for our little language. Negation of literals can be performed in advance:
+
+\begin{code}
+optimise :: Expr -> Expr
+optimise = mapUnder f
+    where  f (Neg (Val i))  = Val (negate i)
+           f x              = x
+\end{code}
+
+Here the Play method being used is \C{mapUnder}. This applies the given function to all the children of an expression, before applying it to the parent. This can be thought of as bottom-up traversal of the data structure. For most traversals, \C{mapUnder} is the only method to use. The optimise code merely pattern matches on the negation of a literal, and replaces it with the literal. Using a bottom-up traversal means that |Neg (Neg (Val 1))| is reduced to 1, while top-down traversal would leave |Neg (Val -1)|.
+
+Given the algebraic rule that |a + a == 2 * a|, this can be added easily:
+
+\begin{code}
+optimise :: Expr -> Expr
+optimise = mapUnder f
+    where  f (Neg (Val i))       = Val (negate i)
+           f (Add x y) | x == y  = Mul (Val 2) x
+           f x                   = x
+\end{code}
+
+This takes an addition where two terms are equal and changes it into a multiplication, causing the nested expression to be executed only once. This shows that normal Haskell applies, the Play lets you write code as before.
+
+\subsection{Top-down traversal}
+
+In practice, a top-down traversal is only rarely necessary. To come up with an example where it is takes some effort! Here is one such example. Consider the mathematical rule |(-a) - (-b) = b - a|. The operational part can be written as:
+
+\begin{code}
+f (Sub (Neg a) (Neg b))  = Sub b a
+f x                      = x
+\end{code}
+
+Writing |mapUnder f x| seems tempting, but is not correct. Consider |Sub (Neg (Neg (Val 1))) (Neg (Neg (Val 2)))|. With a bottom-up traversal this will be reduced to |Sub (Neg (Val -1)) (Neg (Val -1))|, as the \C{Sub} created by \C{f} will not be further analysed. There are three alternatives to this problem.
+
+\begin{code}
+solution1 = mapUnder f
+    where  f (Sub (Neg a) (Neg b))  = f (Sub b a)
+           f x                      = x
+
+solution2 = mapOver f
+    where  f (Sub (Neg a) (Neg b))  = f (Sub b a)
+           f x                      = x
+
+solution3 (Sub (Neg a) (Neg b)) = solution3 (Sub b a)
+solution3 x = compos solution3 x
+\end{code}
+           
+
 
 \begin{comment}
 

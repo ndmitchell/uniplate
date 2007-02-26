@@ -16,7 +16,6 @@
 %format `union` = "\cup{}"
 %format `intersect` = "\cap{}"
 %format `and` = "\wedge{}"
-%format length = "\sharp{}"
 %format not = "\mathsf{not}"
 %format `mergeVal` = "\sqcap{}"
 
