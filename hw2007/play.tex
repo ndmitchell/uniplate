@@ -125,7 +125,7 @@ Of course, this isn't the first technique for removing the boilerplate, the area
 \item We aim to make the common cases easy, and the reasonably difficult cases possible, and leave the obscure cases alone. By focusing on simplicity we bring real benefits to the programmer.
 \item We require the programmer to write only one single function per type to gain access to the operations we provide.
 \item We are able make use of the existing compiler support for deriving SYB traversals automatically, to provide automatic derivation of our class.
-\item Writing additional traversals is trivial, within the reach of even casual users of the library. 
+\item Writing additional traversals is trivial, within the reach of even casual users of the library.
 \item We compare the relative performance of some traversal mechanisms, something that has been neglected in some previous papers.
 \item This library has already been used extensively, importantly outside the friends of the authors. Users have remarked at the ease of learning and deploying the library.
 \end{itemize}
@@ -164,6 +164,8 @@ countDivZero x = length [() | Div _ (Val 0) <- allOver x]
 Extra context could perhaps be given by printing some of the value that is being divided by zero, to help narrow down the error. Using the \C{allOver} function, all queries can be expressed very quickly and directly.
 
 \subsection{Bottom Up Traversals}
+
+Define traversals in terms of LHS context and RHS generate.
 
 The bottom up traversal is by far the most useful type of traversal.
 
@@ -217,7 +219,9 @@ solution2 = mapOver f
 solution3 (Sub (Neg a) (Neg b)) = solution3 (Sub b a)
 solution3 x = compos solution3 x
 \end{code}
-           
+
+It is only necessary where context RHS overlaps with generated LHS.
+
 
 
 \begin{comment}
