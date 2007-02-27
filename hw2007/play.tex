@@ -74,6 +74,15 @@ Generic traversals and queries are often referred to as boilerplate code - they 
 
 \section{Introduction}
 
+\begin{code}
+class Uniform a where
+    everything  :: a -> [a]
+    traverse    :: (a -> a) -> a -> a
+    compos      :: (a -> a) -> a -> a
+    fold        :: ([b] -> b) -> (a -> b) -> a -> b
+    -- plus monadic variants
+\end{code}
+
 Generic programming is not a new problem, lots of solutions have been proposed. Let us take a simple example:
 
 \begin{code}
