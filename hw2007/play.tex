@@ -75,10 +75,10 @@ Generic traversals and queries are often referred to as boilerplate code - they 
 \section{Introduction}
 
 \begin{code}
-class Uniform a where
+class Play a where
     everything  :: a -> [a]
     traverse    :: (a -> a) -> a -> a
-    compos      :: (a -> a) -> a -> a
+    descend     :: (a -> a) -> a -> a
     fold        :: ([b] -> b) -> (a -> b) -> a -> b
     -- plus monadic variants
 \end{code}
@@ -122,7 +122,7 @@ The problem is referred to as the \textit{boilerplate} problem. The boilerplate 
 
 \begin{code}
 variables :: Expr -> [String]
-variables x = [y | Var y <- allOver x]
+variables x = [y | Var y <- everything x]
 \end{code}
 
 \subsection{Contribution}
