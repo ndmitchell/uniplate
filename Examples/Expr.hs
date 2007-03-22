@@ -1,7 +1,7 @@
 
 module Examples.Expr where
 
-import Data.Play
+import Data.Generics.Play
 import Control.Monad.State
 
 
@@ -43,7 +43,7 @@ eval = fold id $ \op args ->
 
 
 hasDivZero :: Expr -> Bool
-hasDivZero x = not $ null [() | Div _ (Val 0) <- allOver x]
+hasDivZero x = not $ null [() | Div _ (Val 0) <- everything x]
 
 
 depth :: Expr -> Int
@@ -51,25 +51,25 @@ depth = fold (foldr max 0) $ const (+1)
 
 
 optimise :: Expr -> Expr
-optimise = mapUnder $ \x -> case x of
+optimise = traverse $ \x -> case x of
     Neg (Val i) -> Val (negate i)
     Add x y | x == y -> Mul x (Val 2)
     x -> x
 
 
 noNegate :: Expr -> Expr
-noNegate = mapOver $ \x -> case x of
+noNegate x = case x of
     Neg (Val i) -> Val (negate i)
-    Neg (Neg x) -> x
-    Neg (Sub a b) -> Sub b a
-    Neg (Add a b) -> Add (Neg a) (Neg b)
-    Neg (Div a b) -> Div (Neg a) b
-    Neg (Mul a b) -> Mul (Neg a) b
-    x -> x
+    Neg (Neg x) -> noNegate x
+    Neg (Sub a b) -> Sub (noNegate b) (noNegate a)
+    Neg (Add a b) -> Add (noNegate $ Neg a) (noNegate $ Neg b)
+    Neg (Div a b) -> Div (noNegate $ Neg a) (noNegate b)
+    Neg (Mul a b) -> Mul (noNegate $ Neg a) (noNegate b)
+    x -> descend noNegate x
 
 
 uniqueLits :: Expr -> Expr
-uniqueLits x = evalState (mapUnderM f x) [0..]
+uniqueLits x = evalState (traverseM f x) [0..]
     where
         f (Val i) = do
             y:ys <- get
@@ -80,11 +80,11 @@ uniqueLits x = evalState (mapUnderM f x) [0..]
 
 
 reverseExpr :: Expr -> Expr
-reverseExpr = mapUnder f
+reverseExpr = traverse f
     where
         f x = generate $ reverse collect
             where (collect,generate) = replaceChildren x
 
 
 mutate :: Expr -> [Expr]
-mutate x = concat [[gen $ Val $ i-1, gen $ Val $ i+1] | (Val i, gen) <- allOverContext x]
+mutate x = concat [[gen $ Val $ i-1, gen $ Val $ i+1] | (Val i, gen) <- everythingContext x]
