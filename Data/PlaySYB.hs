@@ -11,18 +11,18 @@ import Control.Monad.State
 instance (Data a, Typeable a) => Play a where
     replaceChildren x = fromCC (collect_generate x)
     
-    getChildren x = concat (gmapQ getChildrenEx x)
+    getChildren x = concat (gmapQ getType x)
     
 
 
 instance (Data a, Play b, Typeable a, Typeable b) => PlayEx a b where
-    replaceChildrenEx x = fromCC (collect_generate_self x)
+    replaceType x = fromCC (collect_generate_self x)
 
-    getChildrenEx x = res
+    getType x = res
         where
             res = case asTypeOf (cast x) (Just $ head res) of
                        Just y -> [y]
-                       Nothing -> concat $ gmapQ getChildrenEx x
+                       Nothing -> concat $ gmapQ getType x
 
 
 {-
