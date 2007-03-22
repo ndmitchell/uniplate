@@ -28,21 +28,19 @@ main2 [x] = case x of
 
 tasks1 = [("Compos", Compos.task1 . unwrapC)
          ,("Raw", Raw.task1 . unwrapN)
-         ,("Play Over", Play.task1_over . unwrapN)
+         ,("Play Ever", Play.task1_everything . unwrapN)
          ,("Play Fold", Play.task1_fold . unwrapN)
-         ,("Slay Over", PlaySYB.task1_over . unwrapN)
+         ,("Slay Ever", PlaySYB.task1_everything . unwrapN)
          ,("Slay Fold", PlaySYB.task1_fold . unwrapN)
          ,("SYB", SYB.task1 . unwrapN)
          ]
 
 tasks2 = [("Compos", rewrapC . Compos.task2 . unwrapC)
          ,("Raw", rewrapN . Raw.task2 . unwrapN)
-         ,("Play Compos", rewrapN . Play.task2_compos . unwrapN)
-         ,("Play Under" , rewrapN . Play.task2_under  . unwrapN)
-         ,("Play Over"  , rewrapN . Play.task2_over   . unwrapN)
-         ,("Slay Compos", rewrapN . PlaySYB.task2_compos . unwrapN)
-         ,("Slay Under" , rewrapN . PlaySYB.task2_under  . unwrapN)
-         ,("Slay Over"  , rewrapN . PlaySYB.task2_over   . unwrapN)
+         ,("Play Descend", rewrapN . Play.task2_descend   . unwrapN)
+         ,("Play Traverse", rewrapN . Play.task2_traverse  . unwrapN)
+         ,("Slay Descend", rewrapN . PlaySYB.task2_descend . unwrapN)
+         ,("Slay Traverse" , rewrapN . PlaySYB.task2_traverse . unwrapN)
          ,("SYB"  , rewrapN . SYB.task2 . unwrapN)
          ]
 
