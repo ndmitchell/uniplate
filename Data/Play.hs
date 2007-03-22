@@ -5,17 +5,21 @@ import Control.Monad
 import Data.List(inits,tails)
 
 
--- THE CLASS
+-- * The Class
+
+type ReplaceChildren on = on -> ([on], [on] -> on)
+
 class Play on where
-    replaceChildren :: on -> ([on], [on] -> on)
+    replaceChildren :: ReplaceChildren on
     
     getChildren :: on -> [on]
     getChildren = fst . replaceChildren
 
 
+-- * The Combinators
+
 playDefault :: a -> ([b], [b] -> a)
 playDefault x = ([], \[] -> x)
-
 
 playOne :: (a -> b) -> a -> ([a], [a] -> b)
 playOne part item = ([item], \[item] -> part item)
@@ -24,8 +28,7 @@ playTwo :: (a -> a -> b) -> a -> a -> ([a], [a] -> b)
 playTwo part i1 i2 = ([i1,i2], \[i1,i2] -> part i1 i2)
 
 
-
--- THE PLAYERS
+-- * The Operations
 
 traverse :: Play on => (on -> on) -> on -> on
 traverse f x = f $ generate $ map (traverse f) current
