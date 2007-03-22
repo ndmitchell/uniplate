@@ -3,7 +3,7 @@
 module Examples.SYB where
 
 import Data.Generics
-import Data.PlaySYB
+import Data.Generics.PlaySYB
 
 data Company = C [Dept]
     deriving (Typeable,Data)
@@ -24,16 +24,16 @@ type Address = String
 
 
 increase :: PlayEx x Salary => Float -> x -> x
-increase k = mapUnderEx (\(S s) -> S (s * (1+k)))
+increase k = traverseEx (\(S s) -> S (s * (1+k)))
 
 incrOne :: PlayEx x Dept => String -> Float -> x -> x
-incrOne name k = mapUnderEx (\d@(D n _ _) -> if name == n then increase k d else d)
+incrOne name k = traverseEx (\d@(D n _ _) -> if name == n then increase k d else d)
 
 salaryBill :: PlayEx x Salary => x -> Float
-salaryBill x = sum [x | S x <- allOverEx x]
+salaryBill x = sum [x | S x <- everythingEx x]
 
 salaryBill2 :: PlayEx x Salary => x -> Float
-salaryBill2 = sum . map billS . allOverEx
+salaryBill2 = sum . map billS . everythingEx
 
 
 billS :: Salary -> Float
