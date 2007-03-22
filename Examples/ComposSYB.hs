@@ -1,8 +1,8 @@
 {-# OPTIONS_GHC -fglasgow-exts #-}
 
-module Examples.ComposSYB(module Examples.ComposSYB, module Data.PlaySYB) where
+module Examples.ComposSYB(module Examples.ComposSYB, module Data.Generics.PlaySYB) where
 
-import Data.PlaySYB
+import Data.Generics.PlaySYB
 import Data.Generics
 
 
