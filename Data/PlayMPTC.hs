@@ -8,10 +8,10 @@ import Data.PlayEx
 
 
 instance (Play with, PlayEx on with) => PlayEx [on] with where
-    replaceChildrenEx x = (concat currents, zipWith ($) generates . divide currents)
+    replaceType x = (concat currents, zipWith ($) generates . divide currents)
         where
             divide [] [] = []
             divide (x:xs) ys = y1 : divide xs y2
                 where (y1,y2) = splitAt (length x) ys
 
-            (currents, generates) = unzip $ map replaceChildrenEx x
+            (currents, generates) = unzip $ map replaceType x
