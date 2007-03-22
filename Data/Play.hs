@@ -27,28 +27,28 @@ playTwo part i1 i2 = ([i1,i2], \[i1,i2] -> part i1 i2)
 
 -- THE PLAYERS
 
-mapUnder :: Play on => (on -> on) -> on -> on
-mapUnder f x = f $ generate $ map (mapUnder f) current
+traverse :: Play on => (on -> on) -> on -> on
+traverse f x = f $ generate $ map (traverse f) current
     where (current, generate) = replaceChildren x
 
 
-mapUnderM :: (Monad m, Play on) => (on -> m on) -> on -> m on
-mapUnderM f x = mapM (mapUnderM f) current >>= f . generate
+traverseM :: (Monad m, Play on) => (on -> m on) -> on -> m on
+traverseM f x = mapM (traverseM f) current >>= f . generate
     where (current, generate) = replaceChildren x
 
 
-mapOver :: Play on => (on -> on) -> on -> on
-mapOver f x = generate $ map (mapOver f) current
-    where (current, generate) = replaceChildren $ f x
+descend :: Play on => (on -> on) -> on -> on
+descend f x = generate $ map f current
+    where (current, generate) = replaceChildren x
+
+    
+descendM :: (Monad m, Play on) => (on -> m on) -> on -> m on
+descendM f x = liftM generate $ mapM f current
+    where (current, generate) = replaceChildren x
 
 
-mapOverM :: (Monad m, Play on) => (on -> m on) -> on -> m on
-mapOverM f x = do (current, generate) <- liftM replaceChildren $ f x
-                  liftM generate $ mapM (mapOverM f) current
-
-
-allOver :: Play on => on -> [on]
-allOver x = allOverRest x []
+everything :: Play on => on -> [on]
+everything x = allOverRest x []
     where
         allOverRest :: Play on => on -> [on] -> [on]
         allOverRest x rest = x : concat2 (map allOverRest $ getChildren x) rest
@@ -58,25 +58,15 @@ allOver x = allOverRest x []
         concat2 (x:xs) rest = x (concat2 xs rest)
 
 
-allOverContext :: Play on => on -> [(on, on -> on)]
-allOverContext x = (x,id) : f current
+everythingContext :: Play on => on -> [(on, on -> on)]
+everythingContext x = (x,id) : f current
   where
     (current, generate) = replaceChildren x
     f xs = [ (y, \i -> generate (pre ++ [context i] ++ post))
            | (pre,b:post) <- zip (inits xs) (tails xs)
-           , (y, context) <- allOverContext b]
+           , (y, context) <- everythingContext b]
 
 
 fold :: Play on => ([res] -> tmp) -> (on -> tmp -> res) -> on -> res
 fold merge gen x = gen x $ merge $ map (fold merge gen) $ getChildren x
-
-
-compos :: Play on => (on -> on) -> on -> on
-compos f x = generate $ map f current
-    where (current, generate) = replaceChildren x
-
-    
-composM :: (Monad m, Play on) => (on -> m on) -> on -> m on
-composM f x = liftM generate $ mapM f current
-    where (current, generate) = replaceChildren x
 
