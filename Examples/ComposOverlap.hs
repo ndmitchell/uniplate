@@ -1,8 +1,8 @@
 {-# OPTIONS_GHC -fglasgow-exts -fallow-incoherent-instances #-}
 
-module Examples.ComposOverlap(module Examples.ComposOverlap, module Data.PlayMPTC) where
+module Examples.ComposOverlap(module Examples.ComposOverlap, module Data.Generics.PlayMPTC) where
 
-import Data.PlayMPTC
+import Data.Generics.PlayMPTC
 
 
 data Exp2 = EAbs2 String Exp2
@@ -58,12 +58,12 @@ instance Play Var where
 
 
 -- COMBINATOR BASED PLAY INSTANCES
-instance PlayEx Stm Stm where; replaceChildrenEx = playSelf
-instance PlayEx Exp Exp where; replaceChildrenEx = playSelf
-instance PlayEx Var Var where; replaceChildrenEx = playSelf
+instance PlayEx Stm Stm where; replaceType = playSelf
+instance PlayEx Exp Exp where; replaceType = playSelf
+instance PlayEx Var Var where; replaceType = playSelf
 
 instance Play a => PlayEx Exp a where
-    replaceChildrenEx x =
+    replaceType x =
         case x of
             EStm a -> play EStm /\ a
             EAdd a b -> play EAdd /\ a /\ b
@@ -72,7 +72,7 @@ instance Play a => PlayEx Exp a where
 
 
 instance Play a => PlayEx Stm a where
-    replaceChildrenEx x =
+    replaceType x =
         case x of
             SDecl a b -> play SDecl /\! a /\ b
             SAss a b -> play SAss /\ a /\ b
@@ -80,5 +80,5 @@ instance Play a => PlayEx Stm a where
             SReturn x -> play SReturn /\ x
 
 instance Play a => PlayEx Var a where
-    replaceChildrenEx = playDefault
+    replaceType = playDefault
 
