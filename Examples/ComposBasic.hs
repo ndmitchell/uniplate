@@ -1,8 +1,8 @@
 {-# OPTIONS_GHC -fglasgow-exts #-}
 
-module Examples.ComposBasic(module Examples.ComposBasic, module Data.PlayMPTC) where
+module Examples.ComposBasic(module Examples.ComposBasic, module Data.Generics.PlayMPTC) where
 
-import Data.PlayMPTC
+import Data.Generics.PlayMPTC
 
 
 data Exp2 = EAbs2 String Exp2
@@ -61,35 +61,35 @@ instance Play Var where
 
 
 instance PlayEx Stm Stm where
-    replaceChildrenEx = playSelf
+    replaceType = playSelf
 
 
 instance PlayEx Stm Exp where
-    replaceChildrenEx x =
+    replaceType x =
         case x of
             SAss x y -> playOne (SAss x) y
             SReturn x -> playOne SReturn x
             x -> playExDefault x
 
 instance PlayEx Exp Stm where
-    replaceChildrenEx x =
+    replaceType x =
         case x of
             EStm x -> playOne EStm x
             x -> playExDefault x
 
 
 instance PlayEx Stm Var where
-    replaceChildrenEx x =
+    replaceType x =
         case x of
             SDecl typ var -> playOne (SDecl typ) var
             SAss var e -> (var:collect, \(var:xs) -> SAss var (generate xs))
-                where (collect,generate) = replaceChildrenEx e
+                where (collect,generate) = replaceType e
             SReturn e -> playMore SReturn e
             x -> playExDefault x
 
 
 instance PlayEx Exp Var where
-    replaceChildrenEx x =
+    replaceType x =
         case x of
             EStm x -> playMore EStm x
             EVar x -> playOne EVar x
