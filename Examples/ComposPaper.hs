@@ -20,7 +20,7 @@ exp2_1 = EApp2 (EVar2 "a") (EAbs2 "b" (EVar2 "b"))
 
 
 rename2 :: Exp2 -> Exp2
-rename2 = mapUnder $ \e -> case e of
+rename2 = traverse $ \e -> case e of
     EAbs2 s x -> EAbs2 ("_" ++ s) x
     EVar2 s -> EVar2 ("_" ++ s)
     x -> x
@@ -49,7 +49,7 @@ fresh2 x = evalState (f [] x) names
                 liftM (EAbs2 y) (f ((x,y):vs) b)
             EVar2 x ->
                 return (EVar2 (fromMaybe x (lookup x vs)))
-            _ -> composM (f vs) t
+            _ -> descendM (f vs) t
 
 
 -- SECTION 4
@@ -64,16 +64,16 @@ stm_1 = SBlock [SDecl T_int (V "x")
 -- MANIPULATIONS
 
 rename :: PlayEx x Var => x -> x
-rename = mapUnderEx $ \(V x) -> V ("_" ++ x)
+rename = traverseEx $ \(V x) -> V ("_" ++ x)
 
 
 warnAssign :: PlayEx x Stm => x -> IO ()
-warnAssign x = putStr [chr 7 | SAss{} <- allOverEx x]
+warnAssign x = putStr [chr 7 | SAss{} <- everythingEx x]
 
 symbols :: PlayEx x Stm => x -> [(Var,Typ)]
-symbols x = [(v,t) | SDecl t v <- allOverEx x]
+symbols x = [(v,t) | SDecl t v <- everythingEx x]
 
 constFold :: PlayEx x Exp => x -> x
-constFold = mapUnderEx $ \e -> case e of
+constFold = traverseEx $ \e -> case e of
     EAdd (EInt n) (EInt m) -> EInt (n+m)
     x -> x
