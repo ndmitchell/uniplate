@@ -69,19 +69,10 @@
 \maketitle
 
 \begin{abstract}
-Generic traversals and queries are often referred to as boilerplate code - they remain relatively similar as the action performed by the code changes, and can often outnumber the actual intent of the code in terms of lines. While other generic traversal schemes have shown how powerful new features can be added to compilers, and how the type system can be manipulated into accepting these operations, this document focuses on a conceptually simpler generic concept. The \textit{Play} class is introduced, which abstracts over common traversals and queries in a simple manner.
+Generic traversals and queries are often referred to as boilerplate code -- they remain relatively similar as the action performed by the code changes, and can often outnumber the actual intent of the code in terms of lines. While other generic traversal schemes have shown how powerful new features can be added to compilers, and how the type system can be manipulated into accepting these operations, this document focuses on a conceptually simpler generic concept. The |Play| class is introduced, which abstracts over common traversals and queries in a simple manner.
 \end{abstract}
 
 \section{Introduction}
-
-\begin{code}
-class Play a where
-    everything  :: a -> [a]
-    traverse    :: (a -> a) -> a -> a
-    descend     :: (a -> a) -> a -> a
-    fold        :: ([b] -> b) -> (a -> b) -> a -> b
-    -- plus monadic variants
-\end{code}
 
 Generic programming is not a new problem, lots of solutions have been proposed. Let us take a simple example:
 
@@ -100,7 +91,7 @@ This is a small expression language for integer expressions, which permits free 
 \begin{code}
 variables :: Expr -> [String]
 variables (Var  x    ) = [x]
-variables (Val  _    ) = []
+variables (Val  x    ) = []
 variables (Neg  x    ) = variables x
 variables (Add  x y  ) = variables x ++ variables y
 variables (Sub  x y  ) = variables x ++ variables y
@@ -114,7 +105,7 @@ This code has lots of bad properties:
 \item Adding a new constructor would require the program to change.
 \item The action part is the first line, but is obscured by the rest of the code.
 \item The code is repetitive, and uninteresting.
-\item The volume of the code, and the repeatitive nature, can lead to subtle bugs, which are easy to overlook.
+\item The volume of the code, and the repetitive nature, can lead to subtle bugs, which are easy to overlook.
 \item The code is too long.
 \end{itemize}
 
@@ -133,9 +124,9 @@ Of course, this isn't the first technique for removing the boilerplate, the area
 \item We restrict ourselves to Haskell 98 where possible, introducing multi-parameter type classes only for more complex problems. Most contrasting approaches requires rank-2 types and/or GADT's.
 \item We aim to make the common cases easy, and the reasonably difficult cases possible, and leave the obscure cases alone. By focusing on simplicity we bring real benefits to the programmer.
 \item We require the programmer to write only one single function per type to gain access to the operations we provide.
-\item We are able make use of the existing compiler support for deriving SYB traversals automatically, to provide automatic derivation of our class.
+\item We are able make use of the existing compiler support for deriving |Typeable| and |Data|, to provide automatic derivation of our class.
 \item Writing additional traversals is trivial, within the reach of even casual users of the library.
-\item We compare the relative performance of some traversal mechanisms, something that has been neglected in some previous papers.
+\item We compare the relative performance of some traversal mechanisms, something that has been neglected in previous papers.
 \item This library has already been used extensively, importantly outside the friends of the authors. Users have remarked at the ease of learning and deploying the library.
 \end{itemize}
 
@@ -146,20 +137,20 @@ Of course, this isn't the first technique for removing the boilerplate, the area
 
 \section{Queries and Traversals}
 
-We define various queries and traversals, using the \C{Expr} type defined in the introduction as an example throughout. All the traversals rely on the class \C{Play}, an instance of which is defined for \C{Expr}. This instance and definition are defined in \S\ref{sec:implementation}.
+We define various queries and traversals, using the |Expr| type defined in the introduction as an example throughout. All the traversals rely on the class |Play|, an instance of which is defined for |Expr|. This instance and definition are covered in \S\ref{sec:implementation}.
 
 \subsection{Queries}
 
-This library provides a single method for implementing queries, the \C{allOver} method.
+This library provides a single method for implementing queries, the |everything| method.
 
 \begin{code}
-allOver :: Play on => on -> [on]
+everything :: Play alpha => alpha -> [alpha]
 \end{code}
 
-This function takes a data structure, and returns a list of all data structures of the appropriate type found within it. Given a tree, allOver returns all the root of the tree, and all it's subtrees at all levels. This can be used to quickly flatten a tree structure into a list, for quick analysis via list comprehensions, as is done above. For example:
+This function takes a data structure, and returns a list of all data structures of the appropriate type found within it. Given a tree, |everything| returns all the root of the tree, and all it's subtrees at all levels. This can be used to quickly flatten a tree structure into a list, for quick analysis via list comprehensions, as is done above. For example:
 
 \begin{code}
-allOver (Add (Neg (Var "x")) (Val 12)) =
+everything (Add (Neg (Var "x")) (Val 12)) =
     [Add (Neg (Var "x")) (Val 12), Neg (Var "x"), Var "x", Val 12]
 \end{code}
 
@@ -170,9 +161,67 @@ countDivZero :: Expr -> Int
 countDivZero x = length [() | Div _ (Val 0) <- allOver x]
 \end{code}
 
-Extra context could perhaps be given by printing some of the value that is being divided by zero, to help narrow down the error. Using the \C{allOver} function, all queries can be expressed very quickly and directly.
+Extra context could perhaps be given by printing some of the value that is being divided by zero, to help narrow down the error. Using the \C{everything} function, all queries can be expressed very quickly and directly.
 
-\subsection{Bottom Up Traversals}
+\subsection{Traversals}
+
+Another common operation covered by many boilerplate removal systems is the traversal. We model our traversals as rewrite rules.
+
+Take for example the equation:
+
+\begin{code}
+x - y = x + (-y)
+\end{code}
+
+This can be rewritten in Haskell as:
+
+\begin{code}
+Sub x y = Add x (Neg y)
+\end{code}
+
+If we consider this to be a directed rule, stating that the 
+
+
+
+
+
+We define as our standard traversal a bottom up traversal.
+
+\begin{code}
+traverse :: Play alpha => (alpha -> alpha) -> alpha -> alpha
+\end{code}
+ 
+Take the example of removing the |Sub| constructor, a little bit of thought leads to the equation:
+
+The desire is then to apply this rewrite at all possible places in the input expression. This can be done with:
+
+\begin{code}
+simplify x = traverse f x
+    where  f (Sub x y)  = Add x (Neg y)
+           f x          = x
+\end{code}
+
+This code can be read as applying the subtraction rule where you can, and where you can not, doing nothing.
+
+Adding additional rules is trivial, let us take the example of:
+
+\[
+x + y = 2 * x \text{where} x \equiv y
+\]
+
+Now we can add this new rule into our existing traversal:
+
+\begin{code}
+simplify x = traverse f x
+    where  f (Sub x y)           = Add x (Neg y)
+           f (Add x y) | x == y  = Mul (Val 2) x
+           f x                   = x
+\end{code}
+
+The thing to note about this example is that each rule corresponds to the natural Haskell translation of the rule. The |traverse| function manages all the required 
+
+
+
 
 Define traversals in terms of LHS context and RHS generate.
 
@@ -204,6 +253,13 @@ optimise = mapUnder f
 \end{code}
 
 This takes an addition where two terms are equal and changes it into a multiplication, causing the nested expression to be executed only once. This shows that normal Haskell applies, the Play lets you write code as before.
+
+\subsection{Action Traversals}
+
+After introducing queries, most boilerplate approaches would naturally move on to traversals, as we do. However, we have separate traversals into two different types -- action traversals,
+
+
+
 
 \subsection{Top-down traversal}
 
