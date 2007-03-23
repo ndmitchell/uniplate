@@ -163,35 +163,20 @@ countDivZero x = length [() | Div _ (Val 0) <- allOver x]
 
 Extra context could perhaps be given by printing some of the value that is being divided by zero, to help narrow down the error. Using the \C{everything} function, all queries can be expressed very quickly and directly.
 
-\subsection{Traversals}
+\subsection{Bottom-up Traversals}
 
-Another common operation covered by many boilerplate removal systems is the traversal. We model our traversals as rewrite rules.
-
-Take for example the equation:
-
-\begin{code}
-x - y = x + (-y)
-\end{code}
-
-This can be rewritten in Haskell as:
-
-\begin{code}
-Sub x y = Add x (Neg y)
-\end{code}
-
-If we consider this to be a directed rule, stating that the 
-
-
-
-
-
+Another common operation covered by many boilerplate removal systems is the traversal. 
 We define as our standard traversal a bottom up traversal.
 
 \begin{code}
 traverse :: Play alpha => (alpha -> alpha) -> alpha -> alpha
 \end{code}
- 
+
 Take the example of removing the |Sub| constructor, a little bit of thought leads to the equation:
+
+\begin{code}
+x - y == x + (- y)
+\end{code}
 
 The desire is then to apply this rewrite at all possible places in the input expression. This can be done with:
 
@@ -205,9 +190,9 @@ This code can be read as applying the subtraction rule where you can, and where 
 
 Adding additional rules is trivial, let us take the example of:
 
-\[
+\begin{code}
 x + y = 2 * x \text{where} x \equiv y
-\]
+\end{code}
 
 Now we can add this new rule into our existing traversal:
 
@@ -218,7 +203,48 @@ simplify x = traverse f x
            f x                   = x
 \end{code}
 
-The thing to note about this example is that each rule corresponds to the natural Haskell translation of the rule. The |traverse| function manages all the required 
+The thing to note about this example is that each rule corresponds to the natural Haskell translation of the rule. The |traverse| function manages all the required boilerplate.
+
+So how does a bottom-up traversal work? The traversal starts by applying the function |f| to all the leaf nodes in the tree, then progressively working up to the root node. The condition on ordering is that before applying |f| to an expression, all the sub-expressions must have had |f| applied.
+
+\subsection{Rewrite Traversals}
+
+Following bottom-up traversals, many boilerplate schemes would define a top-down traversal. Once two traversals have been defined, how should the user pick between them? Instead we focus on modelling traversals as rewrites.
+
+To model the previous two actions as rewrites
+
+
+
+We define a set of rewrites to be a set of directed equations, where the left side may introduce unique free variables, and the right side may refer to them. More formally:
+
+\begin{code}
+data Rewrite  =  Match :-> Match
+
+data Match    =  Free  Int
+              |  Ctor  String [Match]
+\end{code}
+
+The validity condition is that each number within a |Free| in the right hand side occurs at most once, and each on the left hand side must also be present on the right.
+
+
+We model our traversals as rewrite rules.
+
+Take for example the equation:
+
+\begin{code}
+x - y = x + (-y)
+\end{code}
+
+This can be rewritten in Haskell as:
+
+\begin{code}
+Sub x y = Add x (Neg y)
+\end{code}
+
+If we consider this to be a directed rule, stating that the
+
+
+
 
 
 
