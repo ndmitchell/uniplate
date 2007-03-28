@@ -66,6 +66,14 @@ traverseExM :: (Monad m, PlayEx from to) => (to -> m to) -> from -> m from
 traverseExM = traverseOnM replaceType
 
 
+rewriteEx :: PlayEx from to => (to -> Maybe to) -> from -> from
+rewriteEx = rewriteOn replaceType
+
+
+rewriteExM :: (Monad m, PlayEx from to) => (to -> m (Maybe to)) -> from -> m from
+rewriteExM = rewriteOnM replaceType
+
+
 descendEx :: PlayEx from to => (to -> to) -> from -> from
 descendEx = descendOn replaceType
 
