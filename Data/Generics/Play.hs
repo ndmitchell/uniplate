@@ -40,6 +40,16 @@ traverseM f x = mapM (traverseM f) current >>= f . generate
     where (current, generate) = replaceChildren x
 
 
+rewrite :: Play on => (on -> Maybe on) -> on -> on
+rewrite f = traverse g
+    where g x = maybe x (rewrite f) (f x)
+
+
+rewriteM :: (Monad m, Play on) => (on -> m (Maybe on)) -> on -> m on
+rewriteM f = traverseM g
+    where g x = f x >>= maybe (return x) (rewriteM f)
+
+
 descend :: Play on => (on -> on) -> on -> on
 descend f x = generate $ map f current
     where (current, generate) = replaceChildren x
