@@ -19,6 +19,16 @@ traverseOnM replaceType f x = liftM generate $ mapM (traverseM f) current
     where (current, generate) = replaceType x
 
 
+rewriteOn :: Play to => ReplaceType from to -> (to -> Maybe to) -> from -> from
+rewriteOn replaceType f x = generate $ map (rewrite f) current
+    where (current, generate) = replaceType x
+
+
+rewriteOnM :: (Monad m, Play to) => ReplaceType from to -> (to -> m (Maybe to)) -> from -> m from
+rewriteOnM replaceType f x = liftM generate $ mapM (rewriteM f) current
+    where (current, generate) = replaceType x
+
+
 descendOn :: Play to => ReplaceType from to -> (to -> to) -> from -> from
 descendOn replaceType f x = generate $ map (descend f) current
     where (current, generate) = replaceType x
