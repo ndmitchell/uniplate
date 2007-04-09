@@ -8,28 +8,29 @@
    xmlns="http://www.w3.org/2000/svg"
    xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
-   width="744.09448819"
-   height="1052.3622047"
+   width="177.28519"
+   height="133.57535"
    id="svg2"
    sodipodi:version="0.32"
    inkscape:version="0.45.1"
    sodipodi:docbase="C:\Neil\play\hw2007\img"
    sodipodi:docname="everything.svg"
-   inkscape:output_extension="org.inkscape.output.svg.inkscape">
+   inkscape:output_extension="org.inkscape.output.svg.inkscape"
+   version="1.0">
   <defs
      id="defs4">
     <marker
        inkscape:stockid="Dot_l"
        orient="auto"
-       refY="0.0"
-       refX="0.0"
+       refY="0"
+       refX="0"
        id="Dot_l"
        style="overflow:visible">
       <path
          id="path3214"
-         d="M -2.5,-1.0 C -2.5,1.7600000 -4.7400000,4.0 -7.5,4.0 C -10.260000,4.0 -12.5,1.7600000 -12.5,-1.0 C -12.5,-3.7600000 -10.260000,-6.0 -7.5,-6.0 C -4.7400000,-6.0 -2.5,-3.7600000 -2.5,-1.0 z "
-         style="fill-rule:evenodd;stroke:#000000;stroke-width:1.0pt;marker-start:none;marker-end:none"
-         transform="scale(0.8) translate(7.4, 1)" />
+         d="M -2.5,-1 C -2.5,1.76 -4.74,4 -7.5,4 C -10.26,4 -12.5,1.76 -12.5,-1 C -12.5,-3.76 -10.26,-6 -7.5,-6 C -4.74,-6 -2.5,-3.76 -2.5,-1 z "
+         style="fill-rule:evenodd;stroke:#000000;stroke-width:1pt;marker-start:none;marker-end:none"
+         transform="matrix(0.8,0,0,0.8,5.92,0.8)" />
     </marker>
   </defs>
   <sodipodi:namedview
@@ -42,15 +43,15 @@
      objecttolerance="10"
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
-     inkscape:zoom="1"
-     inkscape:cx="375"
-     inkscape:cy="680"
+     inkscape:zoom="2"
+     inkscape:cx="144.71803"
+     inkscape:cy="48.375025"
      inkscape:document-units="px"
      inkscape:current-layer="layer1"
      inkscape:window-width="1024"
      inkscape:window-height="708"
-     inkscape:window-x="-4"
-     inkscape:window-y="-4"
+     inkscape:window-x="0"
+     inkscape:window-y="26"
      showgrid="false" />
   <metadata
      id="metadata7">
@@ -66,17 +67,18 @@
   <g
      inkscape:label="Layer 1"
      inkscape:groupmode="layer"
-     id="layer1">
+     id="layer1"
+     transform="translate(-378.721,-222.36219)">
     <text
        xml:space="preserve"
        style="font-size:18.27507973px;font-style:normal;font-weight:normal;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;font-family:Bitstream Vera Sans"
-       x="410.16525"
+       x="322.16525"
        y="235.66695"
        id="text2170"><tspan
          sodipodi:role="line"
-         id="tspan2172"
-         x="410.16525"
-         y="235.66695">(Add           )</tspan></text>
+         x="322.16525"
+         y="235.66695"
+         id="tspan2200">everything (Add           )</tspan></text>
     <text
        xml:space="preserve"
        style="font-size:18.27507973px;font-style:normal;font-weight:normal;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;font-family:Bitstream Vera Sans"
@@ -122,5 +124,36 @@
        d="M 448.97586,288.89376 L 412.97586,335.89376"
        id="path3375"
        sodipodi:nodetypes="cc" />
+    <text
+       xml:space="preserve"
+       style="font-size:18.27507973px;font-style:normal;font-weight:normal;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;font-family:Bitstream Vera Sans"
+       x="321.81534"
+       y="390.00354"
+       id="text2188"><tspan
+         sodipodi:role="line"
+         id="tspan2190"
+         x="321.81534"
+         y="390.00354">= [    ,    ,    ,    ]</tspan></text>
+    <path
+       style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:1;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;marker-start:url(#Dot_l);marker-mid:none;stroke-miterlimit:4;stroke-dasharray:2,2;stroke-dashoffset:0"
+       d="M -26.5,162.57535 C -26.5,162.57535 -76,73.575348 32,20.075348"
+       id="path2210"
+       transform="translate(378.721,222.36219)"
+       sodipodi:nodetypes="cc" />
+    <path
+       style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:1;stroke-linecap:butt;stroke-linejoin:miter;marker-start:url(#Dot_l);marker-mid:none;stroke-miterlimit:4;stroke-dasharray:2, 2;stroke-dashoffset:0;stroke-opacity:1"
+       d="M 378.39479,385.45392 C 378.39479,385.45392 329.15193,324.28422 405.86362,297.92097"
+       id="path3381"
+       sodipodi:nodetypes="cc" />
+    <path
+       style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:1;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;marker-start:url(#Dot_l);stroke-miterlimit:4;stroke-dasharray:2,2;stroke-dashoffset:0"
+       d="M 26,163.57535 L 26,136.57535"
+       id="path3383"
+       transform="translate(378.721,222.36219)" />
+    <path
+       style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:1;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;marker-start:url(#Dot_l);stroke-miterlimit:4;stroke-dasharray:2,2;stroke-dashoffset:0"
+       d="M 50,164.57535 C 50,164.57535 51.5,137.57535 104.5,128.57535 C 157.5,119.57535 146.5,78.075348 146.5,78.075348"
+       id="path3387"
+       transform="translate(378.721,222.36219)" />
   </g>
 </svg>

@@ -6,6 +6,7 @@
 \usepackage{url}
 \usepackage{natbib}
 \usepackage{datetime}
+\usepackage{graphicx}
 \usepackage{comment}
 
 %include polycode.fmt
@@ -16,6 +17,8 @@
 \newcommand{\C}[1]{\textsf{#1}}
 \newcommand{\tup}[1]{\ensuremath{\langle #1 \rangle}}
 \newcommand{\mtxt}[1]{\textsf{#1}}
+
+\newcommand{\pic}[1]{\includegraphics[scale=0.55]{#1.eps}}
 
 % examples
 \newcounter{exmp}
@@ -147,25 +150,38 @@ This library provides a single method for implementing queries, the |everything|
 everything :: Play alpha => alpha -> [alpha]
 \end{code}
 
-This function takes a data structure, and returns a list of all data structures of the appropriate type found within it. Given a tree, |everything| returns all the root of the tree, and all it's subtrees at all levels. This can be used to quickly flatten a tree structure into a list, for quick analysis via list comprehensions, as is done above. For example:
+This function takes a data structure, and returns a list of all data structures of the appropriate type found within it. Given a tree, |everything| returns the root of the tree, and all it's subtrees at all levels. This can be used to quickly flatten a tree structure into a list, for quick analysis via list comprehensions, as is done above. For example:
 
 \begin{code}
 everything (Add (Neg (Var "x")) (Val 12)) =
-    [Add (Neg (Var "x")) (Val 12), Neg (Var "x"), Var "x", Val 12]
+    [Add (Neg (Var "x")) (Val 12)
+    ,Neg (Var "x")
+    ,Var "x"
+    ,Val 12]
 \end{code}
 
-One use of this mechanism for querying was given in the introduction. For another example, consider the task of checking for division by a literal 0 -- as this will cause a runtime error.
+\begin{figure}
+\pic{everything2}
+\caption{Graphical representation of |everything|.}
+\label{fig:everything}
+\end{figure}
+
+A visual representation of this example is given in Figure \ref{fig:everything}.
+
+One use of this mechanism for querying was given in the introduction. For another example, consider the task of seeing how many divisions by the literal 0 there are -- as this will cause a runtime error.
 
 \begin{code}
 countDivZero :: Expr -> Int
 countDivZero x = length [() | Div _ (Val 0) <- allOver x]
 \end{code}
 
+Note that we make essential use of the feature of list comprehensions that if a pattern does not match, then no errors are returned. In other places of the Haskell language, failing to match a pattern results in a pattern-match error.
+
 Extra context could perhaps be given by printing some of the value that is being divided by zero, to help narrow down the error. Using the \C{everything} function, all queries can be expressed very quickly and directly.
 
 \subsection{Bottom-up Traversals}
 
-Another common operation covered by many boilerplate removal systems is the traversal. 
+Another common operation covered by many boilerplate removal systems is the traversal.
 We define as our standard traversal a bottom up traversal.
 
 \begin{code}
@@ -209,109 +225,397 @@ So how does a bottom-up traversal work? The traversal starts by applying the fun
 
 \subsection{Rewrite Traversals}
 
-Following bottom-up traversals, many boilerplate schemes would define a top-down traversal. Once two traversals have been defined, how should the user pick between them? Instead we focus on modelling traversals as rewrites.
+Following bottom-up traversals, many boilerplate schemes would define a top-down traversal. Once two traversals have been defined, how should the user pick between them? Instead we focus on modelling traversals as rewrites -- showing why providing a top-down traversal is both unnecessary, and potentially dangerous! There is no barrier to defining a bottom-up traversal in our library -- it is trivial, and we refer to such a hypothetical traversal as |traversal'|.
 
-To model the previous two actions as rewrites
-
-
-
-We define a set of rewrites to be a set of directed equations, where the left side may introduce unique free variables, and the right side may refer to them. More formally:
+We define our rewrite traversal to be:
 
 \begin{code}
-data Rewrite  =  Match :-> Match
-
-data Match    =  Free  Int
-              |  Ctor  String [Match]
+rewrite :: Play alpha => (alpha -> Maybe alpha) -> alpha -> alpha
+rewrite rule x = ...
 \end{code}
 
-The validity condition is that each number within a |Free| in the right hand side occurs at most once, and each on the left hand side must also be present on the right.
-
-
-We model our traversals as rewrite rules.
-
-Take for example the equation:
+A |rule| takes an expression of type |alpha|, and returns either |Nothing| to indicate that the rule is not applicable at this root expression, or a |Just| indicating that a modification has been performed, and that the new expression should be checked for rewrites. The postcondition for |rewrite| is that there must be no expressions where |rule| could be applied. Another way of stating this is:
 
 \begin{code}
-x - y = x + (-y)
+forall r, x `o` all (isNothing . r) (everywhere (rewrite r x))
 \end{code}
 
-This can be rewritten in Haskell as:
+It is possible to define this function in terms of |traverse|:
 
 \begin{code}
-Sub x y = Add x (Neg y)
+rewrite :: Play alpha => (alpha -> Maybe alpha) -> alpha -> alpha
+rewrite f = traverse g
+    where g x = maybe x (rewrite f) (f x)
 \end{code}
 
-If we consider this to be a directed rule, stating that the
+This function can be seen as trying to apply the rule everywhere in a bottom-up manner, and if at any point if makes a change, then the new tree has the rewrite applied to it. Assuming the set of rules is confluent and terminating, there will be no difference between a top-down and bottom-up application of the rules.
 
+Obviously the disadvantage of |rewrite| is that if the rule modifies a tree only slightly, then large amounts of wasted work could be performed checking expressions repeatedly. Because of this, most programmers would rather use an explicit traversal -- namely top-down or bottom-up, and manage this rewriting themselves. But which one of top-down and bottom-up is most appropriate, and how would it be augmented to ensure |rewrite| behaviour?
 
+\subsubsection{Rewrite as Bottom-Up}
 
+Given a rewrite |f :: alpha -> Maybe alpha|, we can construct |f' :: alpha -> alpha| by |f' x = maybe x id x|. Now what are the preconditions on |f| such that |forall x `o` rewrite f x == traverse f' x|?
 
-
-
-
-Define traversals in terms of LHS context and RHS generate.
-
-The bottom up traversal is by far the most useful type of traversal.
+There answer is that in |f| the root matching of any equation may not overlap with any of the constructors introduced freshly on the right hand side. For example, taking the traversals from the previous section:
 
 \begin{code}
-mapUnder :: Play on => (on -> on) -> on -> on
+f (Sub x y)           = Just $ Add x (Neg y)
+f (Add x y) | x == y  = Just $ Mul (Val 2) x
+f _                   = Nothing
 \end{code}
 
-Let's now try and write a basic optimiser for our little language. Negation of literals can be performed in advance:
+Here |Add| occurs on the right-hand side of the first line, and on the left-hand side of the second. When applied as a single traversal, we can construct a value where the two alternatives differ:
 
 \begin{code}
-optimise :: Expr -> Expr
-optimise = mapUnder f
-    where  f (Neg (Val i))  = Val (negate i)
-           f x              = x
+let x = Sub (Neg (Var "q")) (Var "q")
+
+rewrite   f   x = Mul (Val 2) (Var "q")
+traverse  f'  x = Add (Var "q") (Neg (Var "q"))
 \end{code}
 
-Here the Play method being used is \C{mapUnder}. This applies the given function to all the children of an expression, before applying it to the parent. This can be thought of as bottom-up traversal of the data structure. For most traversals, \C{mapUnder} is the only method to use. The optimise code merely pattern matches on the negation of a literal, and replaces it with the literal. Using a bottom-up traversal means that |Neg (Neg (Val 1))| is reduced to 1, while top-down traversal would leave |Neg (Val -1)|.
-
-Given the algebraic rule that |a + a == 2 * a|, this can be added easily:
+So is it possible to easily remedy this situation? The answer is yes, whenever the right-hand side introduces a new constructor, an additional onward call can be made:
 
 \begin{code}
-optimise :: Expr -> Expr
-optimise = mapUnder f
-    where  f (Neg (Val i))       = Val (negate i)
-           f (Add x y) | x == y  = Mul (Val 2) x
-           f x                   = x
+f (Sub x y)           = f $ Add x (f $ Neg y)
+f (Add x y) | x == y  = f $ Mul (f $ Val 2) x
+f x                   = x
 \end{code}
 
-This takes an addition where two terms are equal and changes it into a multiplication, causing the nested expression to be executed only once. This shows that normal Haskell applies, the Play lets you write code as before.
+This approach guarantees that the traversal is a rewrite, but in fact only one of those |f| calls is necessary, the one attached to the construction of an |Add| value.
+
+
+\subsubsection{Rewrite at Top-Down}
+
+Now we pose the same question: under what circumstances is a top-down traversal a rewrite, and what modifications can be made to ensure it becomes so?
+
+Before we can answer this question, we must first reflect on what a top-down traversal means. The usual answer is that a modification is on the original tree, at the root. After being modified, the action is re-run upon each of the children.
+
+A sufficient restriction to impose on |f| is that the leaves of left-hand side matches must be distinct from the constructions on the right hand side, although this condition is overly strict. To obtain the correct restriction requires a complete analysis of both the left and right sides.
+
+Note that this restriction is neither strictly more restrictive or less restrictive than the one imposed on bottom-up traversals. \todo{Example}
+
+In a similar manner to bottom-up traversals, we wonder if it is possible to modify |f| minimally to permit a rewrite traversal. The answer is no, consider:
+
+\begin{code}
+f (Add (Lit x) (Lit y)  ) = Lit (x+y)
+f (Neg (Lit x)          ) = Lit (negate x)
+\end{code}
+
+Now choose the value:
+
+\begin{code}
+let x = Add (Lit 5) (Neg (Lit 2))
+
+rewrite f x = Lit 3
+traverse' f x = Add (Lit 5) (Lit -2)
+\end{code}
+
+Now, are we able to find a simple mechanism to go back to obtaining full rewrite behaviour? No. One option is to perform the traversals on the matches of the first equation before doing the match, perhaps a |case| expression -- effectively resulting in a bottom-up traversal. The other option is do rewrite on the entire new right-hand side -- modelling the behaviour of rewrite.
+
+
+\subsubsection{Summary}
+
+As a result we consider top-down traversals to be more complex and less functional than bottom-up traversals, and we do not include them in our library. An initial version of this library included top-down traversals -- we found they were rarely the correct choice. After investigating further, we discovered that most uses of top-down traversals were to model rewrites where information was pushed down, and most of these functions were wrong in corner cases. This experience lead us to the decision that top-down traversals do not deserve library support.
+
+We include |rewrite| but suspect that most users would be better suited with |traverse|.
+
 
 \subsection{Action Traversals}
 
-After introducing queries, most boilerplate approaches would naturally move on to traversals, as we do. However, we have separate traversals into two different types -- action traversals,
+We have introduced rewrite traversals, where the intention was to apply a set of rules until a fixed point was found. The alternative is action traversals, where the order each node wants to be visited and transformed. The |descend| and |traverse| actions can be used to perform this, but a standard technique for allowing actions is to thread a monad through the actions. We do this by introducing |traverseM|, |descendM| and |rewriteM|.
 
-
-
-
-\subsection{Top-down traversal}
-
-In practice, a top-down traversal is only rarely necessary. To come up with an example where it is takes some effort! Here is one such example. Consider the mathematical rule |(-a) - (-b) = b - a|. The operational part can be written as:
+Let us assume that each variable wants to be renamed so it is unique.
 
 \begin{code}
-f (Sub (Neg a) (Neg b))  = Sub b a
-f x                      = x
+uniqueVars :: Expr -> Expr
+uniqueVars x = evalState (traverseM f x)
+    where
+        vars = ['x':show i | i <- [1..]]
+    
+        f (Var i)  = do  y:ys <- get
+                         put ys
+                         return (Var y)
+        f x        = return x
 \end{code}
 
-Writing |mapUnder f x| seems tempting, but is not correct. Consider |Sub (Neg (Neg (Val 1))) (Neg (Neg (Val 2)))|. With a bottom-up traversal this will be reduced to |Sub (Neg (Val -1)) (Neg (Val -1))|, as the \C{Sub} created by \C{f} will not be further analysed. There are three alternatives to this problem.
+Here a monadic computation is required, the program needs to keep track of what the next item in the list to use is, and replace the current item. By using the state monad, this can be done easily.
+
+
+\subsection{Top-Down Descending}
+
+While we have decided that top-down traversals are unnecessary for our library, we still believe that some traversals operate more naturally in a top-down manner. An extension to the top-down traversal includes one where information is pushed downwards at the same time.
+
+Consider the addition of the constructor |Let String Expr Expr| -- binding the variable introduced. In order to determine which variables are used in an unbound manner, we need to ``remember'' which variables have been introduced as we descend. We introduced the |descend| function, taken from the Compos paper \cite{compos}.
 
 \begin{code}
-solution1 = mapUnder f
-    where  f (Sub (Neg a) (Neg b))  = f (Sub b a)
-           f x                      = x
-
-solution2 = mapOver f
-    where  f (Sub (Neg a) (Neg b))  = f (Sub b a)
-           f x                      = x
-
-solution3 (Sub (Neg a) (Neg b)) = solution3 (Sub b a)
-solution3 x = compos solution3 x
+descend :: Play alpha => (alpha -> alpha) -> alpha -> alpha
 \end{code}
 
-It is only necessary where context RHS overlaps with generated LHS.
+Now we can write out function with:
+
+\begin{code}
+replaceVars :: [(String,Expr)] -> Expr -> Expr
+replaceVars rep x =
+    case  x of
+          Let name bind x -> Let name
+              (replaceVars rep bind)
+              (replaceVars (filter ((/= name) . fst) rep) x
+          Var x -> fromMaybe (Var x) (lookup x rep)
+          _ -> descend (replaceVars rep) x
+\end{code}
+
+Note that although this function is finished, we have only specified what to do in the two interesting cases, namely |Let| and |Var|.
+
+The |descend| function applies a function to all children of a node, then reconstructs a new result using those results. It is a useful function to have, and often is a better choice than top-down traversals, as it preserves the order you would require, but makes more things explicit.
+
+
+\subsection{Folds}
+
+Traditionally in Haskell a fold replaces each constructor with an alternative. To define a complete fold on a data type, each constructor must be represented, and there is no obvious library function to abstract over this process. A more useful fold for a library such as this would be to allow a default operation. To do this we have:
+
+\begin{code}
+fold :: Play alpha => ([r] -> t) -> (alpha -> t -> r) -> alpha -> r
+\end{code}
+
+Now lets imagine that programmers are paid by the depth of expression they produce, so lets write a function that computes the maximum depth of an expression.
+
+\begin{code}
+depth :: Expr -> Int
+depth = fold (foldr max 0) $ const (+1)
+\end{code}
+
+Our |fold| function takes two functions, one which combines a list of values representing each child, and one which generates a new value given the value for the children and this particular node. In the above example we have used |foldr max 0| to combine all the children -- |maximum| is inappropriate, as |maximum [] = {-"\bot"-}|. The second function |const (+1)| simply adds one to the previous depth.
+
+
+\subsection{EverythingContext}
+
+The final operation in the library is a curious one -- we have not seen it referenced in any other library, even in those which attempt to include all variations \cite{replib}. However, if the user requires this particular function, they really do need it -- faking it from other operations requires a lot of monadic complexity. This function was actually contributed by a user, which we feel enhances our claim that average users can construct their own operations upon our framework.
+
+Imagine that you wish to change the value of one literal by one, either increasing or decreasing. This particular operation could be useful for mutation testing. To do this we require the function:
+
+\begin{code}
+everythingContext :: Play alpha => alpha -> [(alpha, alpha -> alpha)]
+\end{code}
+
+This function returns two lists, one of which is the list as would be returned by everything. The other is the function which would replace the hole which the given expression was removed from. It has the properties:
+
+\begin{code}
+forall x `o` everything x == map fst (everythingContext x)
+forall x `o` all (== x) [b a | (a,b) <- everythingContext x]
+\end{code}
+
+Now we are in a situation to write our function:
+
+\begin{code}
+mutants :: Expr -> [Expr]
+mutants x =  [gen (Val j)
+             | (Val i, gen) <- everythingContext x
+             , j <- [i-1, i+1]]
+\end{code}
+
+
+\subsection{Summary}
+
+\begin{figure}
+\begin{code}
+module Data.Generics.Play where
+
+class Play alpha where
+    descend            :: (alpha -> alpha) -> alpha -> alpha
+    descendM           :: Monad m => (alpha -> m alpha) -> alpha -> m alpha
+    everything         :: alpha -> [alpha]
+    everythingContext  :: alpha -> [(alpha, alpha -> alpha)]
+    fold               :: ([r] -> t) -> (alpha -> t -> r) -> alpha -> r
+    rewrite            :: (alpha -> Maybe alpha) -> alpha -> alpha
+    rewriteM           :: Monad m  => (alpha -> m (Maybe alpha))
+                                   -> alpha -> m alpha
+    traverse           :: (alpha -> alpha) -> alpha -> alpha
+    traverseM          :: Monad m => (alpha -> m alpha) -> alpha -> m alpha
+\end{code}
+\caption{All |Play| methods.}
+\label{fig:play}
+\end{figure}
+
+We present all our methods in Figure \ref{fig:play}, including several monadic variants. We consider these methods encapsulate most of the common operations. In our experience, the most common operations are |everything| and |traverse|, with |traverseM| being the next most common.
+
+
+\section{Implementing Play}
+
+Requiring each class to implement nine separate methods would be overly arduous. Instead we implement all of these operations on top of just a single method:
+
+\begin{code}
+replaceChildren :: Play alpha => alpha -> ([alpha], [alpha] -> alpha)
+\end{code}
+
+The idea is that given an item, you want to return all the children, and a function that will replace all the children. An invariant is that the list given to the second function will be the
+same length as that returned in the first element of the pair. The second invariant is:
+
+\begin{code}
+forall x `o` x == generate children
+    where (children,generate) = replaceChildren x
+\end{code}
+
+For example:
+
+\begin{code}
+replaceChildren (Add x y) = ([x,y], \[x2,y2] -> Add x2 y2)
+\end{code}
+
+The Play class also has one additional method:
+
+\begin{code}
+getChildren = fst . replaceChildren
+\end{code}
+
+The reason for the addition of |getChildren| is for performance reasons -- some of the operations such as |everything| only require the extraction -- and in some cases it can be implemented more efficient -- see \S\ref{sec:syb_play}.
+
+
+\subsection{Operations in terms of |replaceChildren|}
+
+
+\subsection{Writing |Play| instances}
+
+
+Let's start by constructing the Play instance for the expression type.
+
+\begin{code}
+instance Play Expr of
+    replaceChildren x =
+        case x of
+            Add a b -> ([a,b], \[a,b] -> Add a b)
+            ...
+            Neg a -> ([a], \[a] -> Neg a)
+            Val i -> ([], \[] -> Val i)
+\end{code}
+
+A short study of the code should show how this works. The other constructors such as Mul follow the same pattern as Add. There are some additional combinators defined in the Play class to make this a bit easier.
+
+instance Play Expr of
+    replaceChildren x =
+        case x of
+            Add x y -> playTwo Add x y
+            ...
+            Neg x   -> playOne Neg x
+            x -> playDefault x
+
+Here playTwo takes a constructor of two expressions, and the expressions within them. The function playOne operates similarly on one expression. The remaining playDefault, which handles Val is for expressions with no recursive element.
+
+
+\subsection{Derivation Rules}
+
+
+
+\section{Multi-variable Play, PlayOn, PlayEx}
+
+ To define the PlayEx class, there are three combinatiors that can be used. These automate much of the definition:
+
+\begin{code}
+play :: on -> ([with],[with] -> on)
+(/\) :: PlayEx item with => ([with], [with] -> item -> on) -> item -> ([with], [with] -> on)
+(/\!) :: ([with], [with] -> item -> on) -> item -> ([with], [with] -> on)
+\end{code}
+
+Note, the above are presented with type signatures for completeness. They are intended to be used mechanically, without excessive thought.
+
+To define a PlayEx instance for the Expr type introduced earlier:
+
+\begin{code}
+instance PlayEx Expr a where
+    replaceChildrenEx x =
+        case x of
+            Val a -> play Val /\! a
+            Add a b -> play Add /\ a /\ b
+            Sub a b -> play Sub /\ a /\ b
+            ...
+            Neg a -> play Neg /\ a
+\end{code}
+
+The definition follows mechanically. The only choice a user makes is whether to use the |(/\)| operator (which recurses into the child on the right), or the |(/\!)| operator, which doesn't. For example, here we have decided not to traverse inside the Int of Val. This can be changed, and would require a PlayEx instance for Int.
+
+If using this style of definition, a special instance must be defined for the self case:
+
+instance PlayEx Expr Expr where
+    replaceChildrenEx = playSelf
+
+Unfortunately this requires undecidable instances. A Play instance still needs to be written for each definition.
+
+
+\subsection{In terms of SYB}
+
+ To define Play and PlayEx instances for all types, in all combinations, simply:
+
+import Data.PlaySYB
+
+data Expr ... deriving (Typeable, Data)
+
+The disadvatages of this are the lack of type safety - you can now do entirely meaningless operations, which the earlier definitions would have spotted as being an error. This code will also only work where Data.Generics is supported, namely GHC at the present time.
+
+The clear advantage is that there is almost no work to creating Play instances.
+
+\begin{figure}
+\begin{code}
+instance (Data a, Typeable a) => Play a where
+    replaceChildren x = fromCC (collect_generate x)
+
+    getChildren x = concat (gmapQ getType x)
+
+
+
+instance (Data a, Play b, Typeable a, Typeable b) => PlayEx a b where
+    replaceType x = fromCC (collect_generate_self x)
+
+    getType x = res
+        where
+            res = case asTypeOf (cast x) (Just $ head res) of
+                       Just y -> [y]
+                       Nothing -> concat $ gmapQ getType x
+
+
+newtype C x a = C {fromC :: CC x a}
+
+type CC x a = ([x], [x] -> (a, [x]))
+
+
+fromCC :: CC x a -> ([x], [x] -> a)
+fromCC (a, b) = (a, \i -> fst (b i))
+
+
+collect_generate_self :: (Data on, Play with, Typeable on, Typeable with) => on -> CC with on
+collect_generate_self x = res
+        where
+            res = case asTypeOf (cast x) (Just $ head $ fst res) of
+                       Just y -> ([y], \(x:xs) -> (fromJust (cast x), xs))
+                       Nothing -> collect_generate x
+
+
+collect_generate :: (Data on, Play with, Typeable on, Typeable with) => on -> CC with on
+collect_generate item = fromC $ gfoldl combine create item
+    where
+        -- forall a b . Data a => C with (a -> b) -> a -> C with b
+        combine (C (c,g)) x = case collect_generate_self x of
+                                  (c2, g2) -> C (c2 ++ c, regen g2)
+            where
+                regen g2 i = case g2 i of
+                            (x2,i2) -> case g i2 of
+                                (y2,i3) -> (y2 x2, i3)
+
+        -- forall g . g -> C with g
+        create x = C ([], \res -> (x, res))
+\end{code}
+\end{figure}
+
+
+\section{Properties and optimisation}
+
+
+\section{The Paradise Benchmark}
+
+\section{Implementation Speed}
+
+\section{Related Work}
+
+\section{Conclusions and Future Work}
+
 
 
 
