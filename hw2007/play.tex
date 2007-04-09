@@ -458,7 +458,7 @@ forall x `o` x == generate children
 For example:
 
 \begin{code}
-replaceChildren (Add x y) = ([x,y], \[x2,y2] -> Add x2 y2)
+replaceChildren (Add x y) = ([x,y], \[x',y'] -> Add x' y')
 \end{code}
 
 The Play class also has one additional method:
@@ -472,38 +472,137 @@ The reason for the addition of |getChildren| is for performance reasons -- some 
 
 \subsection{Operations in terms of |replaceChildren|}
 
+Defining operations in terms of |replaceChildren| is easy, we implement the three most common as an example. None is more than a handful of lines long, and none has great deep complexity:
+
+\begin{code}
+everything :: Play alpha => alpha -> [alpha]
+everything x = x : concatMap everything $ getChildren x
+
+descend :: Play alpha => (alpha -> alpha) -> alpha -> alpha
+descend f x = generate $ map f current
+    where (current, generate) = replaceChildren x
+
+
+descendM :: (Monad m, Play alpha) => (alpha -> m alpha) -> alpha -> m alpha
+descendM f x = liftM generate $ mapM f current
+    where (current, generate) = replaceChildren x
+\end{code}
+
+The common pattern is to call replace children, then perform some action on the current children, before combining them back.
+
+Of these operations, some may be slightly optimised -- |everything| requires an excessive number of concatentations -- one for each depth of the tree. In practice an optimised version based on continuation passing is used, still only five lines long.
+
 
 \subsection{Writing |Play| instances}
 
+While in other generics libraries it is trivial to write the instances, in our case it is more challenging. This is not of a big concern, we have developed automated approaches to deriving these libraries within the \textsc{Derive} tool.
 
-Let's start by constructing the Play instance for the expression type.
-
+\begin{figure}
 \begin{code}
 instance Play Expr of
     replaceChildren x =
         case x of
-            Add a b -> ([a,b], \[a,b] -> Add a b)
-            ...
-            Neg a -> ([a], \[a] -> Neg a)
-            Val i -> ([], \[] -> Val i)
+            Neg  a    -> ([a]    , \[a']     -> Neg  a'     )
+            Add  a b  -> ([a,b]  , \[a',b']  -> Add  a' b'  )
+            Sub  a b  -> ([a,b]  , \[a',b']  -> Sub  a' b'  )
+            Mul  a b  -> ([a,b]  , \[a',b']  -> Mul  a' b'  )
+            Div  a b  -> ([a,b]  , \[a',b']  -> Div  a' b'  )
+            _         -> ([]     , \[]       -> x           )
 \end{code}
+\caption{Instance of |Play| for |Expr|.}
+\label{fig:play_expr}
+\end{figure}
 
-A short study of the code should show how this works. The other constructors such as Mul follow the same pattern as Add. There are some additional combinators defined in the Play class to make this a bit easier.
-
-instance Play Expr of
-    replaceChildren x =
-        case x of
-            Add x y -> playTwo Add x y
-            ...
-            Neg x   -> playOne Neg x
-            x -> playDefault x
-
-Here playTwo takes a constructor of two expressions, and the expressions within them. The function playOne operates similarly on one expression. The remaining playDefault, which handles Val is for expressions with no recursive element.
+We construct a |Play| instance for the |Expr| type in Figure \ref{fig:play_expr}. The pattern of the instance can be seen easily. The default clause has no children of type |Expr|, meaning the leaves have been reached. Some simple combinators are provided to allow these derivations to be written more compactly, but they are not introduced here as they only serve to complicate the story.
 
 
 \subsection{Derivation Rules}
 
+The distinguishing feature of our libraries is that the children are defined in terms of their type -- while this makes the traversals and queries simpler, it does mean that the definition is dependent on the types of the constructors. We can model the type of an operation with the following construction:
 
+\begin{code}
+data Type  =  None
+           |  Target
+           |  List  Type
+           |  Pair  Type Type
+\end{code}
+
+While arbitrary sized tuples are supported, along with the |Maybe| type, their rules are no more complex and fit easily into the framework we develop. With this, we define the |<|| `o` ||>| operation, using this we can write a |getChildren| clause as:
+
+\begin{code}
+getChildren (C (x1::t1) .. (xn::tn))
+    = concat [ <| t1 |> x1, .. , <| tn |> xn]
+
+<| Type         |> :: Type -> [alpha]
+<| None         |> = const []
+<| Target       |> = (:[])
+<| Pair  t1 t2  |> = \(x1,x2) -> <| t1 |> x1 ++ <| t2 |> x2
+<| List  t1     |> = concatMap \? <| t1 |>
+\end{code}
+
+Having implemented |getChildren|, we can imagine that it may be natural to implement |setChildren|, which could be combined to create |replaceChildren|. For efficiency reasons these two operations are combined into one, requiring only one examination of each constructor, but we present these two methods separately.
+
+\begin{code}
+setChildren (C (x1::t1) .. (xn::tn))
+    = \ns1 ->  <| t1 |>  x1 ns1  $ \x1'  ns2  ->
+               ..
+               <| tn |>  xn nsn  $ \xn'  _    ->
+               C x1' .. xn'
+
+<| Type         |> :: Type -> [alpha] -> (Type -> [alpha] -> r) -> r
+<| None         |> = \x        ns      c -> c x ns
+<| Target       |> = \x        (n:ns)  c -> c n ns
+<| Pair  t1 t2  |> = \(x1,x2)  ns1     c ->
+                               <| t1 |> x1 ns1 $ \x1' ns2 ->
+                               <| t2 |> x2 ns2 $ \x2' ns3 ->
+                               c (x1',x2') ns3
+<| List  t1     |> = list \? <| t1 |>
+    where
+        list fn []      ns c =  c [] ns
+        list fn (x:xs)  ns c =  fn x ns         $ \x'   ns2  ->
+                                list fn xs ns2  $ \xs'  ns3  ->
+                                c (x':xs') ns3
+\end{code}
+
+\subsection{Using Derive}
+
+Apply the presented derivation rules is quite time consuming, and does not produce the cleanest instances. Take for example the type:
+
+\begin{code}
+data Term = Name String
+          | Apply Term [Term]
+\end{code}
+
+The generated code for the instances would be:
+
+\begin{code}
+replaceChildren (Name x1) =
+    (concat [const [] x1]
+    ,\ns1 ->  (\x ns c -> c x ns) x1 ns1 $ \x1' _ ->
+              Name x1
+    )
+
+replaceChildren (Apply x1 x2) =
+    (concat [(:[]) x1, concatMap (:[]) x2]
+    ,\ns1 ->  (\x (n:ns) c -> c n ns)         x1 ns1 $ \x1' ns2  ->
+              (list (\x (n:ns) c -> c n ns))  x2 ns2 $ \x2' _    ->
+              Apply x1' x2'
+    )
+\end{code}
+
+Through transformation these can be written as:
+
+\begin{code}
+replaceChildren (Name x1) =
+    ([], \_ -> Name x1)
+
+replaceChildren (Apply x1 x2) =
+    (x1:x2, \(n:ns) -> Apply n ns)
+\end{code}
+
+Note that the |setChildren| in the |Apply| case changes the strictness -- but assuming the |getChildren| case has been executed first, this is still the same overall strictness.
+
+These transformations are automatically performed by derive.
 
 \section{Multi-variable Play, PlayOn, PlayEx}
 
@@ -511,8 +610,10 @@ Here playTwo takes a constructor of two expressions, and the expressions within 
 
 \begin{code}
 play :: on -> ([with],[with] -> on)
-(/\) :: PlayEx item with => ([with], [with] -> item -> on) -> item -> ([with], [with] -> on)
-(/\!) :: ([with], [with] -> item -> on) -> item -> ([with], [with] -> on)
+(/\) :: PlayEx item with => ([with], [with] ->
+    item -> on) -> item -> ([with], [with] -> on)
+(/\!) :: ([with], [with] -> item -> on) ->
+    item -> ([with], [with] -> on)
 \end{code}
 
 Note, the above are presented with type signatures for completeness. They are intended to be used mechanically, without excessive thought.
