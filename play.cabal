@@ -7,5 +7,9 @@ Category:       Data
 Build-Depends:  base
 Synopsis:       Library for playing with data structures.
 Exposed-modules:
-        Data.Play
-        Data.PlayEx
+        Data.Generics.Play
+		Data.Generics.PlayOn
+		Data.Generics.PlayMPTC
+		Data.Generics.PlayEx
+		Data.Generics.PlaySYB
+
