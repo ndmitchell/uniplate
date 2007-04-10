@@ -5,10 +5,10 @@
 
 @book{haskell,
     title =         "{H}askell 98 {L}anguage and {L}ibraries: {T}he {R}evised {R}eport",
-    author =        "Simon Peyton Jones",
+    author =        "Simon {Peyton Jones}",
     year =          "2003",
     publisher =     "Cambridge University Press",
-    edition =       "First",
+    _edition =      "First",
     URL =           "http://www.haskell.org/onlinereport/",
     urlpdf =        "http://www.haskell.org/definition/haskell98--report.pdf",
     comment =       "Language definition for Haskell",
@@ -20,9 +20,9 @@
     title =         "Concurrent programming in ERLANG",
     edition =       "Second",
     year =          "1996",
-    isbn =          "0-13-508301-X",
-    publisher =     "Prentice Hall International (UK) Ltd.",
-    address =       "Hertfordshire, UK",
+    _isbn =         "0-13-508301-X",
+    publisher =     "Prentice Hall",
+    _address =      "Hertfordshire, UK",
 }
 
 @book{lisp,
@@ -41,7 +41,7 @@
     author =        "Tim Bray",
     year =          "2004",
     month =         feb,
-    edition =       "Third"
+    edition =       "Third",
     note =          "\url{http://www.w3.org/TR/2004/REC-xml-20040204/}",
 }
 
@@ -60,11 +60,11 @@
 % References to tools or programs
 % All of which I would know by name
 
-@inproceedings{ghc,
-    title =         "{T}he {G}lasgow {H}askell {C}ompiler: {A} {T}echnical {O}verview",
-    author =        "S L Peyton Jones and C V Hall and K Hammond and W Partain and P Wadler",
-    year =          "1993",
-    booktitle =     "Proc. UK Joint Framework for Information Technology (JFIT) Technical Conference",
+@unpublished{ghc,
+    title =         "The {GHC} Compiler, Version 6.6",
+    author =        "{The GHC Team}",
+    year =          "2006",
+    month =         oct,
     note =          "\url{http://www.haskell.org/ghc/}",
 }
 
@@ -73,7 +73,7 @@
     author =        "Andrew Tolmach",
     year =          "2001",
     month =         sep,
-    howpublished =  "\url{http://www.haskell/org/ghc/documentation.html}",
+    note  =          "\url{http://www.haskell.org/ghc/docs/papers/core.ps.gz}",
 }
 
 @misc{ghc_manual,
@@ -85,14 +85,14 @@
 }
 
 @inproceedings{nhc,
-    author =        "Niklas R\:{o}jemo",
+    author =        "Niklas R{\"o}jemo",
     title =         "Highlights from nhc - a space-efficient {H}askell compiler",
-    booktitle =     "FPCA '95: Proceedings of the seventh international conference on Functional programming languages and computer architecture",
+    booktitle =     "Proc. FPCA '95",
     year =          "1995",
-    isbn =          "0-89791-719-7",
+    _isbn =         "0-89791-719-7",
     pages =         "282--292",
     location =      "La Jolla, California, United States",
-    doi =           "http://doi.acm.org/10.1145/224164.224217",
+    _doi =          "http://doi.acm.org/10.1145/224164.224217",
     publisher =     "ACM Press",
 }
 
@@ -108,34 +108,37 @@
     author =        "David Roundy",
     title =         "{D}arcs: distributed version management in {H}askell",
     year =          "2005",
-    booktitle =     "Haskell '05: Proceedings of the 2005 ACM SIGPLAN workshop on Haskell",
+    booktitle =     "Proc. Haskell '05",
     pages =         "1--4",
-    isbn =          "1-59593-071-X",
+    _isbn =         "1-59593-071-X",
     location =      "Tallinn, Estonia",
-    doi =           "http://doi.acm.org/10.1145/1088348.1088349",
+    _doi =          "http://doi.acm.org/10.1145/1088348.1088349",
     publisher =     "ACM Press",
 }
 
-@manual{epigram,
-    title =         "{E}pigram: {P}ractical {P}rogramming with {D}ependent {T}ypes",
-    author =        "Conor McBride",
-    year =          "2005",
-    month =         apr,
+@article{epigram,
+    author =        "Conor McBride and James McKinna",
+    title =         "The view from the left",
+    journal =       "JFP",
+    volume =        "14",
+    number =        "1",
+    year =          "2004",
+    pages =         "69--111",
+    _doi =          "http://dx.doi.org/10.1017/S0956796803004829",
 }
+
 
 @inproceedings{cayenne,
     author =        "Lennart Augustsson",
     title =         "Cayenne - a language with dependent types",
     booktitle =     "ICFP '98: Proceedings of the third ACM SIGPLAN international conference on Functional programming",
     year =          "1998",
-    isbn =          "1-58113-024-4",
+    _isbn =          "1-58113-024-4",
     pages =         "239--250",
     location =      "Baltimore, Maryland, United States",
-    doi =           "http://doi.acm.org/10.1145/289423.289451",
+    _doi =           "http://doi.acm.org/10.1145/289423.289451",
     publisher =     "ACM Press",
 }
-
-
 
 @inproceedings{quickcheck,
     title =         "{Q}uick{C}heck: {A} {L}ightweight {T}ool for {R}andom {T}esting of {H}askell {P}rograms",
@@ -146,25 +149,22 @@
     publisher =     "{ACM} Press",
 }
 
-@inproceedings{nofib,
+@misc{nofib,
     title =         "{T}he \texttt{nofib} {B}enchmark {S}uite of {H}askell {P}rograms",
-    author =        "Will Partain",
-    year =          "1992",
-    booktitle =     "Functional Programming, Glasgow 1992",
-    pages =         "195--202",
-    publisher =     "Springer-Verlag Workshops in Computing",
-    editor =        "J Launchbury and PM Sansom",
+    author =        "Will {Partain et al.}",
+    year =          "2007",
+    howpublished =  "\url{http://darcs.haskell.org/nofib/}"
 }
 
 @inproceedings{esc_haskell,
     author =        "Dana N. Xu",
-    title =         "Extended static checking for haskell",
-    booktitle =     "Haskell '06: Proceedings of the 2006 ACM SIGPLAN workshop on Haskell",
+    title =         "Extended static checking for {H}askell",
+    booktitle =     "Proc. Haskell '06",
     year =          "2006",
-    isbn =          "1-59593-489-8",
+    _isbn =         "1-59593-489-8",
     pages =         "48--59",
     location =      "Portland, Oregon, USA",
-    doi =           "http://doi.acm.org/10.1145/1159842.1159849",
+    _doi =          "http://doi.acm.org/10.1145/1159842.1159849",
     publisher =     "ACM Press",
 }
 
@@ -179,26 +179,21 @@
 @inproceedings{dialyzer,
     title =         "Detecting Software Defects in Telecom Applications Through Lightweight Static Analysis: A War Story",
     author =        "Tobias Lindahl and Konstantinos Sagonas",
-    year =          "2004"
+    year =          "2004",
     month =         nov,
-    booktitle =     "Programming Languages and Systems: Proceedings of the Second Asian Symposium (APLAS'04)",
+    booktitle =     "Proc. APLAS '04, LNCS 3302",
     pages =         "91--106",
-    editor =        "Chin Wei-Ngan",
-    volume =        "3302",
-    series =        "LNCS",
     publisher =     "Springer", 
 }
 
-@article{omega,
+@inproceedings{omega,
     author =        "Tim Sheard",
     title =         "Languages of the future",
-    journal =       "SIGPLAN Not.",
-    volume =        "39",
-    number =        "12",
+    booktitle =     "Proc. OOPSLA '04",
     year =          "2004",
-    issn =          "0362-1340",
-    pages =         "119--132",
-    doi =           "http://doi.acm.org/10.1145/1052883.1052897",
+    _issn =         "0362-1340",
+    pages =         "116--119",
+    _doi =          "http://doi.acm.org/10.1145/1052883.1052897",
     publisher =     "ACM Press",
 }
 
@@ -222,7 +217,7 @@
 @inproceedings{reynolds:defunc,
     title =         "Definitional interpreters for higher-order programming languages",
     author =        "John C. Reynolds",
-    booktitle =     "ACM '72: Proceedings of the ACM annual conference",
+    booktitle =     "Proc. ACM '72",
     year =          "1972",
     pages =         "717--740",
     location =      "Boston, Massachusetts, United States",
@@ -231,24 +226,46 @@
 }
 
 @article{turner:total,
-  author =       "David Turner",
-  title =        "{T}otal {F}unctional {P}rogramming",
-  month =        jul,
-  year =         "2004",
-  journal =      "Journal of Universal Computer Science",
-  volume =       "10",
-  number =       "7",
-  pages =        "751--768",
-  URL =          "http://www.jucs.org/jucs_10_7/total_functional_programming",
+    author =        "David Turner",
+    title =         "{T}otal {F}unctional {P}rogramming",
+    month =         jul,
+    year =          "2004",
+    journal =       "Journal of Universal Computer Science",
+    volume =        "10",
+    number =        "7",
+    pages =         "751--768",
+    _URL =          "http://www.jucs.org/jucs_10_7/total_functional_programming",
 }
 
 @book{conway:regexp,
-  title =        "{R}egular {A}lgebra and {F}inite {M}achines",
-  author =       "John Horton Conway",
-  year =         "1971",
-  publisher =    "London Chapman and Hall",
-  ISBN =         "0-412-10620-5",
+    title =         "{R}egular {A}lgebra and {F}inite {M}achines",
+    author =        "John Horton Conway",
+    year =          "1971",
+    publisher =     "London Chapman and Hall",
+    _ISBN =          "0-412-10620-5",
 }
+
+@article{lee:bdd,
+    author =        "Lee, C.",
+    title =         "Representation of switching circuits by binary decision diagrams",
+    journal =       "Bell System Technical Journal",
+    volume =        "38",
+    year =          "1959",
+    pages =         "985-999",
+}
+
+@article{spj:gadt,
+    author =        "Simon {Peyton Jones} and Dimitrios Vytiniotis and Stephanie Weirich and Geoffrey Washburn",
+    title =         "Simple unification-based type inference for {GADT}s",
+    journal =       "Proc. ICFP '06",
+    year =          "2006",
+    _isbn =         "1595933093",
+    pages =         "50--61",
+    _doi =          "http://doi.acm.org/10.1145/1160074.1159811",
+    publisher =     "ACM Press",
+    address =       "New York, NY, USA",
+}
+
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -256,7 +273,7 @@
 
 % Papers which I wrote
 
-@inproceedings{me:catch_tfp,
+@inproceedings{me:catch_tfp_original,
     title =         "Unfailing {H}askell: A Static Checker for Pattern Matching",
     author =        "Neil Mitchell and Colin Runciman",
     booktitle =     "Proceedings of the Sixth Symposium on Trends in Functional Programming",
@@ -265,6 +282,16 @@
     month =         sep,
 }
 
+@inproceedings{me:catch_tfp,
+    author =        "Neil Mitchell and Colin Runciman",
+    title =         "A Static Checker for Safe Pattern Matching in {H}askell",
+    booktitle =     "Trends in Functional Programming (2005 Symposium)",
+    volume =        "6",
+    publisher =     "Intellect",
+    _isbn =         "9781841501765",
+    pages =         "15--30",
+    year =          "2007",
+}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% HASKELL PAPERS
@@ -273,26 +300,27 @@
 @inproceedings{wadler:type_classes,
     title =         "How to make ad-hoc polymorphism less ad hoc",
     author =        "Philip Wadler and Stephen Blott",
-    booktitle =     "POPL '89: Proceedings of the 16th ACM SIGPLAN-SIGACT symposium on Principles of programming languages",
+    booktitle =     "Proc. POPL '89",
     year =          "1989",
-    isbn =          "0-89791-294-2",
+    _isbn =         "0-89791-294-2",
     pages =         "60--76",
     location =      "Austin, Texas, United States",
-    doi =           "http://doi.acm.org/10.1145/75277.75283",
+    _doi =          "http://doi.acm.org/10.1145/75277.75283",
     publisher =     "ACM Press",
     address =       "New York, NY, USA",
     comment =       "The idea of type classes, along with the dictionary implementation"
 }
 
-@inproceedings{jones:dictionary_removal,
-  author =          "Mark P. Jones",
-  title =           "{D}ictionary-free {O}verloading by {P}artial {E}valuation",
-  booktitle =       "ACM SIGPLAN Workshop on Partial Evaluation and Semantics-Based Program Manipulation",
-  year =            "1994",
-  month =           jun,
-  location =        "Orlando, Florida, United States",
-  publisher =       "ACM Press",
-  comment =         "How to remove dictionaries by partial evaluation/specialisation"
+@inproceedings{jones:dictionary_free,
+    author =        "Mark P. Jones",
+    title =         "{D}ictionary-free {O}verloading by {P}artial {E}valuation",
+    booktitle =     "Proc. PEPM '94",
+    year =          "1994",
+    month =         jun,
+    location =      "Orlando, Florida, United States",
+    publisher =     "ACM Press",
+    pages =         "107--117",
+    comment =       "How to remove dictionaries by partial evaluation/specialisation"
 }
 
 @unpublished{maranget:pattern_warnings,
@@ -307,21 +335,21 @@
 @inproceedings{aiken:type_infer,
     author =        "Alex Aiken and Brian Murphy",
     title =         "{S}tatic {T}ype {I}nference in a {D}ynamically {T}yped {L}anguage",
-    booktitle =     "POPL '91: Proceedings of the 18th ACM SIGPLAN-SIGACT symposium on Principles of programming languages",
+    booktitle =     "Proc. POPL '91",
     year =          "1991",
-    isbn =          "0-89791-419-8",
+    _isbn =          "0-89791-419-8",
     pages =         "279--290",
     location =      "Orlando, Florida, United States",
-    doi =           "http://doi.acm.org/10.1145/99583.99621",
+    _doi =           "http://doi.acm.org/10.1145/99583.99621",
     publisher =     "ACM Press",
 }
 
 @inproceedings{fluet:phantom,
     author =        "Matthew Fluet and Riccardo Pucella",
     title =         "Phantom Types and Subtyping",
-    booktitle =     "TCS '02: 2nd IFIP International Conference on Theoretical Computer Science",
+    booktitle =     "Proc. TCS '02",
     year =          "2002",
-    isbn =          "1-4020-7181-7",
+    _isbn =         "1-4020-7181-7",
     pages =         "448--460",
     publisher =     "Kluwer, B.V.",
     address =       "Deventer, The Netherlands",
@@ -330,23 +358,64 @@
 @inproceedings{xi:dependent_practical,
     author =        "Hongwei Xi and Frank Pfenning",
     title =         "Dependent types in practical programming",
-    booktitle =     "POPL '99: Proceedings of the 26th ACM SIGPLAN-SIGACT symposium on Principles of programming languages",
+    booktitle =     "Proc. POPL '99",
     year =          "1999",
-    isbn =          "1-58113-095-3",
+    _isbn =         "1-58113-095-3",
     pages =         "214--227",
     location =      "San Antonio, Texas, United States",
-    doi =           "http://doi.acm.org/10.1145/292540.292560",
+    _doi =          "http://doi.acm.org/10.1145/292540.292560",
     publisher =     "ACM Press",
 }
 
+@article{runciman:naturals,
+    author =        "Colin Runciman",
+    title =         "What about the natural numbers?",
+    journal =       "Comput. Lang.",
+    volume =        "14",
+    number =        "3",
+    year =          "1989",
+    _issn =         "0096-0551",
+    pages =         "181--191",
+    _doi =          "http://dx.doi.org/10.1016/0096-0551(89)90004-0",
+    publisher =     "Pergamon Press, Inc.",
+    address =       "Tarrytown, NY, USA",
+}
+
+@book{spj:implementation,
+    author =        "Simon {Peyton Jones}",
+    title =         "The Implementation of Functional Programming Languages",
+    publisher =     "Computer Science. Prentice-Hall",
+    year =          "1987",
+}
+
+@inproceedings{spj:ghc_overview,
+    title =         "{T}he {G}lasgow {H}askell {C}ompiler: {A} {T}echnical {O}verview",
+    author =        "S L {Peyton Jones} and C V Hall and K Hammond and W Partain and P Wadler",
+    year =          "1993",
+    booktitle =     "Proc. UK Joint Framework for Information Technology (JFIT) Technical Conference",
+    note =          "\url{http://www.haskell.org/ghc/}",
+}
+
+@inproceedings{partain:nofib,
+    title =         "{T}he \texttt{nofib} {B}enchmark {S}uite of {H}askell {P}rograms",
+    author =        "Will Partain",
+    year =          "1992",
+    booktitle =     "Functional Programming, Glasgow 1992",
+    pages =         "195--202",
+    publisher =     "Springer-Verlag Workshops in Computing",
+    editor =        "J Launchbury and PM Sansom",
+}
 
 
-
-
-
-
-
-
+@article{adams:sets,
+    author =        "Stephen Adams",
+    title =         "Efficient Sets -- A Balancing Act",
+    journal =       "JFP",
+    volume =        "3",
+    number =        "4",
+    year =          "1993",
+    pages =         "553-561",
+}
 
 
 
@@ -362,8 +431,7 @@
 
 @Article{term:erlang,
   author =       "Jurgen Giesl and Thomas Arts",
-  title =        "{V}erification of {E}rlang {P}rocesses by {D}ependency
-                 {P}airs",
+  title =        "{V}erification of {E}rlang {P}rocesses by {D}ependency {P}airs",
   journal =      "Applicable Algebra in Engineering, Communication and
                  Computing",
   volume =       "12",
@@ -754,13 +822,12 @@
 @InProceedings{static_xslt,
   author =       "Akihiko Tozawa",
   title =        "Towards {S}tatic {T}ype {C}hecking for {XSLT}",
-  booktitle =    "DocEng '01: Proceedings of the 2001 ACM Symposium on
-                 Document engineering",
+  booktitle =    "Proc. DocEng '01",
   year =         "2001",
-  ISBN =         "1-58113-432-0",
+  _ISBN =        "1-58113-432-0",
   pages =        "18--27",
   location =     "Atlanta, Georgia, USA",
-  doi =          "http://doi.acm.org/10.1145/502187.502191",
+  _doi =         "http://doi.acm.org/10.1145/502187.502191",
   publisher =    "ACM Press",
   address =      "New York, NY, USA",
 }
