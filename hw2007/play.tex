@@ -333,7 +333,7 @@ uniqueVars :: Expr -> Expr
 uniqueVars x = evalState (traverseM f x) vars
     where
         vars = ['x':show i | i <- [1..]]
-
+    
         f (Var i)  = do  y:ys <- get
                          put ys
                          return (Var y)
@@ -507,14 +507,12 @@ While in other generics libraries it is trivial to write the instances, in our c
 \begin{figure}
 \begin{code}
 instance Play Expr where
-    replaceChildren x =
-        case x of
-            Neg  a    -> ([a]    , \[a']     -> Neg  a'     )
-            Add  a b  -> ([a,b]  , \[a',b']  -> Add  a' b'  )
-            Sub  a b  -> ([a,b]  , \[a',b']  -> Sub  a' b'  )
-            Mul  a b  -> ([a,b]  , \[a',b']  -> Mul  a' b'  )
-            Div  a b  -> ([a,b]  , \[a',b']  -> Div  a' b'  )
-            _         -> ([]     , \[]       -> x           )
+    replaceChildren (Neg  a    )  = ([a]    , \[a']     -> Neg  a'     )
+    replaceChildren (Add  a b  )  = ([a,b]  , \[a',b']  -> Add  a' b'  )
+    replaceChildren (Sub  a b  )  = ([a,b]  , \[a',b']  -> Sub  a' b'  )
+    replaceChildren (Mul  a b  )  = ([a,b]  , \[a',b']  -> Mul  a' b'  )
+    replaceChildren (Div  a b  )  = ([a,b]  , \[a',b']  -> Div  a' b'  )
+    replaceChildren _             = ([]     , \[]       -> x           )
 \end{code}
 \caption{Instance of |Play| for |Expr|.}
 \label{fig:play_expr}
@@ -636,7 +634,7 @@ These transformations are automatically performed by derive.
 
 \section{Multi-variable Play, PlayOn, PlayEx}
 
-To define the PlayEx class, there are three combinatiors that can be used. These automate much of the definition:
+ To define the PlayEx class, there are three combinatiors that can be used. These automate much of the definition:
 
 \begin{code}
 play :: on -> ([with],[with] -> on)
@@ -1570,11 +1568,11 @@ salaryBill2 = sum . map billS . allOverEx
 % \section{Appendix Title}
 %
 % Here is the text of the appendix, if you need one.
-
+\end{comment}
 \acks
 
 The first author is a PhD student supported by a studentship from the Engineering and Physical Sciences Research Council of the UK.
-\end{comment}
+
 
 \bibliographystyle{plainnat}
 \bibliography{play}

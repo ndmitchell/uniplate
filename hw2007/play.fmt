@@ -1,5 +1,6 @@
 %format forall  = "\forall{}"
 %format alpha  = "\alpha{}"
+%format beta  = "\beta{}"
 %format lambda  = "\lambda{}"
 %format phi  = "\phi{}"
 %format <| = "[\!["
