@@ -40,23 +40,6 @@ play f = ([], \[] -> f)
 (|-) (collect,generate) item = (collect,\xs -> generate xs item)
 
 
--- * Dead Combinators
-
-playExDefault :: (Play on, PlayEx on with) => on -> ([with], [with] -> on)
-playExDefault x = (concat currents, generate . zipWith ($) generates . divide currents)
-    where
-        divide [] [] = []
-        divide (x:xs) ys = y1 : divide xs y2
-            where (y1,y2) = splitAt (length x) ys
-    
-        (currents, generates) = unzip $ map replaceType current
-        (current, generate) = replaceChildren x
-
-playMore :: PlayEx a b => (a -> c) -> a -> ([b],[b] -> c)
-playMore part item = (current, part . generate)
-    where (current, generate) = replaceType item
-
-
 -- * The Operations
 
 traverseEx :: PlayEx from to => (to -> to) -> from -> from
