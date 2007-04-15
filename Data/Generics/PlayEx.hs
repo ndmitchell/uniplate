@@ -18,6 +18,30 @@ class Play to => PlayEx from to where
 
 -- * The Combinators
 
+playSelf :: a -> ([a], [a] -> a)
+playSelf x = ([x], \[x] -> x)
+
+
+play :: on -> ([with],[with] -> on)
+play f = ([], \[] -> f)
+
+
+(|+) :: PlayEx item with => ([with], [with] -> item -> on) -> item -> ([with], [with] -> on)
+(|+) f item = (collect2,generate2)
+    where
+        (collectL,generateL) = f
+        (collectR,generateR) = replaceType item
+        collect2 = collectL ++ collectR
+        generate2 xs = generateL a (generateR b)
+            where (a,b) = splitAt (length collect2) xs
+
+
+(|-) :: ([with], [with] -> item -> on) -> item -> ([with], [with] -> on)
+(|-) (collect,generate) item = (collect,\xs -> generate xs item)
+
+
+-- * Dead Combinators
+
 playExDefault :: (Play on, PlayEx on with) => on -> ([with], [with] -> on)
 playExDefault x = (concat currents, generate . zipWith ($) generates . divide currents)
     where
@@ -28,32 +52,9 @@ playExDefault x = (concat currents, generate . zipWith ($) generates . divide cu
         (currents, generates) = unzip $ map replaceType current
         (current, generate) = replaceChildren x
 
-
-playSelf :: a -> ([a], [a] -> a)
-playSelf x = ([x], \[x] -> x)
-
-
 playMore :: PlayEx a b => (a -> c) -> a -> ([b],[b] -> c)
 playMore part item = (current, part . generate)
     where (current, generate) = replaceType item
-
-
-play :: on -> ([with],[with] -> on)
-play f = ([], \[] -> f)
-
-
-(/\) :: PlayEx item with => ([with], [with] -> item -> on) -> item -> ([with], [with] -> on)
-(/\) f item = (collect2,generate2)
-    where
-        (collectL,generateL) = f
-        (collectR,generateR) = replaceType item
-        collect2 = collectL ++ collectR
-        generate2 xs = generateL a (generateR b)
-            where (a,b) = splitAt (length collect2) xs
-
-
-(/\!) :: ([with], [with] -> item -> on) -> item -> ([with], [with] -> on)
-(/\!) (collect,generate) item = (collect,\xs -> generate xs item)
 
 
 -- * The Operations
