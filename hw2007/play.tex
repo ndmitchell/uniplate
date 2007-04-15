@@ -331,7 +331,7 @@ uniqueVars :: Expr -> Expr
 uniqueVars x = evalState (traverseM f x)
     where
         vars = ['x':show i | i <- [1..]]
-    
+
         f (Var i)  = do  y:ys <- get
                          put ys
                          return (Var y)
@@ -543,34 +543,60 @@ getChildren (C (x1::t1) .. (xn::tn))
 Having implemented |getChildren|, we can imagine that it may be natural to implement |setChildren|, which could be combined to create |replaceChildren|. For efficiency reasons these two operations are combined into one, requiring only one examination of each constructor, but we present these two methods separately.
 
 \begin{code}
-setChildren (C (x1::t1) .. (xn::tn))
-    = \ns1 ->  <| t1 |>  x1 ns1  $ \x1'  ns2  ->
-               ..
-               <| tn |>  xn nsn  $ \xn'  _    ->
-               C x1' .. xn'
+type Cont t = [alpha] -> (t,[alpha])
 
-<| Type         |> :: Type -> [alpha] -> (Type -> [alpha] -> r) -> r
-<| None         |> = \x        ns      c -> c x ns
-<| Target       |> = \x        (n:ns)  c -> c n ns
-<| Pair  t1 t2  |> = \(x1,x2)  ns1     c ->
-                               <| t1 |> x1 ns1 $ \x1' ns2 ->
-                               <| t2 |> x2 ns2 $ \x2' ns3 ->
-                               c (x1',x2') ns3
-<| List  t1     |> = list \? <| t1 |>
+setChildren (C (x1::t1) .. (xn::tn))
+    = value' $ const' C <> <| t1 |> x1 <> .. <> <| tn xn |>
+
+<| Type         |> :: Type -> Cont t
+<| None         |> x = const' x
+<| Target       |> x = id' x
+<| Pair t1 t2   |> (x1,x2) = const' (,) <> <| t1 |> x1 <> <| t2 |> x2
+<| List t       |> xs = list' <| t |> xs
     where
-        list fn []      ns c =  c [] ns
-        list fn (x:xs)  ns c =  fn x ns         $ \x'   ns2  ->
-                                list fn xs ns2  $ \xs'  ns3  ->
-                                c (x':xs') ns3
+        list' fn []      = const' []
+        list' fn (x:xs)  = const' (:) <> fn x <> list' fn xs
+
+
+const' :: t -> Cont t
+const' x ns = (x,ns)
+
+id' :: alpha -> Cont alpha
+id' x (n:ns) = (n,ns)
+
+value' :: Cont t -> [alpha] -> t
+value' c ns = fst $ c ns
+
+(<>) :: Cont (a->b) -> Cont a -> Cont b
+(<>) a b ns1 = let (a',ns2) = a ns1
+                   (b',ns3) = b ns2
+               in  (a' b',ns3)
 \end{code}
+
+Of course, all these tuples are very bad for the soul, and should be removed with continuation passing style:
+
+\begin{code}
+type Cont t = [alpha] -> (t -> [alpha] -> r) -> r
+
+const' x ns c = c x ns
+id' x (n:ns) c = c n ns
+value' c ns = c ns const
+
+(<>) a b ns c =  a ns $ \a' ns ->
+                 b ns $ \b' ns ->
+                 c (a' b') ns
+\end{code}
+
+In reality all but the |list'| function are expanded out inline.
+
 
 \subsection{Using Derive}
 
 Apply the presented derivation rules is quite time consuming, and does not produce the cleanest instances. Take for example the type:
 
 \begin{code}
-data Term = Name String
-          | Apply Term [Term]
+data Term  =  Name String
+           |  Apply Term [Term]
 \end{code}
 
 The generated code for the instances would be:
@@ -578,15 +604,12 @@ The generated code for the instances would be:
 \begin{code}
 replaceChildren (Name x1) =
     (concat [const [] x1]
-    ,\ns1 ->  (\x ns c -> c x ns) x1 ns1 $ \x1' _ ->
-              Name x1
+    ,value $ Name <> const' x1
     )
 
 replaceChildren (Apply x1 x2) =
     (concat [(:[]) x1, concatMap (:[]) x2]
-    ,\ns1 ->  (\x (n:ns) c -> c n ns)         x1 ns1 $ \x1' ns2  ->
-              (list (\x (n:ns) c -> c n ns))  x2 ns2 $ \x2' _    ->
-              Apply x1' x2'
+    ,value $ Apply <> id' x1 <> list' x2
     )
 \end{code}
 
