@@ -119,6 +119,8 @@ variables :: Expr -> [String]
 variables x = [y | Var y <- everything x]
 \end{code}
 
+Note that in the above example the type signature is optional, and would be inferred automatically if left absent.
+
 \subsection{Contribution}
 
 Of course, this isn't the first technique for removing the boilerplate, the area has been researched extensively. There are a number of novel features in our approach:
@@ -172,7 +174,7 @@ One use of this mechanism for querying was given in the introduction. For anothe
 
 \begin{code}
 countDivZero :: Expr -> Int
-countDivZero x = length [() | Div _ (Val 0) <- allOver x]
+countDivZero x = length [() | Div _ (Val 0) <- everything x]
 \end{code}
 
 Note that we make essential use of the feature of list comprehensions that if a pattern does not match, then no errors are returned. In other places of the Haskell language, failing to match a pattern results in a pattern-match error.
@@ -207,7 +209,7 @@ This code can be read as applying the subtraction rule where you can, and where 
 Adding additional rules is trivial, let us take the example of:
 
 \begin{code}
-x + y = 2 * x \text{where} x \equiv y
+x + y | x == y = 2 * x
 \end{code}
 
 Now we can add this new rule into our existing traversal:
@@ -328,7 +330,7 @@ Let us assume that each variable wants to be renamed so it is unique.
 
 \begin{code}
 uniqueVars :: Expr -> Expr
-uniqueVars x = evalState (traverseM f x)
+uniqueVars x = evalState (traverseM f x) vars
     where
         vars = ['x':show i | i <- [1..]]
 
@@ -445,25 +447,30 @@ Requiring each class to implement nine separate methods would be overly arduous.
 
 \begin{code}
 replaceChildren :: Play alpha => alpha -> ([alpha], [alpha] -> alpha)
+replaceChildren x = (children,generate)
 \end{code}
 
-The idea is that given an item, you want to return all the children, and a function that will replace all the children. An invariant is that the list given to the second function will be the
-same length as that returned in the first element of the pair. The second invariant is:
+Given |x|, the function |replaceChildren| will return a tuple comprising of: |children| - all the children of the same type; |generate| - a function to generate a new value with a different set of children. The caller of |generate| must ensure that the length of the list given to it is the same as the length of |children|. The implementor must ensure two conditions:
 
 \begin{code}
 forall x `o` x == generate children
     where (children,generate) = replaceChildren x
 \end{code}
 
-For example:
+Firstly, generating a new value using the existing children must give the same value back.
 
 \begin{code}
-replaceChildren (Add x y) = ([x,y], \[x',y'] -> Add x' y')
+forall x ys `o`  length ys == length children =>
+                 fst (replaceChildren (generate ys)) == ys
+    where (children,generate) = replaceChildren 
 \end{code}
 
-The Play class also has one additional method:
+Secondly, after inserting a new set of children, getting those children must return them back.
+
+While the |replaceChildren| function is sufficient to implement all methods, the class also contains one additional function, with a suitable default:
 
 \begin{code}
+getChildren :: alpha -> [alpha]
 getChildren = fst . replaceChildren
 \end{code}
 
@@ -499,7 +506,7 @@ While in other generics libraries it is trivial to write the instances, in our c
 
 \begin{figure}
 \begin{code}
-instance Play Expr of
+instance Play Expr where
     replaceChildren x =
         case x of
             Neg  a    -> ([a]    , \[a']     -> Neg  a'     )
@@ -629,7 +636,7 @@ These transformations are automatically performed by derive.
 
 \section{Multi-variable Play, PlayOn, PlayEx}
 
- To define the PlayEx class, there are three combinatiors that can be used. These automate much of the definition:
+To define the PlayEx class, there are three combinatiors that can be used. These automate much of the definition:
 
 \begin{code}
 play :: on -> ([with],[with] -> on)
