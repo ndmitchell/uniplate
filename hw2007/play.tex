@@ -333,7 +333,7 @@ uniqueVars :: Expr -> Expr
 uniqueVars x = evalState (traverseM f x) vars
     where
         vars = ['x':show i | i <- [1..]]
-    
+
         f (Var i)  = do  y:ys <- get
                          put ys
                          return (Var y)
@@ -462,7 +462,7 @@ Firstly, generating a new value using the existing children must give the same v
 \begin{code}
 forall x ys `o`  length ys == length children =>
                  fst (replaceChildren (generate ys)) == ys
-    where (children,generate) = replaceChildren 
+    where (children,generate) = replaceChildren
 \end{code}
 
 Secondly, after inserting a new set of children, getting those children must return them back.
@@ -551,7 +551,7 @@ Having implemented |getChildren|, we can imagine that it may be natural to imple
 type Cont t = [alpha] -> (t,[alpha])
 
 setChildren (C (x1::t1) .. (xn::tn))
-    = value' $ const' C <> <| t1 |> x1 <> .. <> <| tn xn |>
+    = value' $ const' C <> <| t1 |> x1 <> .. <> <| tn |> xn
 
 <| Type         |> :: Type -> Cont t
 <| None         |> x = const' x
@@ -634,7 +634,57 @@ These transformations are automatically performed by derive.
 
 \section{Multi-variable Play, PlayOn, PlayEx}
 
- To define the PlayEx class, there are three combinatiors that can be used. These automate much of the definition:
+We have introduced |Play| which will operate on values of type |Expr|. Now lets imagine that our |Expr| type is merely the expression type in a language with statements:
+
+\begin{code}
+data Stmt = Assign String Expr
+          | Sequence [Stmt]
+          | If Expr Stmt Stmt
+          | While Expr Stmt
+\end{code}
+
+Now given a value of type |Stmt| there is no easy way to perform queries and extractions upon the |Expr| type embedded in the |Stmt| type using |Play|. We present a solution named |PlayEx|. To take the example of extracting all the variables we can write:
+
+\begin{code}
+variables :: PlayEx beta Expr => beta -> [String]
+variables x = [y | Var y <- everythingEx x]
+\end{code}
+
+Note that this code is now uses the multi-parameter type class |PlayEx|, and permits all expressions containing |Expr| to be used as the input type. This new |variables| function will work on |Expr| and |Stmt|, but also |[Expr]|, |(Expr,Maybe Stmt)| and many more types besides.
+
+Alas |PlayEx| takes us outside the realms of Haskell 98, so after presenting |PlayEx| we give a simple encoding back into Haskell 98 in the form of |PlayOn|. While the |PlayEx| class gives greater flexibility, the |PlayOn| class is still a useful alternative when Haskell 98 compatibility is required.
+
+\subsection{The |PlayEx| class}
+
+\begin{figure}
+\begin{code}
+class Play alpha => PlayEx beta alpha where
+    replaceType :: beta -> ([alpha], [alpha] -> beta)
+
+    getType :: beta -> [alpha]
+    getType = fst . replaceType
+
+instance PlayEx Expr Expr where
+    replaceType x = ([x], \[x'] -> x')
+
+instance PlayEx Stmt Expr where
+    replaceType (Assign n x) = ([x], \[x'] -> Assign n x')
+    replaceType (Sequence xs) = (concatMap replaceType xs,
+        where (gen,rep) = replaceType
+\end{code}
+\caption{|PlayEx| class and sample instances.}
+\label{fig:playex}
+\end{figure}
+
+
+The |PlayEx| class is defined in Figure \ref{fig:playex}. Consider |alpha| to be the type on which to perform operations, and |beta| to be the initial type -- which contains examples of |alpha|. The idea of the |replaceType| function is much the same as |replaceChildren|, but instead of finding then children of this node, you find the occurrences of |alpha| within |beta|.
+
+One this to note, when defining |PlayEx| where |alpha == beta| the program does not descend to the children, but simply returns this particular node.
+
+Writing |PlayEx| can be done following a similar scheme to |Play|. However, the freedom to use multi-parameter type classes can give us a little more freedom. By using overlapping instances, we can use the |/\| combinator:
+
+
+To define the PlayEx class, there are three combinatiors that can be used. These automate much of the definition:
 
 \begin{code}
 play :: on -> ([with],[with] -> on)
