@@ -7,13 +7,24 @@ import Data.Generics.PlayOn
 import Control.Monad
 
 
--- * The Class
+-- * The Classes
 
+-- | Children are defined as the top-most items of type to
+--   /starting at the root/.
 class Play to => PlayEx from to where
     replaceType :: ReplaceType from to
     
     getType :: from -> [to]
     getType = fst . replaceType
+
+
+-- | Children are defined as the top-most items of type to
+--   /starting beneath the root/.
+class PlayAll from to where
+    replaceAll :: ReplaceType from to
+    
+    getAll :: from -> [to]
+    getAll = fst . replaceAll
 
 
 -- * The Combinators

@@ -1,4 +1,4 @@
-{-# OPTIONS_GHC -fglasgow-exts #-}
+{-# OPTIONS_GHC -fglasgow-exts -fallow-undecidable-instances #-}
 
 -- this module should not be imported directly
 
@@ -7,11 +7,10 @@ module Data.Generics.PlayMPTC(module Data.Generics.PlayEx, module Data.Generics.
 import Data.Generics.PlayEx
 
 
-instance (Play with, PlayEx on with) => PlayEx [on] with where
-    replaceType x = (concat currents, zipWith ($) generates . divide currents)
-        where
-            divide [] [] = []
-            divide (x:xs) ys = y1 : divide xs y2
-                where (y1,y2) = splitAt (length x) ys
+instance Play a => PlayEx a a where
+    replaceType = playSelf
 
-            (currents, generates) = unzip $ map replaceType x
+instance (Play b, PlayAll a b) => PlayEx a b where
+    replaceType = replaceAll
+
+

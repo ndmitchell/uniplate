@@ -1,7 +1,7 @@
 
 module Examples.Paper where
 
-import Data.Generics.PlayEx
+import Data.Generics.PlayMPTC
 import Control.Monad.State
 
 
@@ -26,6 +26,21 @@ instance Play Expr where
             _         -> ([]     , \[]       -> x           )
 -}
 
+instance Play Expr where
+    replaceChildren = replaceAll
+
+instance Play a => PlayAll Expr a where
+    replaceAll x =
+        case x of
+            Val a    -> play Val |- a
+            Var a    -> play Var |- a
+            Neg a    -> play Neg |+ a
+            Add a b  -> play Add |+ a |+ b
+            Sub a b  -> play Add |+ a |+ b
+            Mul a b  -> play Add |+ a |+ b
+            Div a b  -> play Add |+ a |+ b
+
+{-
 instance PlayEx Expr Expr where
     replaceType x = playSelf x
 
@@ -50,7 +65,7 @@ instance Play Expr where
             Sub a b  -> play Add |+ a |+ b
             Mul a b  -> play Add |+ a |+ b
             Div a b  -> play Add |+ a |+ b
-
+-}
 
 
 
