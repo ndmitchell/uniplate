@@ -4,14 +4,17 @@ module Data.Generics.PlayEx(module Data.Generics.Play, module Data.Generics.Play
 
 import Data.Generics.Play
 import Data.Generics.PlayOn
+import Data.Typeable
+import Data.Maybe
 import Control.Monad
 
 
 -- * The Classes
 
+
 -- | Children are defined as the top-most items of type to
 --   /starting at the root/.
-class Play to => PlayEx from to where
+class (Typeable from, Typeable to, Play to) => PlayEx from to where
     replaceType :: ReplaceType from to
     
     getType :: from -> [to]
@@ -20,11 +23,19 @@ class Play to => PlayEx from to where
 
 -- | Children are defined as the top-most items of type to
 --   /starting beneath the root/.
-class PlayAll from to where
+class (Typeable from, Typeable to, Play to) => PlayAll from to where
     replaceAll :: ReplaceType from to
     
     getAll :: from -> [to]
     getAll = fst . replaceAll
+
+
+instance PlayAll a b => PlayEx a b where
+    replaceType x = res
+        where
+            res = case asTypeOf (cast x) (Just $ head $ fst res) of
+                      Nothing -> replaceAll x
+                      Just y -> ([y], \[y] -> fromJust $ cast y)
 
 
 -- * The Combinators

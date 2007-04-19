@@ -1,4 +1,5 @@
-{-# OPTIONS_GHC -fglasgow-exts -fallow-undecidable-instances #-}
+{-# OPTIONS_GHC -fglasgow-exts -fallow-undecidable-instances -fallow-incoherent-instances #-}
+
 
 -- this module should not be imported directly
 

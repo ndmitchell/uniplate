@@ -1,7 +1,9 @@
+{-# OPTIONS_GHC -fglasgow-exts -fallow-incoherent-instances -fallow-undecidable-instances #-}
 
 module Examples.Paper where
 
-import Data.Generics.PlayMPTC
+import Data.Generics.PlayEx
+import Data.Typeable
 import Control.Monad.State
 
 
@@ -13,6 +15,12 @@ data Expr  =  Val  Int         -- a literal value
            |  Mul  Expr  Expr  -- multiplication
            |  Div  Expr  Expr  -- division
            deriving (Eq, Show)
+
+
+typename_Expr = mkTyCon "Expr"
+instance Typeable Expr where
+    typeOf _ = mkTyConApp typename_Expr []
+
 
 {-
 instance Play Expr where
@@ -29,7 +37,7 @@ instance Play Expr where
 instance Play Expr where
     replaceChildren = replaceAll
 
-instance Play a => PlayAll Expr a where
+instance (Typeable a, Play a) => PlayAll Expr a where
     replaceAll x =
         case x of
             Val a    -> play Val |- a
@@ -39,6 +47,28 @@ instance Play a => PlayAll Expr a where
             Sub a b  -> play Add |+ a |+ b
             Mul a b  -> play Add |+ a |+ b
             Div a b  -> play Add |+ a |+ b
+
+data Foo a = Foo a
+
+
+typename_Foo = mkTyCon "Foo"
+instance Typeable1 Foo where { typeOf1 _ = mkTyConApp typename_Foo [] }
+instance Typeable a => Typeable (Foo a) where { typeOf = typeOfDefault }
+
+
+instance Typeable (Foo Expr) where
+
+{-
+instance Typeable a => Typeable (Foo a) where
+    typeOf _ = mkTyConApp typename_Foo
+-}
+
+instance (PlayAll a (Foo a), Typeable (Foo a)) => Play (Foo a) where
+    replaceChildren = replaceAll
+
+
+instance (Typeable b, Typeable (Foo a), Play (Foo a), PlayAll a b) => PlayAll (Foo a) b where
+    replaceAll (Foo x) = play Foo |+ x
 
 {-
 instance PlayEx Expr Expr where
