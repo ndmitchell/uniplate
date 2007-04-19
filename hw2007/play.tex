@@ -786,6 +786,18 @@ collect_generate item = fromC $ gfoldl combine create item
 
 \section{Properties and optimisation}
 
+Whether or not you go for this title (but particularly if you do)
+another question to ask is: What functions do we get for the list
+instance of Play/Uni?  That is, given the instance
+
+replaceChildren []     = ([]  , const [])
+replaceChildren (x:xs) = ([xs], (x:)    )
+
+what (familiar?) list-processing functions are equivalent to the
+various generic traversals and queries applied to lists?
+
+
+
 
 \section{The Paradise Benchmark}
 
