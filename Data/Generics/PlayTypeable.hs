@@ -16,10 +16,11 @@ instance (Typeable a, Typeable b, Play b, PlayAll a b) => PlayEx a b where
     replaceType x = res
         where
             res = case asTypeOf (cast x) (Just $ head $ fst res) of
-                      Nothing -> replaceAll x
+                      Nothing -> playAll x
                       Just y -> ([y], \[y] -> fromJust $ cast y)
 
 
+replaceChildrenAll a = playAll a
 
 
 -- | Children are defined as the top-most items of type to
@@ -27,15 +28,7 @@ instance (Typeable a, Typeable b, Play b, PlayAll a b) => PlayEx a b where
 --
 --   This class should only be constructed with 'play', '|+' and '|-'
 class PlayAll from to where
-    replaceAll :: ReplaceType from to
-    
-    getAll :: from -> [to]
-    getAll = fst . replaceAll
-
-
-
-playSelf :: a -> ([a], [a] -> a)
-playSelf x = ([x], \[x] -> x)
+    playAll :: ReplaceType from to
 
 
 play :: on -> ([with],[with] -> on)
