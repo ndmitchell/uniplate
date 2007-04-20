@@ -119,3 +119,8 @@ uniqueVars x = evalState (traverseM f x) vars
         f x        = return x
 
 
+
+instance Play [alpha] where
+    replaceChildren []     = ([]  , const [])
+    replaceChildren (x:xs) = ([xs], \[xs] -> x:xs)
+
