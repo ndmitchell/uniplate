@@ -10,8 +10,6 @@ Exposed-modules:
         Data.Generics.Play
         Data.Generics.PlayOn
         Data.Generics.PlayEx
-        Data.Generics.PlayMPTC
         Data.Generics.PlayTypeable
-        Data.Generics.PlayOverlap
-        Data.Generics.PlaySYB
+        Data.Generics.PlayData
 
