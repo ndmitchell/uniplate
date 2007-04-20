@@ -815,25 +815,38 @@ This has been used extensively in the Yhc compiler.
 
 This section discusses various properties that hold. Some of these could be turned into GHC rules, but this has not been done.
 
+\subsection{General Properties}
+
+\begin{code}
+descend id == id
+traverse id == id
+rewrite (const Nothing) == id
+
+descendM return == return
+rewriteM (return . const Nothing) == return
+traverseM return == return
+
+fold _ const = id
+
+everything . traverse f == map (traverse f) . everything
+\end{code}
+
 \subsection{List Properties}
 
 A list is defined inductively as |data [alpha] = [] || alpha : [alpha]|. We can therefore define a |Play| instance as:
 
 \begin{code}
 instance Play [alpha] where
-    replaceChildren []     = ([]  , const [])
-    replaceChildren (x:xs) = ([xs], (x:)    )
+    replaceChildren []      = ([]    , const []       )
+    replaceChildren (x:xs)  = ([xs]  , \[xs] -> x:xs  )
 \end{code}
 
 Now some common list operations can be represented as traversals:
 
 \begin{code}
-everything = reverse . tails ?
+everything == tails
 \end{code}
 
-\begin{code}
-map = ...
-\end{code}
 
 
 \section{Existing Benchmarks}
