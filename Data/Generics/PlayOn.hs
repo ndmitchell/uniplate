@@ -1,8 +1,11 @@
 
-module Data.Generics.PlayOn(module Data.Generics.Play, module Data.Generics.PlayOn) where
+module Data.Generics.PlayOn(
+    module Data.Generics.Play,
+    module Data.Generics.PlayOn
+    ) where
 
 import Data.Generics.Play
-import Control.Monad
+import Control.Monad(liftM)
 import Data.List(inits,tails)
 
 
