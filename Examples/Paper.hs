@@ -2,7 +2,7 @@
 
 module Examples.Paper where
 
-import Data.Generics.PlayEx
+import Data.Generics.PlayTypeable
 import Data.Typeable
 import Control.Monad.State
 
@@ -16,6 +16,13 @@ data Expr  =  Val  Int         -- a literal value
            |  Div  Expr  Expr  -- division
            deriving (Eq, Show)
 
+data Foo a = Foo a
+
+
+typename_Foo = mkTyCon "Foo"
+instance Typeable1 Foo where { typeOf1 _ = mkTyConApp typename_Foo [] }
+instance Typeable a => Typeable (Foo a) where { typeOf = typeOfDefault }
+
 
 typename_Expr = mkTyCon "Expr"
 instance Typeable Expr where
@@ -23,6 +30,7 @@ instance Typeable Expr where
 
 
 {-
+-- manually written instance
 instance Play Expr where
     replaceChildren x =
         case x of
@@ -35,10 +43,10 @@ instance Play Expr where
 -}
 
 instance Play Expr where
-    replaceChildren = replaceAll
+    replaceChildren = replaceChildrenAll
 
 instance (Typeable a, Play a) => PlayAll Expr a where
-    replaceAll x =
+    playAll x =
         case x of
             Val a    -> play Val |- a
             Var a    -> play Var |- a
@@ -48,54 +56,19 @@ instance (Typeable a, Play a) => PlayAll Expr a where
             Mul a b  -> play Add |+ a |+ b
             Div a b  -> play Add |+ a |+ b
 
-data Foo a = Foo a
 
-
-typename_Foo = mkTyCon "Foo"
-instance Typeable1 Foo where { typeOf1 _ = mkTyConApp typename_Foo [] }
-instance Typeable a => Typeable (Foo a) where { typeOf = typeOfDefault }
-
-
-instance Typeable (Foo Expr) where
 
 {-
 instance Typeable a => Typeable (Foo a) where
     typeOf _ = mkTyConApp typename_Foo
 -}
 
-instance (PlayAll a (Foo a), Typeable (Foo a)) => Play (Foo a) where
-    replaceChildren = replaceAll
+instance (PlayAll a (Foo a), Typeable a) => Play (Foo a) where
+    replaceChildren = replaceChildrenAll
 
 
-instance (Typeable b, Typeable (Foo a), Play (Foo a), PlayAll a b) => PlayAll (Foo a) b where
-    replaceAll (Foo x) = play Foo |+ x
-
-{-
-instance PlayEx Expr Expr where
-    replaceType x = playSelf x
-
-instance Play a => PlayEx Expr a where
-    replaceType x =
-        case x of
-            Val a    -> play Val |- a
-            Var a    -> play Var |- a
-            Neg a    -> play Neg |+ a
-            Add a b  -> play Add |+ a |+ b
-            Sub a b  -> play Add |+ a |+ b
-            Mul a b  -> play Add |+ a |+ b
-            Div a b  -> play Add |+ a |+ b
-
-instance Play Expr where
-    replaceChildren x =
-        case x of
-            Val a    -> play Val |- a
-            Var a    -> play Var |- a
-            Neg a    -> play Neg |+ a
-            Add a b  -> play Add |+ a |+ b
-            Sub a b  -> play Add |+ a |+ b
-            Mul a b  -> play Add |+ a |+ b
-            Div a b  -> play Add |+ a |+ b
--}
+instance (Typeable b, Typeable a, Play b, PlayAll a b) => PlayAll (Foo a) b where
+    playAll (Foo x) = play Foo |+ x
 
 
 
