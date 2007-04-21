@@ -12,7 +12,7 @@ import Data.Generics.PlayEx as Play
 import Data.Generics as SYB
 
 
-tasksExpr = variables ++ zeros
+tasksExpr = variables ++ zeros ++ simplify
 tasksStm = rename ++ symbols ++ constFold
 
 
