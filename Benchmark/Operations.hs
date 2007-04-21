@@ -13,7 +13,7 @@ import Data.Generics as SYB
 
 
 tasksExpr = variables ++ zeros
-tasksStm = rename
+tasksStm = rename ++ symbols
 
 
 -- * SECTION 1
@@ -21,7 +21,7 @@ tasksStm = rename
 
 variables = task "variables" [variables_raw, variables_play, variables_play2, variables_syb, variables_comp]
 
-variables_raw = rawExpr RStrings f
+variables_raw = rawExpr id f
     where
         f (NVar  x    ) = [x]
         f (NVal  x    ) = []
@@ -32,19 +32,19 @@ variables_raw = rawExpr RStrings f
         f (NDiv  x y  ) = f x ++ f y
 
 
-variables_play = playExpr RStrings $ \x -> [y | NVar y <- Play.everything x]
+variables_play = playExpr id $ \x -> [y | NVar y <- Play.everything x]
 
-variables_play2 = alt "fold" $ playExpr RStrings $ fold concat f
+variables_play2 = alt "fold" $ playExpr id $ fold concat f
     where
         f (NVar x) c = x : c
         f _ c = c
 
-variables_syb = sybExpr RStrings $ SYB.everything (++) ([] `mkQ` f)
+variables_syb = sybExpr id $ SYB.everything (++) ([] `mkQ` f)
     where
         f (NVar x) = [x]
         f _ = []
 
-variables_comp = compExpr RStrings f
+variables_comp = compExpr id f
     where
         f :: GExpr a -> [String]
         f (CVar x) = [x]
@@ -54,7 +54,7 @@ variables_comp = compExpr RStrings f
 
 zeros = task "zeros" [zeros_raw, zeros_play, zeros_play2, zeros_syb, zeros_comp]
 
-zeros_raw = rawExpr RInt f
+zeros_raw = rawExpr id f
     where
         f (NDiv  x (NVal 0)) = f x + 1
         f (NVar  x    ) = 0
@@ -65,19 +65,19 @@ zeros_raw = rawExpr RInt f
         f (NMul  x y  ) = f x + f y
         f (NDiv  x y  ) = f x + f y
 
-zeros_play = playExpr RInt $ \x -> length [() | NDiv _ (NVal 0) <- Play.everything x]
+zeros_play = playExpr id $ \x -> length [() | NDiv _ (NVal 0) <- Play.everything x]
 
-zeros_play2 = alt "fold" $ playExpr RInt $ fold sum f
+zeros_play2 = alt "fold" $ playExpr id $ fold sum f
     where
         f (NDiv _ (NVal 0)) c = 1 + c
         f _ c = c
 
-zeros_syb = sybExpr RInt $ SYB.everything (+) (0 `mkQ` f)
+zeros_syb = sybExpr id $ SYB.everything (+) (0 `mkQ` f)
     where
         f (NDiv _ (NVal 0)) = 1
         f _ = 0
 
-zeros_comp = compExpr RInt f
+zeros_comp = compExpr id f
     where
         f :: GExpr a -> Int
         f (CDiv x (CVal 0)) = 1 + f x 
@@ -147,3 +147,19 @@ rename_raw = rawStm2 f
         g (NEAdd a b) = NEAdd (g a) (g b)
         g (NEVar a) = NEVar (rename_op a)
         g x = x
+
+
+
+symbols = task "symbols" [symbols_compos, symbols_play]
+
+rewrapPairC xs = [(rewrapVarC a, rewrapTypC b) | (a,b) <- xs]
+rewrapPairN xs = [(rewrapVarN a, rewrapTypN b) | (a,b) <- xs]
+
+symbols_compos = compStm rewrapPairC f
+    where
+        f :: CTree c -> [(CTree CVar, CTree CTyp)]
+        f t = case t of
+            CSDecl typ var -> [(var,typ)]
+            _ -> composOpMonoid f t
+
+symbols_play = playStm rewrapPairN $ \x -> [(v,t) | NSDecl t v <- everythingEx x]
