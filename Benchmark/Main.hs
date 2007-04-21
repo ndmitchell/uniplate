@@ -35,13 +35,14 @@ exec tsts ops = mapM_ (uncurry $ execTask tsts) (map f tasks)
 
 
 execTask :: [a] -> String -> [(String,a -> Res)] -> IO ()
-execTask tsts name ops | ans == ans = mapM_ f xs
+execTask tsts name ops | ans == ans = do
+        putStrLn $ "== " ++ name ++ " =="
+        mapM_ f xs
     where
         ans = map (snd $ head ops) tests
         tests = concat $ replicate 100 tsts
         xs = Map.toList $ Map.fromList ops
 
-        
         f (name, action) = do
             start <- getCPUTime
             when (ans /= map action tests) $ putStrLn $ "FAILED TO MATCH in " ++ name
