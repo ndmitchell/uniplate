@@ -30,6 +30,17 @@ instance Compos CTree where
         where
             mapM g = foldr (ap . ap (return (:)) . g) (return [])
 
+instance Compos Paradise where
+    compos return ap f t = case t of
+            CC xs -> return CC `ap` mapM f xs
+            CD x y z -> return CD `ap` return x `ap` f y `ap` mapM f z
+            CPU x -> return CPU `ap` f x
+            CDU x -> return CDU `ap` f x
+            CE x y -> return CE `ap` f x `ap` f y
+            _ -> return t
+        where
+            mapM g = foldr (ap . ap (return (:)) . g) (return [])
+
 
 -- stuff from the Compos module
 
@@ -53,6 +64,6 @@ composOpMPlus :: (Compos t, MonadPlus m) => (forall a. t a -> m b) -> t c -> m b
 composOpMPlus = composOpFold mzero mplus
 
 composOpFold :: Compos t => b -> (b -> b -> b) -> (forall a. t a -> b) -> t c -> b
-composOpFold z c f = unC . compos (\_ -> C z) (\(C x) (C y) -> C (c x y)) (C . f)
+composOpFold z c f = unC . compos (\_ -> Comp z) (\(Comp x) (Comp y) -> Comp (c x y)) (Comp . f)
 
-newtype C b a = C { unC :: b }
+newtype Comp b a = Comp { unC :: b }
