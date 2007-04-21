@@ -1,5 +1,5 @@
 
-module Generate(generateExpr, generateStm) where
+module Generate(generateExpr, generateStm,generatePar) where
 
 import Data
 import Control.Monad
@@ -12,6 +12,9 @@ generateExpr n = generateList n
 
 generateStm :: Int -> IO [Stm]
 generateStm n = generateList n
+
+generatePar :: Int -> IO [Company]
+generatePar n = generateList n
 
 
 generateList :: Arbitrary a => Int -> IO [a]
@@ -117,3 +120,50 @@ instance Arbitrary Typ
 
 
 
+instance Arbitrary Company
+    where arbitrary = do x1 <- arbitrary
+                         return (C x1)
+          coarbitrary = error "coarbitrary not yet supported"
+
+
+
+instance Arbitrary Dept
+    where arbitrary = do x1 <- arbitrary
+                         x2 <- arbitrary
+                         x3 <- arbitrary
+                         return (D x1 x2 x3)
+          coarbitrary = error "coarbitrary not yet supported"
+
+
+
+instance Arbitrary Unt
+    where arbitrary = do x <- choose (0, 15)
+                         case x of
+                             0 -> do x1 <- arbitrary
+                                     return (DU x1)
+                             _ -> do x1 <- arbitrary
+                                     return (PU x1)
+          coarbitrary = error "coarbitrary not yet supported"
+
+
+
+instance Arbitrary Employee
+    where arbitrary = do x1 <- arbitrary
+                         x2 <- arbitrary
+                         return (E x1 x2)
+          coarbitrary = error "coarbitrary not yet supported"
+
+
+
+instance Arbitrary Person
+    where arbitrary = do x1 <- arbitrary
+                         x2 <- arbitrary
+                         return (P x1 x2)
+          coarbitrary = error "coarbitrary not yet supported"
+
+
+
+instance Arbitrary Salary
+    where arbitrary = do x1 <- arbitrary
+                         return (S x1)
+          coarbitrary = error "coarbitrary not yet supported"
