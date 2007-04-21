@@ -29,5 +29,10 @@ playInt = playWith RInt
 sybInt  = sybWith  RInt
 compInt = compWith RInt
 
+rawExpr  = rawWith  (RExpr . rewrapN)
+playExpr = playWith (RExpr . rewrapN)
+sybExpr  = sybWith  (RExpr . rewrapN)
+compExpr = compWith (RExpr . rewrapC)
+
 
 alt s (a,b) = (a ++ " " ++ s,b)
