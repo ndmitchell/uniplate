@@ -1,7 +1,7 @@
 -- This module requires tricky CPP'ing
 -- so that you can use 3 different Play instances
 
-module Operations where
+module Operations(tasksExpr) where
 
 import Data
 import DeriveCompos
@@ -12,7 +12,7 @@ import Data.Generics.PlayEx as Play
 import Data.Generics as SYB
 
 
-tasksExpr = [variables]
+tasksExpr = variables
 
 
 -- * SECTION 1

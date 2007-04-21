@@ -4,8 +4,8 @@ module OperationsCommon where
 import Data
 
 
-taskExpr :: String -> [(String,Expr -> Res)] -> (String,[(String,Expr -> Res)])
-taskExpr = (,)
+taskExpr :: String -> [(String,Expr -> Res)] -> [(String,String,Expr -> Res)]
+taskExpr x y = [(x,a,b) | (a,b) <- y]
 
 
 data Res = RStrings [String]
