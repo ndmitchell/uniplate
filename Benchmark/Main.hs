@@ -20,8 +20,10 @@ main = getArgs >>= main2
 main2 [x] = case x of
     "gen" -> do generateExpr 100 >>= print
                 generateStm  100 >>= print
+                generatePar  100 >>= print
     "expr" -> exec testsExpr tasksExpr
     "stm" -> exec testsStm tasksStm
+    "par" -> exec testsPar tasksPar
 
 
 
