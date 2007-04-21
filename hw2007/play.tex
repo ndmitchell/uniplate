@@ -1206,6 +1206,8 @@ salaryBill2 = sum . map billS . allOverEx
 
 \section{Implementation Speed}
 
+note, we change SYB from Float to Int, as otherwise we get stuffed by floating point errors in folds vs sums.
+
 \section{Related Work}
 
 note that compos does NOT have trivial instances, they are type based!
