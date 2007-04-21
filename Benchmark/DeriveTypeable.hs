@@ -15,9 +15,9 @@ instance (Typeable a, Play a) => PlayAll NExpr a where
         case x of
             NNeg a    -> play NNeg |+ a
             NAdd a b  -> play NAdd |+ a |+ b
-            NSub a b  -> play NAdd |+ a |+ b
-            NMul a b  -> play NAdd |+ a |+ b
-            NDiv a b  -> play NAdd |+ a |+ b
+            NSub a b  -> play NSub |+ a |+ b
+            NMul a b  -> play NMul |+ a |+ b
+            NDiv a b  -> play NDiv |+ a |+ b
             _ -> play x
 
 
