@@ -49,3 +49,8 @@ play f = ([], \[] -> f)
 (|-) :: ([with], [with] -> item -> on) -> item -> ([with], [with] -> on)
 (|-) (collect,generate) item = (collect,\xs -> generate xs item)
 
+
+instance (PlayAll from to, Typeable from, Typeable to, Play to) => PlayAll [from] to where
+    playAll x = case x of
+        [] -> play []
+        (x:xs) -> play (:) |+ x |+ xs
