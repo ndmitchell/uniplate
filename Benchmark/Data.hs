@@ -5,76 +5,55 @@ module Data where
 import Data.Generics
 
 
--- common version
-data Expr = Val Int
-          | Add Expr Expr
-          | Sub Expr Expr
-          | Div Expr Expr
-          | Mul Expr Expr
-          | Neg Expr
-          deriving (Show,Eq)
+-- * SECTION 1
+
+data Exp = EAbs String Exp
+         | EApp Exp Exp
+         | EVar String
 
 
 -- normal version
-data NExpr = NVal Int
-           | NAdd NExpr NExpr
-           | NSub NExpr NExpr
-           | NDiv NExpr NExpr
-           | NMul NExpr NExpr
-           | NNeg NExpr
-           deriving (Typeable, Data)
+data NExp = NAbs String NExp
+          | NApp NExp NExp
+          | NVar String
+          deriving (Typeable, Data)
 
 
-data DExpr
+data DExp
 
 -- Compos version
-type CExpr = GExpr DExpr
+type CExp = GExp DExp
 
 -- GADT version
-data GExpr :: * -> * where
-    GVal :: Int -> GExpr DExpr
-    GAdd :: CExpr -> CExpr -> GExpr DExpr
-    GSub :: CExpr -> CExpr -> GExpr DExpr
-    GDiv :: CExpr -> CExpr -> GExpr DExpr
-    GMul :: CExpr -> CExpr -> GExpr DExpr
-    GNeg :: CExpr -> GExpr DExpr
+data GExp :: * -> * where
+    GAbs :: String -> CExp -> GExp DExp
+    GApp :: CExp -> CExp -> GExp DExp
+    GVar :: String -> GExp DExp
 
 
 
-unwrapN :: Expr -> NExpr
+unwrapN :: Exp -> NExp
 unwrapN x = case x of
-    Val x -> NVal x
-    Add x y -> NAdd (unwrapN x) (unwrapN y)
-    Sub x y -> NSub (unwrapN x) (unwrapN y)
-    Div x y -> NDiv (unwrapN x) (unwrapN y)
-    Mul x y -> NMul (unwrapN x) (unwrapN y)
-    Neg x -> NNeg (unwrapN x)
+    EAbs x y -> NAbs x (unwrapN y)
+    EApp x y -> NApp (unwrapN x) (unwrapN y)
+    EVar x -> NVar x
 
-rewrapN :: NExpr -> Expr
+rewrapN :: NExp -> Exp
 rewrapN x = case x of
-    NVal x -> Val x
-    NAdd x y -> Add (rewrapN x) (rewrapN y)
-    NSub x y -> Sub (rewrapN x) (rewrapN y)
-    NDiv x y -> Div (rewrapN x) (rewrapN y)
-    NMul x y -> Mul (rewrapN x) (rewrapN y)
-    NNeg x -> Neg (rewrapN x)
+    NAbs x y -> EAbs x (rewrapN y)
+    NApp x y -> EApp (rewrapN x) (rewrapN y)
+    NVar x -> EVar x
 
 
-unwrapC :: Expr -> CExpr
+unwrapC :: Exp -> CExp
 unwrapC x = case x of
-    Val x -> GVal x
-    Add x y -> GAdd (unwrapC x) (unwrapC y)
-    Sub x y -> GSub (unwrapC x) (unwrapC y)
-    Div x y -> GDiv (unwrapC x) (unwrapC y)
-    Mul x y -> GMul (unwrapC x) (unwrapC y)
-    Neg x -> GNeg (unwrapC x)
+    EAbs x y -> GAbs x (unwrapC y)
+    EApp x y -> GApp (unwrapC x) (unwrapC y)
+    EVar x -> GVar x
 
 
-rewrapC :: CExpr -> Expr
+rewrapC :: CExp -> Exp
 rewrapC x = case x of
-    GVal x -> Val x
-    GAdd x y -> Add (rewrapC x) (rewrapC y)
-    GSub x y -> Sub (rewrapC x) (rewrapC y)
-    GDiv x y -> Div (rewrapC x) (rewrapC y)
-    GMul x y -> Mul (rewrapC x) (rewrapC y)
-    GNeg x -> Neg (rewrapC x)
+    GAbs x y -> EAbs x (rewrapC y)
+    GApp x y -> EApp (rewrapC x) (rewrapC y)
+    GVar x -> EVar x
