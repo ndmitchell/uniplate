@@ -82,3 +82,38 @@ zeros_comp = compInt f
         f (CDiv x (CVal 0)) = 1 + f x 
         f x = composOpFold 0 (+) f x
 
+
+
+simplify = taskExpr "simplify" [simplify_raw,simplify_play,simplify_play2,simplify_syb,simplify_compos]
+
+simplify_raw = rawExpr f
+    where
+        f (NSub x y) = NAdd (f x) (NNeg (f y))
+        f (NAdd x y) = if x1 == y1 then NMul (NVal 2) x1 else NAdd x1 y1
+            where (x1,y1) = (f x,f y)
+        f (NMul x y) = NMul (f x) (f y)
+        f (NDiv x y) = NDiv (f x) (f y)
+        f (NNeg x) = NNeg (f x)
+        f x = x
+
+simp (NSub x y)           = NAdd x (NNeg y)
+simp (NAdd x y) | x == y  = NMul (NVal 2) x
+simp x                    = x
+
+simplify_play = playExpr $ traverse simp
+
+simplify_play2 = alt "rewrite" $ playExpr $ rewrite f
+    where
+        f (NSub x y)           = Just $ NAdd x (NNeg y)
+        f (NAdd x y) | x == y  = Just $ NMul (NVal 2) x
+        f x                    = Nothing
+
+simplify_syb = sybExpr $ everywhere (mkT simp)
+
+simplify_compos = compExpr f
+    where
+        f :: GExpr a -> GExpr a
+        f (CSub x y) = CAdd (f x) (CNeg (f y))
+        f (CAdd x y) = if x1 == y1 then CMul (CVal 2) x1 else CAdd x1 y1
+            where (x1,y1) = (f x,f y)
+        f x = composOp f x
