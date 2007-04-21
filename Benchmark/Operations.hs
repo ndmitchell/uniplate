@@ -14,7 +14,7 @@ import Data.Generics as SYB
 
 tasksExpr = variables ++ zeros ++ simplify
 tasksStm = rename ++ symbols ++ constFold
-tasksPar = increase
+tasksPar = increase ++ incrone
 
 
 -- * SECTION 1
@@ -214,20 +214,24 @@ constFold_raw = rawStm2 f
 
 
 
-increase = task "increase" [increase_play 0.1, increase_syb 0.1, increase_comp 0.1, increase_raw 0.1]
+increase = task "increase" [increase_play v, increase_syb v, increase_comp v, increase_raw v]
+    where v = 0.1
 
 increase_op k (NS s) = NS (s * (1+k))
 
-increase_play k = playPar2 $ traverseEx (increase_op k)
+increase_play k = playPar2 (increase_play_int k)
+increase_play_int k = traverseEx (increase_op k)
 
-increase_comp k = compPar2 $ f k
+increase_comp k = compPar2 $ increase_comp_int k
+increase_comp_int k = f k
     where
         f :: Float -> Paradise c -> Paradise c
         f k c = case c of
             CS s -> CS (s * (1+k))
             _ -> composOp (f k) c
 
-increase_syb k = sybPar2 $ everywhere (mkT (increase_op k))
+increase_syb k = sybPar2 $ increase_syb_int k
+increase_syb_int k = everywhere (mkT (increase_op k))
 
 increase_raw k = rawPar2 c
     where
@@ -239,11 +243,46 @@ increase_raw k = rawPar2 c
 
 
 
+incrone = task "incrone" [incrone_play n v, incrone_syb n v, incrone_comp n v, incrone_raw n v]
+    where v = 0.1; n = "" -- most common department name
+
+incrone_play name k = playPar2 $ traverseEx
+    (\d@(ND n _ _) -> if name == n then increase_play_int k d else d)
+
+incrone_syb n k = sybPar2 $ f n k
+    where
+        f :: Data a => String -> Float -> a -> a
+        f n k a | isDept n a = increase_syb_int k a
+                | otherwise = gmapT (f n k) a
+
+        isDept :: Data a => String -> a -> Bool
+        isDept n = False `mkQ` isDeptD n
+
+        isDeptD n (ND n' _ _) = n==n'
+
+incrone_comp n k = compPar2 $ f n k
+    where
+        f :: String -> Float -> Paradise c -> Paradise c
+        f d k c = case c of
+            CD n _ _ | n == d -> increase_comp_int k c
+            _ -> composOp (f d k) c
+
+incrone_raw n k = rawPar2 c2
+    where
+        c2 (NC x) = NC $ map d2 x
+        d2 (ND x y z) | n == x = ND x (e y) (map u z)
+        d2 (ND x y z) = ND x y (map u2 z)
+        u2 (NPU x) = NPU x
+        u2 (NDU x) = NDU (d2 x)
+
+        d (ND x y z) = ND x (e y) (map u z)
+        u (NPU x) = NPU (e x)
+        u (NDU x) = NDU (d x)
+        e (NE x y) = NE x (increase_op k y)
+
+
+
 {-
-incrOne :: Name -> Float -> Tree c -> Tree c
-incrOne d k c = case c of
-D n _ _ | n == d -> increase k c
-_ -> composOp (incrOne d k) c
 Query functions are also easy to implement:
 salaryBill :: Tree c -> Float
 salaryBill c = case c of
@@ -253,14 +292,6 @@ _ -> composOpFold 0 (+) salaryBill c
 
 More advanced traversal schemes are also supported. This example
 increases the salary of everyone in a named department:
-incrOne :: Data a => Name -> Float -> a -> a
-incrOne n k a | isDept n a = increase k a
-| otherwise = gmapT (incrOne n k) a
-isDept :: Data a => Name -> a -> Bool
-isDept n = False ‘mkQ‘ isDeptD n
-isDeptD :: Name -> Dept -> Bool
-isDeptD n (D n’ _ _) = n==n’
-
 salaryBill :: Company -> Float
 salaryBill = everything (+) (0 ‘mkQ‘ billS)
 
@@ -269,8 +300,6 @@ billS (S f) = f
 
 
 
-incrOne :: PlayEx x Dept => String -> Float -> x -> x
-incrOne name k = traverseEx (\d@(D n _ _) -> if name == n then increase k d else d)
 
 salaryBill :: PlayEx x Salary => x -> Float
 salaryBill x = sum [x | S x <- everythingEx x]
