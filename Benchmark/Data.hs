@@ -242,12 +242,12 @@ data Employee = E Person Salary deriving Show
 data Person = P String String deriving Show
 data Salary = S Float deriving Show
 
-data NCompany = NC [NDept] deriving Show
-data NDept = ND String NEmployee [NUnt] deriving Show
-data NUnt = NPU NEmployee | NDU NDept deriving Show
-data NEmployee = NE NPerson NSalary deriving Show
-data NPerson = NP String String deriving Show
-data NSalary = NS Float deriving Show
+data NCompany = NC [NDept] deriving (Data,Typeable)
+data NDept = ND String NEmployee [NUnt] deriving (Data,Typeable)
+data NUnt = NPU NEmployee | NDU NDept deriving (Data,Typeable)
+data NEmployee = NE NPerson NSalary deriving (Data,Typeable)
+data NPerson = NP String String deriving (Data,Typeable)
+data NSalary = NS Float deriving (Data,Typeable)
 
 
 data CCompany; data CDept
