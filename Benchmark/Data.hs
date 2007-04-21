@@ -105,15 +105,19 @@ data Stm = SDecl Typ Var
          | SAss  Var Exp
          | SBlock [Stm]
          | SReturn Exp
+         deriving (Eq,Show)
 
 data Exp = EStm Stm
          | EAdd Exp Exp
          | EVar Var
          | EInt Int
+         deriving (Eq,Show)
 
 data Var = V String
+         deriving (Eq,Show)
 
 data Typ = T_int | T_float
+         deriving (Eq,Show)
 
 
 data NStm = NSDecl NTyp NVar
