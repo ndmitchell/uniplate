@@ -4,7 +4,8 @@
 
 module Data.Generics.PlayTypeable(
     module Data.Generics.PlayEx,
-    module Data.Generics.PlayTypeable
+    module Data.Generics.PlayTypeable,
+    module Data.Typeable
     ) where
 
 import Data.Generics.PlayEx
