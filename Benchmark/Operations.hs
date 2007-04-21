@@ -12,14 +12,13 @@ import Data.Generics.PlayEx as Play
 import Data.Generics as SYB
 
 
-tasksExpr = variables
+tasksExpr = variables ++ zeros
 
 
 -- * SECTION 1
 
 
 variables = taskExpr "variables" [variables_raw, variables_play, variables_play2, variables_syb, variables_comp]
-
 
 variables_raw = rawStrings f
     where
@@ -49,3 +48,37 @@ variables_comp = compStrings f
         f :: GExpr a -> [String]
         f (CVar x) = [x]
         f x = composOpFold [] (++) f x
+
+
+
+zeros = taskExpr "zeros" [zeros_raw, zeros_play, zeros_play2, zeros_syb, zeros_comp]
+
+zeros_raw = rawInt f
+    where
+        f (NDiv  x (NVal 0)) = f x + 1
+        f (NVar  x    ) = 0
+        f (NVal  x    ) = 0
+        f (NNeg  x    ) = f x
+        f (NAdd  x y  ) = f x + f y
+        f (NSub  x y  ) = f x + f y
+        f (NMul  x y  ) = f x + f y
+        f (NDiv  x y  ) = f x + f y
+
+zeros_play = playInt $ \x -> length [() | NDiv _ (NVal 0) <- Play.everything x]
+
+zeros_play2 = alt "fold" $ playInt $ fold sum f
+    where
+        f (NVar x) c = 1 + c
+        f _ c = c
+
+zeros_syb = sybInt $ SYB.everything (+) (0 `mkQ` f)
+    where
+        f (NDiv _ (NVal 0)) = 1
+        f _ = 0
+
+zeros_comp = compInt f
+    where
+        f :: GExpr a -> Int
+        f (CDiv x (CVal 0)) = 1 + f x 
+        f x = composOpFold 0 (+) f x
+
