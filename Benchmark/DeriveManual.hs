@@ -46,7 +46,7 @@ instance PlayEx NExp NVar where
             
             _ -> ([], \_ -> x)
 
-instance (PlayEx NStm x, Play x) => PlayEx [NStm] x where
+instance (PlayEx y x, Play x) => PlayEx [y] x where
     replaceType [] = ([], \_ -> [])
     replaceType (x:xs) = (get1++get2, \ys -> let (a,b) = splitAt (length get1) ys in gen1 a : gen2 b)
         where
@@ -93,3 +93,30 @@ instance Play NExp where
                 where (get,gen) = replaceType a
             NEAdd a b -> ([a,b], \(a':b':_) -> NEAdd a' b')
             _ -> ([], \_ -> x)
+
+
+instance PlayEx NCompany NSalary where
+    replaceType (NC xs) = (get, \xs -> NC (gen xs))
+        where (get,gen) = replaceType xs
+
+instance PlayEx NDept NSalary where
+    replaceType (ND a (NE b c) d) = (c:get, \(x:xs) -> ND a (NE b x) (gen xs))
+        where (get,gen) = replaceType d
+
+instance PlayEx NUnt NSalary where
+    replaceType (NPU (NE a b)) = ([b], \(x:_) -> NPU (NE a x))
+    replaceType (NDU x) = (get, \xs -> NDU (gen xs))
+        where (get,gen) = replaceType x
+
+instance Play NSalary where
+    replaceChildren x = ([], \_ -> x)
+    
+
+{-
+data NCompany = NC [NDept] deriving Show
+data NDept = ND String NEmployee [NUnt] deriving Show
+data NUnt = NPU NEmployee | NDU NDept deriving Show
+data NEmployee = NE NPerson NSalary deriving Show
+data NPerson = NP String String deriving Show
+data NSalary = NS Float deriving Show
+-}
