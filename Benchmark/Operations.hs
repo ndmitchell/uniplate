@@ -1,7 +1,7 @@
 -- This module requires tricky CPP'ing
 -- so that you can use 3 different Play instances
 
-module Operations(tasksExpr,tasksStm) where
+module Operations(tasksExpr,tasksStm,tasksPar) where
 
 import Data
 import DeriveCompos
@@ -14,6 +14,7 @@ import Data.Generics as SYB
 
 tasksExpr = variables ++ zeros ++ simplify
 tasksStm = rename ++ symbols ++ constFold
+tasksPar = increase
 
 
 -- * SECTION 1
@@ -210,3 +211,67 @@ constFold_raw = rawStm2 f
         g (NEStm x) = NEStm (f x)
         g (NEAdd x y) = NEAdd (g x) (g y)
         g x = x
+
+
+
+increase = task "increase" [increase_play 0.1, increase_syb 0.1, increase_comp 0.1, increase_raw 0.1]
+
+increase_op k (NS s) = NS (s * (1+k))
+
+increase_play k = playPar2 $ traverseEx (increase_op k)
+
+increase_comp k = compPar2 $ f k
+    where
+        f :: Float -> Paradise c -> Paradise c
+        f k c = case c of
+            CS s -> CS (s * (1+k))
+            _ -> composOp (f k) c
+
+increase_syb k = sybPar2 $ everywhere (mkT (increase_op k))
+
+increase_raw k = rawPar2 c
+    where
+        c (NC x) = NC $ map d x
+        d (ND x y z) = ND x (e y) (map u z)
+        u (NPU x) = NPU (e x)
+        u (NDU x) = NDU (d x)
+        e (NE x y) = NE x (increase_op k y)
+
+
+
+{-
+incrOne :: Name -> Float -> Tree c -> Tree c
+incrOne d k c = case c of
+D n _ _ | n == d -> increase k c
+_ -> composOp (incrOne d k) c
+Query functions are also easy to implement:
+salaryBill :: Tree c -> Float
+salaryBill c = case c of
+S s -> s
+_ -> composOpFold 0 (+) salaryBill c
+
+
+More advanced traversal schemes are also supported. This example
+increases the salary of everyone in a named department:
+incrOne :: Data a => Name -> Float -> a -> a
+incrOne n k a | isDept n a = increase k a
+| otherwise = gmapT (incrOne n k) a
+isDept :: Data a => Name -> a -> Bool
+isDept n = False ‘mkQ‘ isDeptD n
+isDeptD :: Name -> Dept -> Bool
+isDeptD n (D n’ _ _) = n==n’
+
+salaryBill :: Company -> Float
+salaryBill = everything (+) (0 ‘mkQ‘ billS)
+
+billS :: Salary -> Float
+billS (S f) = f
+
+
+
+incrOne :: PlayEx x Dept => String -> Float -> x -> x
+incrOne name k = traverseEx (\d@(D n _ _) -> if name == n then increase k d else d)
+
+salaryBill :: PlayEx x Salary => x -> Float
+salaryBill x = sum [x | S x <- everythingEx x]
+-}
