@@ -240,14 +240,14 @@ data Dept = D String Employee [Unt] deriving Show
 data Unt = PU Employee | DU Dept deriving Show
 data Employee = E Person Salary deriving Show
 data Person = P String String deriving Show
-data Salary = S Float deriving Show
+data Salary = S Integer deriving Show
 
 data NCompany = NC [NDept] deriving (Data,Typeable)
 data NDept = ND String NEmployee [NUnt] deriving (Data,Typeable)
 data NUnt = NPU NEmployee | NDU NDept deriving (Data,Typeable)
 data NEmployee = NE NPerson NSalary deriving (Data,Typeable)
 data NPerson = NP String String deriving (Data,Typeable)
-data NSalary = NS Float deriving (Data,Typeable)
+data NSalary = NS Integer deriving (Data,Typeable)
 
 
 data CCompany; data CDept
@@ -261,7 +261,7 @@ data Paradise :: * -> * where
     CDU :: Paradise CDept -> Paradise CUnit
     CE :: Paradise CPerson -> Paradise CSalary -> Paradise CEmployee
     CP :: String -> String -> Paradise CPerson
-    CS :: Float -> Paradise CSalary
+    CS :: Integer -> Paradise CSalary
 
 unwrapCN (C xs) = NC (map unwrapDN xs)
 unwrapDN (D a b c) = ND a (unwrapEN b) (map unwrapUN c)

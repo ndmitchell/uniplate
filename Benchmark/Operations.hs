@@ -14,7 +14,7 @@ import Data.Generics as SYB
 
 tasksExpr = variables ++ zeros ++ simplify
 tasksStm = rename ++ symbols ++ constFold
-tasksPar = increase ++ incrone
+tasksPar = increase ++ incrone ++ bill
 
 
 -- * SECTION 1
@@ -215,9 +215,9 @@ constFold_raw = rawStm2 f
 
 
 increase = task "increase" [increase_play v, increase_syb v, increase_comp v, increase_raw v]
-    where v = 0.1
+    where v = 100
 
-increase_op k (NS s) = NS (s * (1+k))
+increase_op k (NS s) = NS (s+k)
 
 increase_play k = playPar2 (increase_play_int k)
 increase_play_int k = traverseEx (increase_op k)
@@ -225,9 +225,9 @@ increase_play_int k = traverseEx (increase_op k)
 increase_comp k = compPar2 $ increase_comp_int k
 increase_comp_int k = f k
     where
-        f :: Float -> Paradise c -> Paradise c
+        f :: Integer -> Paradise c -> Paradise c
         f k c = case c of
-            CS s -> CS (s * (1+k))
+            CS s -> CS (s+k)
             _ -> composOp (f k) c
 
 increase_syb k = sybPar2 $ increase_syb_int k
@@ -244,14 +244,14 @@ increase_raw k = rawPar2 c
 
 
 incrone = task "incrone" [incrone_play n v, incrone_syb n v, incrone_comp n v, incrone_raw n v]
-    where v = 0.1; n = "" -- most common department name
+    where v = 100; n = "" -- most common department name
 
 incrone_play name k = playPar2 $ traverseEx
     (\d@(ND n _ _) -> if name == n then increase_play_int k d else d)
 
 incrone_syb n k = sybPar2 $ f n k
     where
-        f :: Data a => String -> Float -> a -> a
+        f :: Data a => String -> Integer -> a -> a
         f n k a | isDept n a = increase_syb_int k a
                 | otherwise = gmapT (f n k) a
 
@@ -262,7 +262,7 @@ incrone_syb n k = sybPar2 $ f n k
 
 incrone_comp n k = compPar2 $ f n k
     where
-        f :: String -> Float -> Paradise c -> Paradise c
+        f :: String -> Integer -> Paradise c -> Paradise c
         f d k c = case c of
             CD n _ _ | n == d -> increase_comp_int k c
             _ -> composOp (f d k) c
@@ -282,25 +282,24 @@ incrone_raw n k = rawPar2 c2
 
 
 
-{-
-Query functions are also easy to implement:
-salaryBill :: Tree c -> Float
-salaryBill c = case c of
-S s -> s
-_ -> composOpFold 0 (+) salaryBill c
+bill = task "bill" [bill_play,bill_syb,bill_raw,bill_comp]
 
+bill_comp = compPar id f
+    where
+        f :: Paradise c -> Integer
+        f c = case c of
+            CS s -> s
+            _ -> composOpFold 0 (+) f c
 
-More advanced traversal schemes are also supported. This example
-increases the salary of everyone in a named department:
-salaryBill :: Company -> Float
-salaryBill = everything (+) (0 ‘mkQ‘ billS)
+bill_syb = sybPar id $ SYB.everything (+) (0 `mkQ` billS)
+    where billS (NS x) = x
 
-billS :: Salary -> Float
-billS (S f) = f
+bill_play = playPar id $ \x -> sum [x | NS x <- everythingEx x]
 
-
-
-
-salaryBill :: PlayEx x Salary => x -> Float
-salaryBill x = sum [x | S x <- everythingEx x]
--}
+bill_raw = rawPar id c
+    where
+        c (NC x) = sum (map d x)
+        d (ND x y z) = e y + sum (map u z)
+        u (NPU x) = e x
+        u (NDU x) = d x
+        e (NE x (NS y)) = y
