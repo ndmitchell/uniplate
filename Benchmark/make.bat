@@ -1,5 +1,5 @@
 mkdir obj
-set comp=ghc --make -odir obj -hidir obj -i. -i..
+set comp=ghc --make -odir obj -hidir obj -i. -i.. %1
 %comp% OperationsData.hs
 %comp% OperationsTypeable.hs
 %comp% OperationsAll.hs
