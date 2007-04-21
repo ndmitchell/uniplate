@@ -1,2 +1,6 @@
 mkdir obj
-ghc --make Main.hs -odir obj -hidir obj -o benchmark.exe -i.. -O2
+set comp=ghc --make -odir obj -hidir obj -i. -i..
+%comp% OperationsData.hs
+%comp% OperationsTypeable.hs
+%comp% OperationsAll.hs
+%comp% Main.hs -o benchmark.exe
