@@ -7,11 +7,15 @@ import Data.Monoid
 import Control.Monad.Identity
 
 
-instance Compos GExp where
+instance Compos GExpr where
     compos return ap f t = case t of
-        GAbs x y -> return GAbs `ap` return x `ap` f y
-        GApp x y -> return GApp `ap` f x `ap` return y
-        GVar x -> return GVar `ap` return x
+        CVal x -> return CVal `ap` return x
+        CVar x -> return CVar `ap` return x
+        CNeg x -> return CNeg `ap` f x
+        CAdd x y -> return CAdd `ap` f x `ap` f y
+        CSub x y -> return CSub `ap` f x `ap` f y
+        CMul x y -> return CMul `ap` f x `ap` f y
+        CDiv x y -> return CDiv `ap` f x `ap` f y
 
 
 -- stuff from the Compos module
