@@ -232,3 +232,67 @@ rewrapTypC x = case x of
     CT_float -> T_float
 
 
+-- * SECTION 3
+
+
+data Company = C [Dept] deriving Show
+data Dept = D String Employee [Unt] deriving Show
+data Unt = PU Employee | DU Dept deriving Show
+data Employee = E Person Salary deriving Show
+data Person = P String String deriving Show
+data Salary = S Float deriving Show
+
+data NCompany = NC [NDept] deriving Show
+data NDept = ND String NEmployee [NUnt] deriving Show
+data NUnt = NPU NEmployee | NDU NDept deriving Show
+data NEmployee = NE NPerson NSalary deriving Show
+data NPerson = NP String String deriving Show
+data NSalary = NS Float deriving Show
+
+
+data CCompany; data CDept
+data CUnit; data CEmployee
+data CPerson; data CSalary
+
+data Paradise :: * -> * where
+    CC :: [Paradise CDept] -> Paradise CCompany
+    CD :: String -> Paradise CEmployee -> [Paradise CUnit] -> Paradise CDept
+    CPU :: Paradise CEmployee -> Paradise CUnit
+    CDU :: Paradise CDept -> Paradise CUnit
+    CE :: Paradise CPerson -> Paradise CSalary -> Paradise CEmployee
+    CP :: String -> String -> Paradise CPerson
+    CS :: Float -> Paradise CSalary
+
+unwrapCN (C xs) = NC (map unwrapDN xs)
+unwrapDN (D a b c) = ND a (unwrapEN b) (map unwrapUN c)
+unwrapUN (PU a) = NPU (unwrapEN a)
+unwrapUN (DU a) = NDU (unwrapDN a)
+unwrapEN (E a b) = NE (unwrapPN a) (unwrapSN b)
+unwrapPN (P a b) = NP a b
+unwrapSN (S a) = NS a
+
+rewrapCN (NC xs) = C (map rewrapDN xs)
+rewrapDN (ND a b c) = D a (rewrapEN b) (map rewrapUN c)
+rewrapUN (NPU a) = PU (rewrapEN a)
+rewrapUN (NDU a) = DU (rewrapDN a)
+rewrapEN (NE a b) = E (rewrapPN a) (rewrapSN b)
+rewrapPN (NP a b) = P a b
+rewrapSN (NS a) = S a
+
+unwrapCC (C xs) = CC (map unwrapDC xs)
+unwrapDC (D a b c) = CD a (unwrapEC b) (map unwrapUC c)
+unwrapUC (PU a) = CPU (unwrapEC a)
+unwrapUC (DU a) = CDU (unwrapDC a)
+unwrapEC (E a b) = CE (unwrapPC a) (unwrapSC b)
+unwrapPC (P a b) = CP a b
+unwrapSC (S a) = CS a
+
+rewrapCC (CC xs) = C (map rewrapDC xs)
+rewrapDC (CD a b c) = D a (rewrapEC b) (map rewrapUC c)
+rewrapUC (CPU a) = PU (rewrapEC a)
+rewrapUC (CDU a) = DU (rewrapDC a)
+rewrapEC (CE a b) = E (rewrapPC a) (rewrapSC b)
+rewrapPC (CP a b) = P a b
+rewrapSC (CS a) = S a
+
+
