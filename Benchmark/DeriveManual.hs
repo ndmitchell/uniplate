@@ -110,7 +110,17 @@ instance PlayEx NUnt NSalary where
 
 instance Play NSalary where
     replaceChildren x = ([], \_ -> x)
-    
+
+instance PlayEx NCompany NDept where
+    replaceType (NC x) = (x, NC)
+
+instance PlayEx NUnt NDept where
+    replaceType (NDU x) = ([x], \(x':_) -> NDU x')
+    replaceType x = ([], \_ -> x)
+
+instance Play NDept where
+    replaceChildren (ND a b c) = (get, \xs -> ND a b (gen xs))
+        where (get,gen) = replaceType c
 
 {-
 data NCompany = NC [NDept] deriving Show
