@@ -1,5 +1,5 @@
 
-module OperationsAll(tasksExpr, tasksStm) where
+module OperationsAll(tasksExpr, tasksStm, tasksPar) where
 
 import qualified Operations
 import qualified OperationsTypeable
@@ -16,6 +16,10 @@ tasksExpr = Operations.tasksExpr ++
 tasksStm  = Operations.tasksStm ++
             renPlay "play typ" OperationsTypeable.tasksStm ++
             renPlay "play data" OperationsData.tasksStm
+
+tasksPar  = Operations.tasksPar ++
+            renPlay "play typ" OperationsTypeable.tasksPar ++
+            renPlay "play data" OperationsData.tasksPar
 
 
 
