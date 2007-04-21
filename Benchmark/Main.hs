@@ -18,8 +18,10 @@ import OperationsAll
 main = getArgs >>= main2
 
 main2 [x] = case x of
-    "gen" -> generate 100 >>= print
-    "expr" -> exec testset tasksExpr
+    "gen" -> do generateExpr 100 >>= print
+                generateStm  100 >>= print
+    "expr" -> exec testsExpr tasksExpr
+    "stm" -> exec testsStm tasksStm
 
 
 
