@@ -23,3 +23,5 @@ playStrings = playWith RStrings
 sybStrings  = sybWith  RStrings
 compStrings = compWith RStrings
 
+
+alt s (a,b) = (a ++ " " ++ s,b)
