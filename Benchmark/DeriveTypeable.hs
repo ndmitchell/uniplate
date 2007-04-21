@@ -55,3 +55,31 @@ instance (Typeable a, Play a) => PlayAll NVar a where
 
 instance (Typeable a, Play a) => PlayAll NTyp a where
     playAll x = play x
+
+
+
+instance Play NCompany where replaceChildren = replaceChildrenAll
+instance Play NDept where replaceChildren = replaceChildrenAll
+instance Play NUnt where replaceChildren = replaceChildrenAll
+instance Play NEmployee where replaceChildren = replaceChildrenAll
+instance Play NPerson where replaceChildren = replaceChildrenAll
+instance Play NSalary where replaceChildren = replaceChildrenAll
+
+instance (Typeable a, Play a) => PlayAll NCompany a where
+    playAll (NC x) = play NC |+ x
+
+instance (Typeable a, Play a) => PlayAll NDept a where
+    playAll (ND x y z) = play (ND x) |+ y |+ z
+
+instance (Typeable a, Play a) => PlayAll NUnt a where
+    playAll (NPU x) = play NPU |+ x
+    playAll (NDU x) = play NDU |+ x
+
+instance (Typeable a, Play a) => PlayAll NEmployee a where
+    playAll (NE x y) = play NE |+ x |+ y
+
+instance (Typeable a, Play a) => PlayAll NPerson a where
+    playAll x = play x
+
+instance (Typeable a, Play a) => PlayAll NSalary a where
+    playAll x = play x
