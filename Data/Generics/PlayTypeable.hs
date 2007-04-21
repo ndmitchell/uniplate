@@ -18,7 +18,7 @@ instance (Typeable a, Typeable b, Play b, PlayAll a b) => PlayEx a b where
         where
             res = case asTypeOf (cast x) (Just $ head $ fst res) of
                       Nothing -> playAll x
-                      Just y -> ([y], \[y] -> fromJust $ cast y)
+                      Just y -> ([y], \(y:_) -> fromJust $ cast y)
 
 
 replaceChildrenAll a = playAll a
@@ -33,7 +33,7 @@ class PlayAll from to where
 
 
 play :: on -> ([with],[with] -> on)
-play f = ([], \[] -> f)
+play f = ([], \_ -> f)
 
 
 (|+) :: PlayEx item with => ([with], [with] -> item -> on) -> item -> ([with], [with] -> on)
