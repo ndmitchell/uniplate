@@ -10,6 +10,7 @@ import Data.Generics
 data Exp = EAbs String Exp
          | EApp Exp Exp
          | EVar String
+         deriving (Show, Read)
 
 
 -- normal version
