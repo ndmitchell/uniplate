@@ -14,7 +14,7 @@ data Expr  =  Val  Int         -- a literal value
            |  Sub  Expr  Expr  -- subtraction
            |  Mul  Expr  Expr  -- multiplication
            |  Div  Expr  Expr  -- division
-           deriving (Eq,Show,Read)
+           deriving (Eq,Show)
 
 
 -- normal version
@@ -96,3 +96,131 @@ rewrapC x = case x of
     CSub x y -> Sub (rewrapC x) (rewrapC y)
     CMul x y -> Mul (rewrapC x) (rewrapC y)
     CDiv x y -> Div (rewrapC x) (rewrapC y)
+
+
+-- * SECTION 2
+
+
+data Stm = SDecl Typ Var
+         | SAss  Var Exp
+         | SBlock [Stm]
+         | SReturn Exp
+
+data Exp = EStm Stm
+         | EAdd Exp Exp
+         | EVar Var
+         | EInt Int
+
+data Var = V String
+
+data Typ = T_int | T_float
+
+
+data NStm = NSDecl NTyp NVar
+         | NSAss  NVar NExp
+         | NSBlock [NStm]
+         | NSReturn NExp
+
+data NExp = NEStm NStm
+         | NEAdd NExp NExp
+         | NEVar NVar
+         | NEInt Int
+
+data NVar = NV String
+
+data NTyp = NT_int | NT_float
+
+
+data CStm; data CExp; data CVar; data CTyp
+
+data CTree :: * -> * where
+    CSDecl :: CTree CTyp -> CTree CVar -> CTree CStm
+    CSAss :: CTree CVar -> CTree CExp -> CTree CStm
+    CSBlock :: [CTree CStm] -> CTree CStm
+    CSReturn :: CTree CExp -> CTree CStm
+    CEStm :: CTree CStm -> CTree CExp
+    CEAdd :: CTree CExp -> CTree CExp -> CTree CExp
+    CEVar :: CTree CVar -> CTree CExp
+    CEInt :: Int -> CTree CExp
+    CV :: String -> CTree CVar
+    CT_int :: CTree CTyp
+    CT_float :: CTree CTyp
+
+
+unwrapStmN x = case x of
+    SDecl x y -> NSDecl (unwrapTypN x) (unwrapVarN y)
+    SAss x y -> NSAss (unwrapVarN x) (unwrapExpN y)
+    SBlock x -> NSBlock (map unwrapStmN x)
+    SReturn x -> NSReturn (unwrapExpN x)
+
+unwrapExpN x = case x of
+    EStm x -> NEStm (unwrapStmN x)
+    EAdd x y -> NEAdd (unwrapExpN x) (unwrapExpN y)
+    EVar x -> NEVar (unwrapVarN x)
+    EInt x -> NEInt x
+
+unwrapVarN (V x) = (NV x)
+
+unwrapTypN x = case x of
+    T_int -> NT_int
+    T_float -> NT_float
+
+
+rewrapStmN x = case x of
+    NSDecl x y -> SDecl (rewrapTypN x) (rewrapVarN y)
+    NSAss x y -> SAss (rewrapVarN x) (rewrapExpN y)
+    NSBlock x -> SBlock (map rewrapStmN x)
+    NSReturn x -> SReturn (rewrapExpN x)
+
+rewrapExpN x = case x of
+    NEStm x -> EStm (rewrapStmN x)
+    NEAdd x y -> EAdd (rewrapExpN x) (rewrapExpN y)
+    NEVar x -> EVar (rewrapVarN x)
+    NEInt x -> EInt x
+
+rewrapVarN (NV x) = (V x)
+
+rewrapTypN x = case x of
+    NT_int -> T_int
+    NT_float -> T_float
+
+
+
+unwrapStmC x = case x of
+    SDecl x y -> CSDecl (unwrapTypC x) (unwrapVarC y)
+    SAss x y -> CSAss (unwrapVarC x) (unwrapExpC y)
+    SBlock x -> CSBlock (map unwrapStmC x)
+    SReturn x -> CSReturn (unwrapExpC x)
+
+unwrapExpC x = case x of
+    EStm x -> CEStm (unwrapStmC x)
+    EAdd x y -> CEAdd (unwrapExpC x) (unwrapExpC y)
+    EVar x -> CEVar (unwrapVarC x)
+    EInt x -> CEInt x
+
+unwrapVarC (V x) = (CV x)
+
+unwrapTypC x = case x of
+    T_int -> CT_int
+    T_float -> CT_float
+
+
+rewrapStmC x = case x of
+    CSDecl x y -> SDecl (rewrapTypC x) (rewrapVarC y)
+    CSAss x y -> SAss (rewrapVarC x) (rewrapExpC y)
+    CSBlock x -> SBlock (map rewrapStmC x)
+    CSReturn x -> SReturn (rewrapExpC x)
+
+rewrapExpC x = case x of
+    CEStm x -> EStm (rewrapStmC x)
+    CEAdd x y -> EAdd (rewrapExpC x) (rewrapExpC y)
+    CEVar x -> EVar (rewrapVarC x)
+    CEInt x -> EInt x
+
+rewrapVarC (CV x) = (V x)
+
+rewrapTypC x = case x of
+    CT_int -> T_int
+    CT_float -> T_float
+
+
