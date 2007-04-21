@@ -5,6 +5,7 @@ import System.Environment
 import System.CPUTime
 import Control.Monad
 import Data.List
+import System.IO
 import qualified Data.Map as Map
 
 import Testset
@@ -23,29 +24,38 @@ main2 [x] = case x of
 
 
 groupOn f xs = groupBy ((==) `on` f) $ sortBy (compare `on` f) xs
-    where on g f x y = g (f x) (f y)
+
+on g f x y = g (f x) (f y)
 
 fst3 (a,b,c) = a
 
 exec :: [a] -> [(String,String,a -> Res)] -> IO ()
-exec tsts ops = mapM_ (uncurry $ execTask tsts) (map f tasks)
+exec tsts ops = do
+        hSetBuffering stdout NoBuffering
+        mapM_ (uncurry $ execTask tsts) (map f tasks)
     where
         tasks = groupOn fst3 ops
-        f xs = (fst3 (head xs), [(b,c) | (a,b,c) <- xs])
+        f xs = (fst3 (head xs), Map.toList $ Map.fromList [(b,c) | (a,b,c) <- xs])
 
 
 execTask :: [a] -> String -> [(String,a -> Res)] -> IO ()
 execTask tsts name ops | ans == ans = do
         putStrLn $ "== " ++ name ++ " =="
-        mapM_ f xs
+        res <- mapM f ops
+        putChar '\n'
+        showTable $ sortBy (compare `on` snd) $ zip (map fst ops) res
     where
+        showTable xs = mapM_ (putStrLn . g) xs
+            where
+                g x@(a,b) = a ++ replicate (4 + width - length (show x)) ' ' ++ show b
+                width = maximum $ map (length . show) xs
+    
         ans = map (snd $ head ops) tests
         tests = concat $ replicate 100 tsts
-        xs = Map.toList $ Map.fromList ops
 
         f (name, action) = do
             start <- getCPUTime
             when (ans /= map action tests) $ putStrLn $ "FAILED TO MATCH in " ++ name
             end <- getCPUTime
-            putStrLn $ name ++ " took \t" ++ show ((end - start) `div` 1000000)
-
+            putChar '.'
+            return $ (end - start) `div` 1000000
