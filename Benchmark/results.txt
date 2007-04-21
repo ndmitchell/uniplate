@@ -1,0 +1,85 @@
+= EXPR =
+== simplify ==
+.........
+raw                   718750
+comp                  843750
+play                  859375
+play rewrite         1078125
+play typ             1281250
+syb                  1609375
+play typ rewrite     1812500
+play data            2062500
+play data rewrite    3125000
+== variables ==
+.........
+raw                203125
+comp               250000
+play               359375
+play fold          421875
+play typ           531250
+play typ fold      593750
+syb               1078125
+play data         1203125
+play data fold    1296875
+== zeros ==
+.........
+raw                 46875
+comp               109375
+play               250000
+play fold          265625
+play typ           406250
+play typ fold      453125
+syb               1000000
+play data         1062500
+play data fold    1109375
+
+= STM =
+== constFold ==
+.....
+play         1062500
+comp         1156250
+play typ     1687500
+syb          2156250
+play data    3406250
+== rename ==
+......
+raw          1046875
+comp         1187500
+play         1281250
+play typ     1968750
+syb          2218750
+play data    3531250
+== symbols ==
+......
+raw           218750
+comp          296875
+play          359375
+play typ      640625
+syb          1281250
+play data    1343750
+
+= PAR =
+== bill ==
+......
+raw           31250
+play          62500
+comp          78125
+play typ     218750
+syb          703125
+play data    734375
+== increase ==
+......
+raw           359375
+play          437500
+comp          515625
+play typ      734375
+syb          1062500
+play data    1203125
+== incrone ==
+......
+raw           343750
+play          375000
+comp          500000
+play typ      671875
+syb           796875
+play data    1203125
