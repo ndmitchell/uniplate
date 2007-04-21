@@ -9,13 +9,26 @@ import Control.Monad.Identity
 
 instance Compos GExpr where
     compos return ap f t = case t of
-        CVal x -> return CVal `ap` return x
-        CVar x -> return CVar `ap` return x
         CNeg x -> return CNeg `ap` f x
         CAdd x y -> return CAdd `ap` f x `ap` f y
         CSub x y -> return CSub `ap` f x `ap` f y
         CMul x y -> return CMul `ap` f x `ap` f y
         CDiv x y -> return CDiv `ap` f x `ap` f y
+        x -> return x
+
+
+instance Compos CTree where
+    compos return ap f t = case t of
+            CSDecl x y -> return CSDecl `ap` f x `ap` f y
+            CSAss x y -> return CSAss `ap` f x `ap` f y
+            CSBlock xs -> return CSBlock `ap` mapM f xs
+            CSReturn x -> return CSReturn `ap` f x
+            CEAdd x y -> return CEAdd `ap` f x `ap` f y
+            CEStm x -> return CEStm `ap` f x
+            CEVar x -> return CEVar `ap` f x
+            _ -> return t
+        where
+            mapM g = foldr (ap . ap (return (:)) . g) (return [])
 
 
 -- stuff from the Compos module
