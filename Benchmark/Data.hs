@@ -124,15 +124,19 @@ data NStm = NSDecl NTyp NVar
          | NSAss  NVar NExp
          | NSBlock [NStm]
          | NSReturn NExp
+         deriving (Data,Typeable)
 
 data NExp = NEStm NStm
          | NEAdd NExp NExp
          | NEVar NVar
          | NEInt Int
+         deriving (Data,Typeable)
 
 data NVar = NV String
+         deriving (Data,Typeable)
 
 data NTyp = NT_int | NT_float
+         deriving (Data,Typeable)
 
 
 data CStm; data CExp; data CVar; data CTyp
