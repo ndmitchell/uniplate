@@ -17,14 +17,16 @@ import OperationsAll
 
 main = getArgs >>= main2
 
-main2 [x] = case x of
+main2 [x] = case (dropWhile (== '-') x) of
     "gen" -> do generateExpr 100 >>= print
                 generateStm  100 >>= print
                 generatePar  100 >>= print
-    "expr" -> exec testsExpr tasksExpr
-    "stm" -> exec testsStm tasksStm
-    "par" -> exec testsPar tasksPar
+    "expr" -> exec (n*10) testsExpr tasksExpr
+    "stm" -> exec (n*3) testsStm tasksStm
+    "par" -> exec (n*1) testsPar tasksPar
 
+    where
+        n = 10 ^ length (takeWhile (== '-') x)
 
 
 groupOn f xs = groupBy ((==) `on` f) $ sortBy (compare `on` f) xs
@@ -33,17 +35,17 @@ on g f x y = g (f x) (f y)
 
 fst3 (a,b,c) = a
 
-exec :: [a] -> [(String,String,a -> String)] -> IO ()
-exec tsts ops = do
+exec :: Int -> [a] -> [(String,String,a -> String)] -> IO ()
+exec count tsts ops = do
         hSetBuffering stdout NoBuffering
-        mapM_ (uncurry $ execTask tsts) (map f tasks)
+        mapM_ (uncurry $ execTask count tsts) (map f tasks)
     where
         tasks = groupOn fst3 ops
         f xs = (fst3 (head xs), Map.toList $ Map.fromList [(b,c) | (a,b,c) <- xs])
 
 
-execTask :: [a] -> String -> [(String,a -> String)] -> IO ()
-execTask tsts name ops | ans == ans = do
+execTask :: Int -> [a] -> String -> [(String,a -> String)] -> IO ()
+execTask count tsts name ops | ans == ans = do
         putStrLn $ "== " ++ name ++ " =="
         res <- mapM f ops
         putChar '\n'
@@ -55,7 +57,7 @@ execTask tsts name ops | ans == ans = do
                 width = maximum $ map (length . show) xs
     
         ans = map (snd $ head ops) tests
-        tests = concat $ replicate 100 tsts
+        tests = concat $ replicate count tsts
 
         f (name, action) = do
             start <- getCPUTime
