@@ -10,6 +10,7 @@ taskExpr x y = [(x,a,b) | (a,b) <- y]
 
 data Res = RStrings [String]
          | RExpr Expr
+         deriving (Show,Eq)
 
 
 rawWith  f g = ("raw" , f . g . unwrapN)
