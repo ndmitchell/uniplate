@@ -43,7 +43,7 @@ play f = ([], \_ -> f)
         (collectR,generateR) = replaceType item
         collect2 = collectL ++ collectR
         generate2 xs = generateL a (generateR b)
-            where (a,b) = splitAt (length collect2) xs
+            where (a,b) = splitAt (length collectL) xs
 
 
 (|-) :: ([with], [with] -> item -> on) -> item -> ([with], [with] -> on)
