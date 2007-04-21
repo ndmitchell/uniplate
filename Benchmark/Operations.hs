@@ -150,7 +150,7 @@ rename_raw = rawStm2 f
 
 
 
-symbols = task "symbols" [symbols_compos, symbols_play]
+symbols = task "symbols" [symbols_compos,symbols_play,symbols_syb,symbols_raw]
 
 rewrapPairC xs = [(rewrapVarC a, rewrapTypC b) | (a,b) <- xs]
 rewrapPairN xs = [(rewrapVarN a, rewrapTypN b) | (a,b) <- xs]
@@ -163,3 +163,19 @@ symbols_compos = compStm rewrapPairC f
             _ -> composOpMonoid f t
 
 symbols_play = playStm rewrapPairN $ \x -> [(v,t) | NSDecl t v <- everythingEx x]
+
+symbols_syb = sybStm rewrapPairN $ SYB.everything (++) ([] `mkQ` f)
+    where
+        f (NSDecl t v) = [(v,t)]
+        f _ = []
+
+symbols_raw = rawStm rewrapPairN f
+    where
+        f (NSDecl a b) = [(b,a)]
+        f (NSAss a b) = g b
+        f (NSBlock a) = concatMap f a
+        f (NSReturn a) = g a
+        
+        g (NEStm a) = f a
+        g (NEAdd a b) = g a ++ g b
+        g x = []
