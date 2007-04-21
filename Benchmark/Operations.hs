@@ -13,7 +13,7 @@ import Data.Generics as SYB
 
 
 tasksExpr = variables ++ zeros
-tasksStm = rename ++ symbols
+tasksStm = rename ++ symbols ++ constFold
 
 
 -- * SECTION 1
@@ -179,3 +179,34 @@ symbols_raw = rawStm rewrapPairN f
         g (NEStm a) = f a
         g (NEAdd a b) = g a ++ g b
         g x = []
+
+
+
+constFold = task "constFold" [constFold_compos,constFold_play,constFold_syb]
+
+constFold_compos = compStm2 f
+    where
+        f :: CTree c -> CTree c
+        f e = case e of
+            CEAdd x y -> case (f x, f y) of
+                            (CEInt n, CEInt m) -> CEInt (n+m)
+                            (x',y') -> CEAdd x' y'
+            _ -> composOp f e
+
+const_op (NEAdd (NEInt n) (NEInt m)) = NEInt (n+m)
+const_op x = x
+
+constFold_play = playStm2 $ traverseEx const_op
+
+constFold_syb = sybStm2 $ everywhere (mkT const_op)
+
+constFold_raw = rawStm2 f
+    where
+        f (NSAss x y) = NSAss x (g y)
+        f (NSBlock x) = NSBlock (map f x)
+        f (NSReturn x) = NSReturn (g x)
+        f x = x
+        
+        g (NEStm x) = NEStm (f x)
+        g (NEAdd x y) = NEAdd (g x) (g y)
+        g x = x
