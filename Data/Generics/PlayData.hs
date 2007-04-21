@@ -1,8 +1,7 @@
 {-# OPTIONS_GHC -fglasgow-exts -fallow-undecidable-instances #-}
 
 module Data.Generics.PlayData(
-    module Data.Generics.PlayEx,
-    module Data.Generics.PlayData
+    module Data.Generics.PlayEx
     ) where
 
 import Data.Generics.PlayEx
@@ -14,18 +13,26 @@ import Control.Monad.State
 instance (Data a, Typeable a) => Play a where
     replaceChildren x = fromCC (collect_generate x)
     
-    getChildren x = concat (gmapQ getType x)
+    getChildren x = concatList (gmapQ getTypeOne x) []
     
 
 
 instance (Data a, Play b, Typeable a, Typeable b) => PlayEx a b where
     replaceType x = fromCC (collect_generate_self x)
 
-    getType x = res
-        where
-            res = case asTypeOf (cast x) (Just $ head res) of
-                       Just y -> [y]
-                       Nothing -> concat $ gmapQ getType x
+    getType x = getTypeOne x []
+
+
+
+getTypeOne :: (Data a, Typeable a, Typeable b) => a -> [b] -> [b]
+getTypeOne a b = case asTypeOf (cast a) (Just $ head b) of
+                      Just y -> y : b
+                      Nothing -> concatList (gmapQ getTypeOne a) b
+
+concatList :: [[a] -> [a]] -> [a] -> [a]
+concatList [] rest = rest
+concatList (x:xs) rest = x (concatList xs rest)
+
 
 
 {-
