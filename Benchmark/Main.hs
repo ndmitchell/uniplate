@@ -31,7 +31,7 @@ on g f x y = g (f x) (f y)
 
 fst3 (a,b,c) = a
 
-exec :: [a] -> [(String,String,a -> Res)] -> IO ()
+exec :: [a] -> [(String,String,a -> String)] -> IO ()
 exec tsts ops = do
         hSetBuffering stdout NoBuffering
         mapM_ (uncurry $ execTask tsts) (map f tasks)
@@ -40,7 +40,7 @@ exec tsts ops = do
         f xs = (fst3 (head xs), Map.toList $ Map.fromList [(b,c) | (a,b,c) <- xs])
 
 
-execTask :: [a] -> String -> [(String,a -> Res)] -> IO ()
+execTask :: [a] -> String -> [(String,a -> String)] -> IO ()
 execTask tsts name ops | ans == ans = do
         putStrLn $ "== " ++ name ++ " =="
         res <- mapM f ops
