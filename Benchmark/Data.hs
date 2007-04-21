@@ -25,7 +25,7 @@ data NExpr  =  NVal  Int         -- a literal value
             |  NSub  NExpr  NExpr  -- subtraction
             |  NMul  NExpr  NExpr  -- multiplication
             |  NDiv  NExpr  NExpr  -- division
-            deriving (Data,Typeable)
+            deriving (Eq,Data,Typeable)
 
 
 data DExpr
@@ -42,6 +42,17 @@ data GExpr :: * -> * where
     CSub :: CExpr -> CExpr  -> GExpr DExpr -- subtraction
     CMul :: CExpr -> CExpr  -> GExpr DExpr -- multiplication
     CDiv :: CExpr -> CExpr  -> GExpr DExpr -- division
+
+
+instance Eq (GExpr a) where
+    (CVal a1) == (CVal a2) = a1 == a2
+    (CVar a1) == (CVar a2) = a1 == a2
+    (CNeg a1) == (CNeg a2) = a1 == a2
+    (CAdd a1 b1) == (CAdd a2 b2) = a1 == a2 && b1 == b2
+    (CSub a1 b1) == (CSub a2 b2) = a1 == a2 && b1 == b2
+    (CMul a1 b1) == (CMul a2 b2) = a1 == a2 && b1 == b2
+    (CDiv a1 b1) == (CDiv a2 b2) = a1 == a2 && b1 == b2
+    _ == _ = False
 
 
 
