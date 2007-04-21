@@ -18,7 +18,7 @@ tasksExpr = variables
 -- * SECTION 1
 
 
-variables = taskExpr "variables" [variables_raw, variables_play, variables_syb, variables_comp]
+variables = taskExpr "variables" [variables_raw, variables_play, variables_play2, variables_syb, variables_comp]
 
 
 variables_raw = rawStrings f
@@ -33,6 +33,11 @@ variables_raw = rawStrings f
 
 
 variables_play = playStrings $ \x -> [y | NVar y <- Play.everything x]
+
+variables_play2 = alt "fold" $ playStrings $ fold concat f
+    where
+        f (NVar x) c = x : c
+        f _ c = c
 
 variables_syb = sybStrings $ SYB.everything (++) ([] `mkQ` f)
     where
