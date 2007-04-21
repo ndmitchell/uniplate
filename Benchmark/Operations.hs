@@ -1,7 +1,7 @@
 -- This module requires tricky CPP'ing
 -- so that you can use 3 different Play instances
 
-module Operations(tasksExpr) where
+module Operations(tasksExpr,tasksStm) where
 
 import Data
 import DeriveCompos
@@ -69,7 +69,7 @@ zeros_play = playExpr RInt $ \x -> length [() | NDiv _ (NVal 0) <- Play.everythi
 
 zeros_play2 = alt "fold" $ playExpr RInt $ fold sum f
     where
-        f (NVar x) c = 1 + c
+        f (NDiv _ (NVal 0)) c = 1 + c
         f _ c = c
 
 zeros_syb = sybExpr RInt $ SYB.everything (+) (0 `mkQ` f)
