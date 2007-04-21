@@ -121,8 +121,7 @@ simplify_compos = compExpr2 f
 
 
 
-rename = task "rename" [rename_compos, rename_play]
-
+rename = task "rename" [rename_compos, rename_play, rename_syb, rename_raw]
 
 rename_compos = compStm2 f
     where
@@ -130,5 +129,21 @@ rename_compos = compStm2 f
         f t = case t of
             CV x -> CV ("_" ++ x)
             _ -> composOp f t
+            
+rename_op (NV x) = NV ("_" ++ x)
 
-rename_play = playStm2 $ traverseEx (\(NV x) -> NV ("_" ++ x))
+rename_play = playStm2 $ traverseEx rename_op
+
+rename_syb = sybStm2 $ everywhere (mkT rename_op)
+
+rename_raw = rawStm2 f
+    where
+        f (NSDecl a b) = NSDecl a (rename_op b)
+        f (NSAss a b) = NSAss (rename_op a) (g b)
+        f (NSBlock a) = NSBlock (map f a)
+        f (NSReturn a) = NSReturn (g a)
+        
+        g (NEStm a) = NEStm (f a)
+        g (NEAdd a b) = NEAdd (g a) (g b)
+        g (NEVar a) = NEVar (rename_op a)
+        g x = x
