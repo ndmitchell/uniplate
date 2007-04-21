@@ -121,7 +121,7 @@ simplify_compos = compExpr2 f
 
 
 
-rename = task "rename" [rename_compos]
+rename = task "rename" [rename_compos, rename_play]
 
 
 rename_compos = compStm2 f
@@ -130,3 +130,5 @@ rename_compos = compStm2 f
         f t = case t of
             CV x -> CV ("_" ++ x)
             _ -> composOp f t
+
+rename_play = playStm2 $ traverseEx (\(NV x) -> NV ("_" ++ x))
