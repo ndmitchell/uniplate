@@ -9,6 +9,7 @@ taskExpr x y = [(x,a,b) | (a,b) <- y]
 
 
 data Res = RStrings [String]
+         | RInt Int
          | RExpr Expr
          deriving (Show,Eq)
 
@@ -22,6 +23,11 @@ rawStrings  = rawWith  RStrings
 playStrings = playWith RStrings
 sybStrings  = sybWith  RStrings
 compStrings = compWith RStrings
+
+rawInt  = rawWith  RInt
+playInt = playWith RInt
+sybInt  = sybWith  RInt
+compInt = compWith RInt
 
 
 alt s (a,b) = (a ++ " " ++ s,b)
