@@ -6,7 +6,7 @@ module Operations(tasksExpr,tasksStm,tasksPar) where
 import Data
 import DeriveCompos
 import OperationsCommon
-import DeriveManual
+import DeriveHand
 
 import Data.Generics.PlayEx as Play
 import Data.Generics as SYB

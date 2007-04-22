@@ -1,5 +1,5 @@
 {-# OPTIONS_GHC -cpp #-}
 
 #define Operations OperationsData
-#define DeriveManual DeriveData
+#define DeriveHand DeriveData
 #include "Operations.hs"

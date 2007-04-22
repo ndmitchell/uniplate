@@ -1,5 +1,5 @@
 {-# OPTIONS_GHC -cpp #-}
 
 #define Operations OperationsTypeable
-#define DeriveManual DeriveTypeable
+#define DeriveHand DeriveTypeable
 #include "Operations.hs"
