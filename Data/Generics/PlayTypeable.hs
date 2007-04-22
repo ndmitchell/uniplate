@@ -39,7 +39,7 @@ play :: from -> Type from to
 play f = ([], \_ -> f)
 
 
-(|+) :: PlayEx item from => Type (item -> to) from -> item -> Type to from
+(|+) :: PlayEx item to => Type (item -> from) to -> item -> Type from to
 (|+) f item = (collect2,generate2)
     where
         (collectL,generateL) = f
@@ -49,7 +49,7 @@ play f = ([], \_ -> f)
             where (a,b) = splitAt (length collectL) xs
 
 
-(|-) :: Type (item -> to) from -> item -> Type to from
+(|-) :: Type (item -> from) to -> item -> Type from to
 (|-) (collect,generate) item = (collect,\xs -> generate xs item)
 
 
