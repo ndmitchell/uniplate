@@ -13,7 +13,7 @@ import Control.Monad.State
 instance (Data a, Typeable a) => Play a where
     replaceChildren x = fromCC (collect_generate x)
     
-    getChildren x = concatList (gmapQ getTypeOne x) []
+    getChildren x = concatCont (gmapQ getTypeOne x) []
     
 
 
@@ -27,12 +27,7 @@ instance (Data a, Play b, Typeable a, Typeable b) => PlayEx a b where
 getTypeOne :: (Data a, Typeable a, Typeable b) => a -> [b] -> [b]
 getTypeOne a b = case asTypeOf (cast a) (Just $ head b) of
                       Just y -> y : b
-                      Nothing -> concatList (gmapQ getTypeOne a) b
-
-concatList :: [[a] -> [a]] -> [a] -> [a]
-concatList [] rest = rest
-concatList (x:xs) rest = x (concatList xs rest)
-
+                      Nothing -> concatCont (gmapQ getTypeOne a) b
 
 
 {-

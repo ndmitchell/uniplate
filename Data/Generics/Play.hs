@@ -28,6 +28,13 @@ playTwo :: (a -> a -> b) -> a -> a -> ([a], [a] -> b)
 playTwo part i1 i2 = ([i1,i2], \[i1,i2] -> part i1 i2)
 
 
+-- * The Helpers
+
+{-# INLINE concatCont #-}
+concatCont :: [[a] -> [a]] -> [a] -> [a]
+concatCont xs rest = foldr ($) rest xs
+
+
 -- * The Operations
 
 traverse :: Play on => (on -> on) -> on -> on
@@ -64,11 +71,7 @@ everything :: Play on => on -> [on]
 everything x = allOverRest x []
     where
         allOverRest :: Play on => on -> [on] -> [on]
-        allOverRest x rest = x : concat2 (map allOverRest $ getChildren x) rest
-        
-        concat2 :: [[a] -> [a]] -> [a] -> [a]
-        concat2 [] rest = rest
-        concat2 (x:xs) rest = x (concat2 xs rest)
+        allOverRest x rest = x : concatCont (map allOverRest $ getChildren x) rest
 
 
 everythingContext :: Play on => on -> [(on, on -> on)]
