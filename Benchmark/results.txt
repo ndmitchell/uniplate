@@ -1,85 +1,77 @@
 = EXPR =
 == simplify ==
-.........
-raw                   718750
-comp                  843750
-play                  859375
-play rewrite         1078125
-play typ             1281250
-syb                  1609375
-play typ rewrite     1812500
-play data            2062500
-play data rewrite    3125000
+raw                 	     718
+play                	     890
+comp                	     906
+play rewrite        	    1125
+play typ            	    1296
+syb                 	    1656
+play data           	    1843
+play typ rewrite    	    1875
+play data rewrite   	    2843
 == variables ==
-.........
-raw                203125
-comp               250000
-play               359375
-play fold          421875
-play typ           531250
-play typ fold      593750
-syb               1078125
-play data         1203125
-play data fold    1296875
+raw                 	     203
+comp                	     234
+play                	     296
+play fold           	     421
+play typ            	     453
+play typ fold       	     593
+syb                 	    1109
+play data           	    1187
+play data fold      	    1296
 == zeros ==
-.........
-raw                 46875
-comp               109375
-play               250000
-play fold          265625
-play typ           406250
-play typ fold      453125
-syb               1000000
-play data         1062500
-play data fold    1109375
+raw                 	      62
+comp                	     109
+play                	     171
+play fold           	     281
+play typ            	     328
+play typ fold       	     406
+syb                 	     968
+play data           	    1031
+play data fold      	    1125
 
 = STM =
 == constFold ==
-.....
-play         1062500
-comp         1156250
-play typ     1687500
-syb          2156250
-play data    3406250
+play                	    1078
+comp                	    1093
+play typ            	    1750
+syb                 	    2093
+play data           	    3343
 == rename ==
-......
-raw          1046875
-comp         1187500
-play         1281250
-play typ     1968750
-syb          2218750
-play data    3531250
+raw                 	    1062
+comp                	    1125
+play                	    1281
+play typ            	    2062
+syb                 	    2093
+play data           	    3453
 == symbols ==
-......
-raw           218750
-comp          296875
-play          359375
-play typ      640625
-syb          1281250
-play data    1343750
+raw                 	     218
+comp                	     281
+play                	     328
+play typ            	     625
+syb                 	    1328
+play data           	    1406
 
 = PAR =
 == bill ==
-......
-raw           31250
-play          62500
-comp          78125
-play typ     218750
-syb          703125
-play data    734375
+raw                 	      31
+play                	      62
+comp                	      78
+play typ            	     218
+syb                 	     703
+play data           	     796
 == increase ==
-......
-raw           359375
-play          437500
-comp          515625
-play typ      734375
-syb          1062500
-play data    1203125
+raw                 	     343
+play                	     421
+comp                	     484
+play typ            	     687
+syb                 	    1078
+play data           	    1109
 == incrone ==
-......
-raw           343750
-play          375000
-comp          500000
-play typ      671875
-syb           796875
-play data    1203125
+raw                 	     328
+play                	     359
+comp                	     468
+play typ            	     656
+syb                 	     765
+play data           	    1140
+
