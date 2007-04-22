@@ -16,18 +16,6 @@ class Play on where
     getChildren = fst . replaceChildren
 
 
--- * The Combinators
-
-playDefault :: a -> ([b], [b] -> a)
-playDefault x = ([], \[] -> x)
-
-playOne :: (a -> b) -> a -> ([a], [a] -> b)
-playOne part item = ([item], \[item] -> part item)
-
-playTwo :: (a -> a -> b) -> a -> a -> ([a], [a] -> b)
-playTwo part i1 i2 = ([i1,i2], \[i1,i2] -> part i1 i2)
-
-
 -- * The Helpers
 
 {-# INLINE concatCont #-}
