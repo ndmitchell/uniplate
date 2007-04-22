@@ -116,6 +116,12 @@ instance Play NExp where
 
 
 instance PlayEx NCompany NSalary where
+    getType (NC x) = concatMap d x
+        where
+            d (ND _ (NE _ x) y) = x : concatMap u y
+            u (NPU (NE _ x)) = [x]
+            u (NDU x) = d x
+
     replaceType (NC xs) = (get, \xs -> NC (gen xs))
         where (get,gen) = replaceType xs
 
@@ -129,6 +135,7 @@ instance PlayEx NUnt NSalary where
         where (get,gen) = replaceType x
 
 instance Play NSalary where
+    getChildren _ = []
     replaceChildren x = ([], \_ -> x)
 
 instance PlayEx NCompany NDept where
