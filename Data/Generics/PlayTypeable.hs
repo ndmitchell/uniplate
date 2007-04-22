@@ -14,13 +14,18 @@ import Data.Maybe
 
 
 instance (Typeable a, Typeable b, Play b, PlayAll a b) => PlayEx a b where
-    replaceType x = playMore x
+    replaceType x = liftType $ playMore x
 
 
-replaceChildrenAll a = playAll a
+replaceChildrenAll a = liftType $ playAll a
+
 
 
 type Type from to = ([to], [to] -> from)
+
+
+liftType :: Type from to -> ([to], [to] -> from)
+liftType x = x
 
 
 playMore :: (Typeable from, Typeable to, PlayAll from to) => from -> Type from to
