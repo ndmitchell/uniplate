@@ -59,9 +59,9 @@ execTask count tsts name ops | ans == ans = do
     where
         showTable xs = mapM_ (putStrLn . g) xs
             where
-                g x@(a,b) = a ++ replicate (4 + width - length (show x)) ' ' ++ show b
-                width = maximum $ map (length . show) xs
-    
+                g (a,b) = a ++ replicate (20 - length a) ' ' ++ "\t" ++
+                          replicate (8 - length (show b)) ' ' ++ show b
+
         ans = map (snd $ head ops) tests
         tests = concat $ replicate count tsts
 
