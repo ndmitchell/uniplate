@@ -7,6 +7,15 @@ import Data.Generics.PlayEx
 
 
 instance Play NExpr where
+    getChildren x =
+        case x of
+            NNeg  a    -> [a]
+            NAdd  a b  -> [a,b]
+            NSub  a b  -> [a,b]
+            NMul  a b  -> [a,b]
+            NDiv  a b  -> [a,b]
+            _         ->  []
+
     replaceChildren x =
         case x of
             NNeg  a    -> ([a]    , \(a':_)    -> NNeg  a'     )
