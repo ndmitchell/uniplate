@@ -9,6 +9,7 @@ module Data.Generics.PlayTypeable(
     ) where
 
 import Data.Generics.PlayEx
+import Data.Generics.PlayInternal
 import Data.Typeable
 import Data.Maybe
 
@@ -33,7 +34,7 @@ playMore x = res
     where
         res = case asTypeOf (cast x) (Just $ head $ fst res []) of
                   Nothing -> playAll x
-                  Just y -> ((y:), \(y:ys) -> (fromJust $ cast y, ys))
+                  Just y -> ((y:), \(y:ys) -> (unsafeCast y, ys))
 
 
 -- | Children are defined as the top-most items of type to

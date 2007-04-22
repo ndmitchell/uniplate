@@ -5,6 +5,7 @@ module Data.Generics.PlayData(
     ) where
 
 import Data.Generics.PlayEx
+import Data.Generics.PlayInternal
 import Data.Generics
 import Data.Maybe
 import Control.Monad.State
@@ -63,7 +64,7 @@ collect_generate_self :: (Data on, Play with, Typeable on, Typeable with) => on 
 collect_generate_self x = res
         where
             res = case asTypeOf (cast x) (Just $ head $ fst res []) of
-                       Just y -> ((y:), \(x:xs) -> (fromJust (cast x), xs))
+                       Just y -> ((y:), \(x:xs) -> (unsafeCast x, xs))
                        Nothing -> collect_generate x
 
 
