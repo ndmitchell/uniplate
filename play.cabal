@@ -10,6 +10,7 @@ Exposed-modules:
         Data.Generics.Play
         Data.Generics.PlayOn
         Data.Generics.PlayEx
+        Data.Generics.PlayManual
         Data.Generics.PlayTypeable
         Data.Generics.PlayData
 
