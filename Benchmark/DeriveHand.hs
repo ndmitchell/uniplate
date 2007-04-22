@@ -66,6 +66,17 @@ instance PlayEx NStm NStm where
     replaceType x = ([x], \(x':_) -> x')
 
 instance Play NStm where
+    getChildren x =
+        case x of
+            NSBlock a -> a
+            NSAss _ a -> f a
+            NSReturn a -> f a
+            _ -> []
+        where
+            f (NEStm x) = [x]
+            f (NEAdd x y) = f x ++ f y
+            f _ = []
+
     replaceChildren x =
         case x of
             NSAss a b -> (get,\xs -> NSAss a (gen xs))
