@@ -21,19 +21,19 @@ replaceChildrenAll a = liftType $ playAll a
 
 
 
-type Type from to = ([to], [to] -> from)
+type Type from to = ([to] -> [to], [to] -> (from,[to]))
 
 
 liftType :: Type from to -> ([to], [to] -> from)
-liftType x = x
+liftType (a,b) = (a [], fst . b)
 
 
 playMore :: (Typeable from, Typeable to, PlayAll from to) => from -> Type from to
 playMore x = res
     where
-        res = case asTypeOf (cast x) (Just $ head $ fst res) of
+        res = case asTypeOf (cast x) (Just $ head $ fst res []) of
                   Nothing -> playAll x
-                  Just y -> ([y], \(y:_) -> fromJust $ cast y)
+                  Just y -> ((y:), \(y:ys) -> (fromJust $ cast y, ys))
 
 
 -- | Children are defined as the top-most items of type to
@@ -45,7 +45,7 @@ class PlayAll from to where
 
 
 play :: from -> Type from to
-play f = ([], \_ -> f)
+play f = (id, \xs -> (f,xs))
 
 
 (|+) :: (Typeable item, Typeable to, PlayAll item to) => Type (item -> from) to -> item -> Type from to
@@ -53,13 +53,14 @@ play f = ([], \_ -> f)
     where
         (collectL,generateL) = f
         (collectR,generateR) = playMore item
-        collect2 = collectL ++ collectR
-        generate2 xs = generateL a (generateR b)
-            where (a,b) = splitAt (length collectL) xs
+        collect2 = collectL . collectR
+        generate2 xs = case generateL xs of
+                        (a,xs) -> case generateR xs of
+                         (b,xs) -> (a b, xs)
 
 
 (|-) :: Type (item -> from) to -> item -> Type from to
-(|-) (collect,generate) item = (collect,\xs -> generate xs item)
+(|-) (collect,generate) item = (collect,\xs -> case generate xs of (r,xs) -> (r item, xs))
 
 
 instance (PlayAll from to, Typeable from, Typeable to, Play to) => PlayAll [from] to where
