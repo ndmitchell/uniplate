@@ -42,7 +42,6 @@ fst3 (a,b,c) = a
 
 exec :: String -> Int -> [a] -> [(String,String,a -> String)] -> IO ()
 exec name count tsts ops = do
-        hSetBuffering stdout NoBuffering
         putStrLn $ "= " ++ map toUpper name ++ " ="
         mapM_ (uncurry $ execTask count tsts) (map f tasks)
         putStrLn ""
@@ -55,7 +54,7 @@ execTask :: Int -> [a] -> String -> [(String,a -> String)] -> IO ()
 execTask count tsts name ops | ans == ans = do
         putStrLn $ "== " ++ name ++ " =="
         res <- mapM f ops
-        putChar '\n'
+        hPutChar stderr '\n'
         showTable $ sortBy (compare `on` snd) $ zip (map fst ops) res
     where
         showTable xs = mapM_ (putStrLn . g) xs
@@ -70,5 +69,5 @@ execTask count tsts name ops | ans == ans = do
             start <- getCPUTime
             when (ans /= map action tests) $ putStrLn $ "FAILED TO MATCH in " ++ name
             end <- getCPUTime
-            putChar '.'
-            return $ (end - start) `div` 1000000
+            hPutChar stderr '.'
+            return $ (end - start) `div` 1000000000
