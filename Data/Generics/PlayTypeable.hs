@@ -24,19 +24,22 @@ instance (Typeable a, Typeable b, Play b, PlayAll a b) => PlayEx a b where
 replaceChildrenAll a = playAll a
 
 
+type Type from to = ([to], [to] -> from)
+
+
 -- | Children are defined as the top-most items of type to
 --   /starting beneath the root/.
 --
 --   This class should only be constructed with 'play', '|+' and '|-'
 class PlayAll from to where
-    playAll :: ReplaceType from to
+    playAll :: from -> Type from to
 
 
-play :: on -> ([with],[with] -> on)
+play :: from -> Type from to
 play f = ([], \_ -> f)
 
 
-(|+) :: PlayEx item with => ([with], [with] -> item -> on) -> item -> ([with], [with] -> on)
+(|+) :: PlayEx item from => Type (item -> to) from -> item -> Type to from
 (|+) f item = (collect2,generate2)
     where
         (collectL,generateL) = f
@@ -46,7 +49,7 @@ play f = ([], \_ -> f)
             where (a,b) = splitAt (length collectL) xs
 
 
-(|-) :: ([with], [with] -> item -> on) -> item -> ([with], [with] -> on)
+(|-) :: Type (item -> to) from -> item -> Type to from
 (|-) (collect,generate) item = (collect,\xs -> generate xs item)
 
 
