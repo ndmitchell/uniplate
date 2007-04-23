@@ -3,6 +3,7 @@ module Data.Generics.Play where
 
 import Control.Monad
 import Data.List(inits,tails)
+import Data.Generics.PlayInternal
 
 
 -- * The Class
@@ -14,13 +15,6 @@ class Play on where
     
     getChildren :: on -> [on]
     getChildren = fst . replaceChildren
-
-
--- * The Helpers
-
-{-# INLINE concatCont #-}
-concatCont :: [[a] -> [a]] -> [a] -> [a]
-concatCont xs rest = foldr ($) rest xs
 
 
 -- * The Operations
