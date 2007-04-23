@@ -90,10 +90,11 @@ instance (Data a, Data b, Play b, Typeable a, Typeable b) => PlayEx a b where
 
 getTypeOneWith :: (Data a, Typeable a, Typeable b) =>
                   (forall a . Typeable a => a -> Answer b) -> a -> [b] -> [b]
-getTypeOneWith f a b = case f a of
-                           Hit i -> i:b
-                           Follow -> concatCont (gmapQ (getTypeOneWith f) a) b
-                           Miss -> b
+getTypeOneWith oracle a b =
+    case oracle a of
+         Hit i -> i:b
+         Follow -> concatCont (gmapQ (getTypeOneWith oracle) a) b
+         Miss -> b
 
 
 
