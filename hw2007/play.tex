@@ -770,56 +770,20 @@ The clear advantage is that there is almost no work to creating Play instances.
 
 \begin{figure}
 \begin{code}
-instance (Data a, Typeable a) => Play a where
-    replaceChildren x = fromCC (collect_generate x)
-
-    getChildren x = concat (gmapQ getType x)
-
-
-
-instance (Data a, Play b, Typeable a, Typeable b)
-     => PlayEx a b where
-    replaceType x = fromCC (collect_generate_self x)
-
-    getType x = res
-        where
-            res = case asTypeOf (cast x) (Just $ head res) of
-                       Just y -> [y]
-                       Nothing -> concat $ gmapQ getType x
-
-
-newtype C x a = C {fromC :: CC x a}
-
-type CC x a = ([x], [x] -> (a, [x]))
-
-
-fromCC :: CC x a -> ([x], [x] -> a)
-fromCC (a, b) = (a, \i -> fst (b i))
-
-
-collect_generate_self :: (Data on, Play with, Typeable on,
-     Typeable with) => on -> CC with on
-collect_generate_self x = res
-        where
-            res = case asTypeOf (cast x) (Just $ head $ fst res) of
-                       Just y -> ([y], \(x:xs) -> (fromJust (cast x), xs))
-                       Nothing -> collect_generate x
-
-
-collect_generate :: (Data on, Play with, Typeable on,
-     Typeable with) => on -> CC with on
-collect_generate item = fromC $ gfoldl combine create item
+collect_generate :: (Data on, Play with, Typeable on, Typeable with) => on -> ([with],[with] -> on)
+collect_generate item = (collect, generate)
     where
-        -- forall a b . Data a => C with (a -> b) -> a -> C with b
-        combine (C (c,g)) x = case collect_generate_self x of
-                                  (c2, g2) -> C (c2 ++ c, regen g2)
-            where
-                regen g2 i = case g2 i of
-                            (x2,i2) -> case g i2 of
-                                (y2,i3) -> (y2 x2, i3)
+        collect = concat $ gmapQ getChildrenEx item
 
-        -- forall g . g -> C with g
-        create x = C ([], \res -> (x, res))
+        generate xs = evalState (gmapM f item) xs
+            where
+                f x = do
+                        ys <- get
+                        let (as,bs) = splitAt (length col) ys
+                        put bs
+                        return $ gen as
+                    where
+                        (col,gen) = replaceChildrenEx x
 \end{code}
 \end{figure}
 
@@ -1166,11 +1130,32 @@ everything x = build (f x)
 
 \subsection{Optimising |PlayData|}
 
-Mention that getChildren is gmapQ, while replaceChildren is a gfoldl, doing both operations in a single pass.
+The |PlayData| instance is an area of the library we are particularly proud of -- being able to use the existing SYB framework which is already built into the GHC compiler makes boilerplate code much easier to write. Managing to both layer |PlayData| over the |Data| instances, and perform better is not something we initially believed to be possible.
+
+The first optimisation built into the |PlayData| framework is the |getChildren| method of the class. This allows children to be extracted, without performing the complex machinery to allow them to be reinserted. The |getChildren| method can be implemented neatly in terms of |gmapQ|.
+
+The second optimisation was to move from generating the two elements on the |replaceChildren| tuple separately, to doing it as one task. This means that it is no longer possible to use |gmapM|, but instead we must use |gfoldl|. This reduction means that each data constructor gets examined fewer times, and our use of the state monad can be eliminated.
+
+The next optimisation is to translate to a basic continuation passing style in some places, as per |PlayManual|.
 
 Note the use of case instead of where to make tuples faster.
 
-Discuss the oracle trick in detail.
+With all these optimisations in place we perform much the same operations as SYB, but have the overhead of list creation at each step. We are able to push this approach to within about 15\% of the speed of SYB operations.
+
+The next optimisation relies on the extra information present in |Play| operations -- namely the target type. For SYB, the target type could be any node on the graph, while for Play it will have a known type. This means as a node is reached, if there can be no nodes of the target type beneath it, the search does not need to continue. Computing which types are containers for the target type can be done relatively easily with the SYB framework:
+
+\begin{code}
+data DataBox = forall a . (Typeable a, Data a) => DataBox a
+
+contains :: (Data a, Typeable a) => a -> [DataBox]
+contains x = if isAlgType dtyp then concatMap f ctrs else []
+    where
+        f ctr = gmapQ DataBox (asTypeOf (fromConstr ctr) x)
+        ctrs = dataTypeConstrs dtyp
+        dtyp = dataTypeOf x
+\end{code}
+
+The |contains| function takes a value which is does not examine, and is always |undefined| in this context. It then returns all fields, and |typeOf| can be performed on each one.
 
 
 
