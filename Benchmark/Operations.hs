@@ -20,7 +20,7 @@ tasksPar = increase ++ incrone ++ bill
 -- * SECTION 1
 
 
-variables = task "variables" [variables_raw, variables_play, variables_play2, variables_syb, variables_comp]
+variables = task "variables" [variables_raw, variables_play, {- variables_play2, -} variables_syb, variables_comp]
 
 variables_raw = rawExpr id f
     where
@@ -53,7 +53,7 @@ variables_comp = compExpr id f
 
 
 
-zeros = task "zeros" [zeros_raw, zeros_play, zeros_play2, zeros_syb, zeros_comp]
+zeros = task "zeros" [zeros_raw, zeros_play, {- zeros_play2, -} zeros_syb, zeros_comp]
 
 zeros_raw = rawExpr id f
     where
@@ -86,7 +86,7 @@ zeros_comp = compExpr id f
 
 
 
-simplify = task "simplify" [simplify_raw,simplify_play,simplify_play2,simplify_syb,simplify_compos]
+simplify = task "simplify" [simplify_raw,simplify_play, {- simplify_play2, -} simplify_syb,simplify_compos]
 
 simplify_raw = rawExpr2 f
     where
