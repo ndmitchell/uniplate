@@ -22,7 +22,7 @@ instance PlayAll NStm NVar where
         case x of
             NSDecl a b -> play (NSDecl a) |* b
             NSAss a b -> play NSAss |* a |+ b
-            NSBlock x -> play NSBlock |+ x
+            NSBlock x -> play NSBlock ||+ x
             NSReturn x -> play NSReturn |+ x
 
 instance PlayAll NStm NStm where
@@ -39,20 +39,11 @@ instance PlayAll NExp NVar where
             NEVar x -> play NEVar |* x
             _ -> play x
 
-instance PlayAll [NStm] NVar where
-    playAll = playListDiff
-
-instance PlayAll [NStm] NExp where
-    playAll = playListDiff
-
-instance PlayAll [NStm] NStm where
-    playAll = playListSame
-
 instance PlayOne NStm where
     playOne x =
         case x of
             NSAss x y -> play (NSAss x) |+ y
-            NSBlock x -> play NSBlock |+ x
+            NSBlock x -> play NSBlock ||* x
             NSReturn x -> play NSReturn |+ x
             _ -> play x
 
@@ -60,7 +51,7 @@ instance PlayAll NStm NExp where
     playAll x =
         case x of
             NSAss x y -> play (NSAss x) |* y
-            NSBlock x -> play NSBlock |+ x
+            NSBlock x -> play NSBlock ||+ x
             NSReturn x -> play NSReturn |* x
             _ -> play x
 
@@ -89,22 +80,10 @@ data NSalary = NS Integer deriving (Data,Typeable)
 -}
 
 instance PlayAll NCompany NSalary where
-    playAll (NC x) = play NC |+ x
-
-instance PlayAll [NDept] NDept where
-    playAll = playListSame
-
-instance PlayAll [NDept] NSalary where
-    playAll = playListDiff
-
-instance PlayAll [NUnt] NSalary where
-    playAll = playListDiff
-
-instance PlayAll [NUnt] NDept where
-    playAll = playListDiff
+    playAll (NC x) = play NC ||+ x
 
 instance PlayAll NDept NSalary where
-    playAll (ND a b c) = play (ND a) |+ b |+ c
+    playAll (ND a b c) = play (ND a) |+ b ||+ c
 
 instance PlayAll NUnt NSalary where
     playAll (NPU a) = play NPU |+ a
@@ -121,7 +100,7 @@ instance PlayOne NSalary where
     playOne x = play x
 
 instance PlayOne NDept where
-    playOne (ND a b c) = play (ND a b) |+ c
+    playOne (ND a b c) = play (ND a b) ||+ c
 
 instance PlayAll NCompany NDept where
-    playAll (NC x) = play NC |+ x
+    playAll (NC x) = play NC ||* x

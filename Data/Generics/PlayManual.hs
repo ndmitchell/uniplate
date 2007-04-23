@@ -6,7 +6,7 @@ module Data.Generics.PlayManual(
     module Data.Generics.PlayEx,
     PlayAll(..), play, (|+), (|-), (|*),
     PlayOne(..), playSelf,
-    playListDiff, playListSame
+    (||+), (||*)
     ) where
 
 import Data.Generics.PlayEx
@@ -67,12 +67,30 @@ play f = (id, \xs -> (f,xs))
 (|-) (collect,generate) item = (collect,\xs -> case generate xs of (r,xs) -> (r item, xs))
 
 
+(||*) :: Type ([to] -> from) to -> [to] -> Type from to
+(||*) f item = (collect2,generate2)
+    where
+        (collectL,generateL) = f
+        collect2 = collectL . (item++)
+        generate2 xs = case generateL xs of
+                        (a,xs) -> let (x1,x2) = splitAt (length item) xs
+                                  in (a x1,x2)
+
+
+(||+) :: PlayAll item to => Type ([item] -> from) to -> [item] -> Type from to
+(||+) f item = (collect2,generate2)
+    where
+        (collectL,generateL) = f
+        (collectR,generateR) = playListDiff item
+        collect2 = collectL . collectR
+        generate2 xs = case generateL xs of
+                        (a,xs) -> case generateR xs of
+                         (b,xs) -> (a b, xs)
+
+
 playListDiff [] = play []
-playListDiff (x:xs) = play (:) |+ x |+ xs
+playListDiff (x:xs) = play (:) |+ x ||+ xs
 
-
-playListSame [] = play []
-playListSame (x:xs) = play (:) |* x |+ xs
 
 
 playSelf x = ((x:), \(x:xs) -> (x,xs))
