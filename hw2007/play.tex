@@ -944,14 +944,14 @@ data Stm  =  SDecl    Typ Var
           |  SBlock   [Stm]
           |  SReturn  Exp
 
-data Exp = EStm  Stm
-         | EAdd  Exp Exp
-         | EVar  Var
-         | EInt  Int
+data Exp  =  EStm  Stm
+          |  EAdd  Exp Exp
+          |  EVar  Var
+          |  EInt  Int
 
-data Var = V String
+data Var  =  V String
 
-data Typ = T_int | T_float
+data Typ  =  T_int | T_float
 \end{code}
 \caption{Data type from Compos.}
 \label{fig:compos}
@@ -1022,16 +1022,16 @@ The constant folding operation is a bottom-up traversal, requiring sub expressio
 
 \begin{figure}
 \begin{code}
-type Manager = Employee
-type Name = String
-type Address = String
+type Manager  = Employee
+type Name     = String
+type Address  = String
 
-data Company = C [Dept]
-data Dept = D Name Manager [Unit]
-data Unit = PU Employee | DU Dept
-data Employee = E Person Salary
-data Person = P Name Address
-data Salary = S Integer
+data Company   = C [Dept]
+data Dept      = D Name Manager [Unit]
+data Unit      = PU Employee | DU Dept
+data Employee  = E Person Salary
+data Person    = P Name Address
+data Salary    = S Integer
 \end{code}
 \caption{Paradise Benchmark data structure.}
 \label{fig:paradise}
@@ -1071,9 +1071,8 @@ Play.incrOne name k = traverseEx f
 
 SYB.incrOne n k a  | isDept n a  = SYB.increase k a
                    | otherwise   = gmapT (SYB.incrOne n k) a
-    where
-        isDept n = False `mkQ` isDeptD n
-        isDeptD n (D n2 _ _) = n==n2
+    where  isDept n = False `mkQ` isDeptD n
+           isDeptD n (D n2 _ _) = n == n2
 
 Comp.incrOne :: Name -> Float -> Tree c -> Tree c
 Comp.incrOne d k c = case c of
@@ -1104,16 +1103,66 @@ Here the Play instance wins by being able to use a list comprehension to select 
 
 \section{Implementation Speed}
 
-In order to have a benchmark we pick the following.
+Something that has been neglected in previous papers on boilerplate is the performance aspects. The first SYB paper gives the quotation ``Our benchmarks show that generic programs are reasonably efficient'', and gives a slow down of 3.5 times for the salary increase program. We choose to benchmark on all the examples shown in the previous section. Our benchmark uses the code as presented in that section. We also benchmark against a hand-coded operation with no boilerplate. The four |Play| derivations are provided by:
 
-note, we change SYB from Float to Int, as otherwise we get stuffed by floating point errors in folds vs sums.
+\begin{description}
+\item[Hand Coded:] These are |Play| and |PlayEx| instances written by hand. We have chosen not to use continuation-passing to implement these instances, as it quickly becomes deeply complex. We have implemented both |getChildren| and |replaceChildren|.
+\item[Manual:] These instances use the manual combinators, defined a required.
+\item[Typeable:] These instances use the standard typeable combinators.
+\item[Data:] These instances use the SYB |Data| instances directly.
+\end{description}
+
+In many cases there are several equivalent |Play| methods that could be used, we choose only the simplest.
+
+First all data structures used have 100 particular values randomly generated and saved. In order to ensure a fair comparison, we define one data structure which is the same as the original, and one which is a GADT encoding. All operations take these original data structures, transform them into the appropriate structure, apply the operation and then unwrap them. We measure all results relative to the time taken for a raw transformation as 1. We compiled all programs with -O2.
+
+The results are presented in Table n, and graphs in Figure n and m. This shows that using well tuned instances, Compos is the same speed as Play. Using Data instances, we are still able to outperform Scrap Your Boilerplate -- for whom Data instances are perfect! At first glance, these results may well seem surprising, given the intermediate list of children created and examined at each stage. We first discuss the manual Play instances, and how they are optimized -- primarily by using continuations. We then focus on our optimization of |everything|, again using continuation passing -- and additionally using some |foldr|/|build| fusion properties. Finally we turn to our |PlayData| module, and how we are able to outperform SYB using their instances underneath.
+
+We suspect there are further places for improvement:
+
+\begin{enumerate}
+\item Continuation passing style may eliminate tuple construction and consumption.
+\item List fusion may be able to eliminate some of the lists in |replaceChildren|.
+\end{enumerate}
 
 \subsection{PlayManual continuation passing}
 
 
 \subsection{Optimising |everything|}
 
-Mention foldr/build fusion, continuation passing etc.
+Our initial |everything| implementation was presented as:
+
+\begin{code}
+everything x = x : concatMap everything $ getChildren x
+\end{code}
+
+The disadvantage of this code is that the |concatMap| constructs and consumes the list at every level, requiring one reconstruction per level of depth in the data structure. We can fix this by using continuations:
+
+\begin{code}
+everything :: Play on => on -> [on]
+everything x = f x []
+    where  f :: Play on => on -> [on] -> [on]
+           f x rest = x : concatCont (map f $ getChildren x) rest
+
+concatCont []     rest  =  rest
+concatCont (x:xs) rest  =  x (concatCont xs rest)
+\end{code}
+
+Now we only perform one reconstruction per level. However, we can do better still using GHC's list fusion. The user of everything is likely to be a good consumer, if it is a list comprehension. We can now make |concatCont| a good consumer:
+
+\begin{code}
+concatCont xs rest = foldr ($) rest xs
+\end{code}
+
+Now we can also make |f| a good producer using |build|:
+
+\begin{code}
+everything :: Play on => on -> [on]
+everything x = build (f x)
+    where  f :: Play on => on -> (on -> res -> res) -> res -> res
+           f x cons nil = x `cons` concatCont (map (\x -> f x cons) $ getChildren x) nil
+\end{code}
+
 
 \subsection{Optimising |PlayData|}
 
@@ -1163,6 +1212,20 @@ Advantages of Play: Haskell 98 (the Play class), plus multi-parameter type class
 Note both Compos and Play require complex instances, but Compos does not have a tool to generate them (although one could be written), and does not have an easy instance at any level.
 
 Compos works on GADT's.
+
+\subsection{Stratego}
+
+If you think that's "easy", why not use the real thing (Stratego)? You lose type-inference, but you don't need those ugly mk constructors.
+
+http://www.acm.org/crossroads/xrds12-3/stratego.html
+
+\subsection{Attribute Grammars}
+
+Yes, those things are really cool. Have you every looked into Attribute Grammars? It's not quite the same, but still related. See: UUAGC and also Wouter Swierstra's excellent article in the Monad Reader: Why Attribute Grammars Matter.
+
+http://www.cs.uu.nl/wiki/HUT/AttributeGrammarSystem
+
+http://www.haskell.org/tmrwiki/WhyAttributeGrammarsMatter
 
 
 \section{Conclusions and Future Work}
