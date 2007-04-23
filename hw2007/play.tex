@@ -1129,7 +1129,32 @@ Discuss the oracle trick in detail.
 
 \subsection{SYB}
 
-we only go part way.
+Many of the examples from the original SYB paper are recapped in the Compos paper, so have been covered in the next section. This section focuses on the underlying traversal mechanism employed by both types.
+
+\todo{image here}
+
+Both traversals are based on the idea of finding the immediate children of a node. The difference is that Play considers a child to be one of the same type, which may not be immediately below the node. In contrast SYB considers all the immediate children. The above diagram shows the difference, where the orange nodes are all of the same type, and those with a black border are considered children.
+
+While the SYB approach is clearly more logical in an untyped language, in a typed language it requires a considerable amount of trickery to get the types correct. The primary SYB traversal function is:
+
+\begin{code}
+gfoldl :: (forall a b. Term a => w (a -> b)
+                              -> a -> w b)
+       -> (forall g. g -> w g)
+       -> a -> w a
+\end{code}
+
+In the original SYB paper the authors note ``Trying to understand the type of <tt>gfoldl</tt> directly can lead to brain damage.'' When compared to the type of <tt>replaceChildren</tt>, it is easy to see which is simpler at the type level.
+
+\begin{code}
+replaceChildren :: on -> ([on], [on] -> on)
+\end{code}
+
+The basic difference between SYB and Play is the choice of the notion of children. It is reasonably easy to see that SYB is more powerful - there are many nodes in the above example that Play cannot reach. However in a typed language this has come at the cost of substantial type based thought. Play on the other hand simplified things with its alternative definition of child.
+
+We do not include support for many of the other generic features in SYB, such as gread/gshow etc, so they are much more powerful.
+
+We are one of the few traversals who do not have the problem that SYB is compiler integrated, but we are not. We are also faster than SYB.
 
 \subsection{Compos}
 
@@ -1537,38 +1562,6 @@ data Expr ... deriving (Typeable, Data)
 <p>
     The clear advantage is that there is almost no work to creating Play instances.
 </p>
-
-
-<h2>Comparison to the SYB Paper</h2>
-
-<p>
-    Many of the examples from the original SYB paper are recapped in the Compos paper, so have been covered in the next section. This section focuses on the underlying traversal mechanism employed by both types.
-</p>
-<p style="text-align:center;">
-    <img src="img/syb_vs_play.png" alt="SYB vs Play, notion of children" />
-</p>
-<p>
-    Both traversals are based on the idea of finding the immediate children of a node. The difference is that Play considers a child to be one of the same type, which may not be immediately below the node. In contrast SYB considers all the immediate children. The above diagram shows the difference, where the orange nodes are all of the same type, and those with a black border are considered children.
-</p>
-<p>
-    While the SYB approach is clearly more logical in an untyped language, in a typed language it requires a considerable amount of trickery to get the types correct. The primary SYB traversal function is:
-</p>
-<pre>
-gfoldl :: (forall a b. Term a => w (a -> b)
-                              -> a -> w b)
-       -> (forall g. g -> w g)
-       -> a -> w a
-</pre>
-<p>
-    In the original SYB paper the authors note "Trying to understand the type of <tt>gfoldl</tt> directly can lead to brain damage." When compared to the type of <tt>replaceChildren</tt>, it is easy to see which is simpler at the type level.
-</p>
-<pre>
-replaceChildren :: on -> ([on], [on] -> on)
-</pre>
-<p>
-    The basic difference between SYB and Play is the choice of the notion of children. It is reasonably easy to see that SYB is more powerful - there are many nodes in the above example that Play cannot reach. However in a typed language this has come at the cost of substantial type based thought. Play on the other hand simplified things with its alternative definition of child.
-</p>
-
 
 
 
