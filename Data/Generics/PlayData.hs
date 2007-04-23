@@ -26,9 +26,7 @@ instance (Data a, Play b, Typeable a, Typeable b) => PlayEx a b where
 
 
 getTypeOne :: (Data a, Typeable a, Typeable b) => a -> [b] -> [b]
-getTypeOne a b = case asTypeOf (cast a) (Just $ head b) of
-                      Just y -> y : b
-                      Nothing -> concatCont (gmapQ getTypeOne a) b
+getTypeOne a b = mkQ (concatCont (gmapQ getTypeOne a) b) (:b) a
 
 
 {-
