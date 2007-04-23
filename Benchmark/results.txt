@@ -1,89 +1,78 @@
 = EXPR =
 == simplify ==
-raw                 	     812
-comp                	     937
-play                	     968
-play man            	     968
-play typ            	    1203
-play rewrite        	    1234
-play man rewrite    	    1343
-play typ rewrite    	    1656
-syb                 	    1781
-play data           	    2031
-play data rewrite   	    3093
+raw                 	     984
+comp                	    1078
+play man            	    1156
+play                	    1171
+play typ            	    1328
+play data           	    1703
+syb                 	    1890
 == variables ==
-raw                 	     234
-comp                	     265
-play                	     296
-play man            	     328
-play fold           	     453
-play man fold       	     546
-play typ            	     593
-play typ fold       	     625
-syb                 	    1218
-play data           	    1312
-play data fold      	    1593
+raw                 	     250
+comp                	     281
+play                	     328
+play man            	     359
+play typ            	     484
+play data           	     875
+syb                 	    1140
 == zeros ==
 raw                 	      62
-comp                	     125
-play                	     171
-play man            	     203
-play fold           	     265
+comp                	     109
+play                	     187
+play man            	     187
 play typ            	     312
-play man fold       	     375
-play typ fold       	     421
-syb                 	    1062
-play data           	    1140
-play data fold      	    1343
+play data           	     671
+syb                 	     968
 
 = STM =
 == constFold ==
-comp                	    1187
-play                	    1203
-play man            	    1234
-play typ            	    1500
-syb                 	    2203
-play data           	    3578
+raw                         1265
+play man                    1515
+comp                        1609
+play                        1640
+play typ                    1796
+play data                   2140
+syb                         2531
 == rename ==
-raw                 	    1125
-play man            	    1218
-comp                	    1265
-play                	    1406
-play typ            	    1578
-syb                 	    2281
-play data           	    3468
+raw                 	    1375
+comp                	    1531
+play man            	    1593
+play typ            	    1671
+play                	    1734
+play data           	    2171
+syb                 	    2453
 == symbols ==
-raw                 	     234
-play                	     281
+raw                 	     250
+play                	     296
 play man            	     328
 comp                	     343
-play typ            	     562
-syb                 	    1375
-play data           	    1500
+play typ            	     593
+play data           	    1031
+syb                 	    1546
 
 = PAR =
 == bill ==
-raw                 	      31
-comp                	      78
-play                	      78
-play man            	      78
-play typ            	     203
+raw                 	      15
+play                	      46
+play man            	      46
+comp                	      62
+play typ            	     187
+play data           	     437
 syb                 	     781
-play data           	     843
 == increase ==
-raw                 	     359
-play man            	     406
-play                	     453
-comp                	     484
-play typ            	     593
-syb                 	    1140
-play data           	    1250
+raw                 	     468
+play man            	     515
+play                	     546
+comp                	     562
+play typ            	     671
+play data           	     828
+syb                 	    1265
 == incrone ==
-raw                 	     375
-play                	     406
-play man            	     406
-comp                	     531
-play typ            	     609
-syb                 	     906
-play data           	    1312
+raw                 	     437
+play                	     468
+play man            	     468
+comp                	     593
+play typ            	     687
+play data           	     703
+syb                 	     953
 
