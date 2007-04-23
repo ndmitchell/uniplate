@@ -183,7 +183,7 @@ symbols_raw = rawStm rewrapPairN f
 
 
 
-constFold = task "constFold" [constFold_compos,constFold_play,constFold_syb]
+constFold = task "constFold" [constFold_raw, constFold_compos,constFold_play,constFold_syb]
 
 constFold_compos = compStm2 f
     where
@@ -209,7 +209,9 @@ constFold_raw = rawStm2 f
         f x = x
         
         g (NEStm x) = NEStm (f x)
-        g (NEAdd x y) = NEAdd (g x) (g y)
+        g (NEAdd x y) = case (g x, g y) of
+                            (NEInt a, NEInt b) -> NEInt (a+b)
+                            (x,y) -> NEAdd x y
         g x = x
 
 
