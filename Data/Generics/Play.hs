@@ -50,10 +50,10 @@ descendM f x = liftM generate $ mapM f current
 
 
 everything :: Play on => on -> [on]
-everything x = allOverRest x []
+everything x = builder (f x)
     where
-        allOverRest :: Play on => on -> [on] -> [on]
-        allOverRest x rest = x : concatCont (map allOverRest $ getChildren x) rest
+        f :: Play on => on -> (on -> res -> res) -> res -> res
+        f x cons nil = x `cons` concatCont (map (\x -> f x cons) $ getChildren x) nil
 
 
 everythingContext :: Play on => on -> [(on, on -> on)]
