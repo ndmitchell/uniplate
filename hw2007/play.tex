@@ -502,7 +502,7 @@ Of these operations, some may be slightly optimised -- |everything| requires an 
 
 \subsection{Writing |Play| instances}
 
-While in other generics libraries it is trivial to write the instances, in our case it is more challenging. This is not of a big concern, we have developed automated approaches to deriving these libraries within the \textsc{Derive} tool.
+While in some generics libraries it is trivial to write the instances, in our case it is more challenging. This is not of a big concern, we have developed automated approaches to deriving these libraries within the \textsc{Derive} tool.
 
 \begin{figure}
 \begin{code}
@@ -693,10 +693,30 @@ The |PlayEx| class is defined in Figure \ref{fig:playex}. Consider |alpha| to be
 
 One thing to note, when defining |PlayEx| where |alpha == beta| the program does not descend to the children, but simply returns this particular node. This ``same type'' restriction can be captured using |Typeable|. There are two separate methods for defining a |PlayEx| instance -- using only MPTC's and overlapping instances (in a safe way). One requires the use of Typeable, and a set of combinators to define classes, the other requires the use of |Data| -- and consequently rank-2 types -- but can be automatically derived by GHC.
 
-It would be possible to explicitly require each pair to be specified, but this would be |O(n^2)| in the number of types. We instead only consider it practical to define |O(n)| applications, as the following do.
+We would also like to automatically derive |Play| from |PlayEx| where possible.
+
+\subsection{Manual instances}
+
+This requires |O(n^2)| but gives the highest performance. Like before these can be automatically generated, and you can move to these instances afterwards. These instances are not quite mechanical, but are certainly easier than |Play|.
+
+\begin{code}
+instance PlayOne NExpr where
+    playOne x =
+        case x of
+            NNeg  a    -> play NNeg |* a
+            NAdd  a b  -> play NAdd |* a |* b
+            NSub  a b  -> play NSub |* a |* b
+            NMul  a b  -> play NMul |* a |* b
+            NDiv  a b  -> play NDiv |* a |* b
+            _          -> play x
+\end{code}
+
+There are 5 combinators available, go through all of them.
+
+The advantage of this is that you don't need to search into deep corners.
+
 
 \subsection{In terms of |Typeable|}
-
 
 Writing |PlayEx| can be done following a similar scheme to |Play|. However, the freedom to use multi-parameter type classes can give us a little more freedom. By using overlapping instances, we can use the |/\| combinator:
 
@@ -809,7 +829,7 @@ After having seen the increased power available with |PlayEx|, users of Haskell 
 
 Imagine that a program mainly manipulates one type, the |Expr| type, but that this type is placed in many containers. Then in this case we can construct the |PlayExpr| type which is equivalent to |PlayEx| but with |Expr| frozen as the second argument. While is is not particularly beautiful, it does make the multi-type operations accessible to more users.
 
-This has been used extensively in the Yhc compiler.
+This has been used extensively in the Yhc compiler. Since the Yhc compiler does not support multi-parameter type classes, and is hoped to be bootstrapping shortly, this rules out MPTC.
 
 \section{Properties}
 
@@ -849,364 +869,261 @@ everything == tails
 
 
 
-\section{Existing Benchmarks}
+\section{Coding Benchmarks}
 
 In this section we compare specific examples of operations using the |Play| framework versus other frameworks. In particular the alternatives we focus on are Scrap Your Boilerplate and Compos. We start by using the single-type examples from Compos, then move on to the multi-type traversals. We then move on to the ``Paradise Benchmark'' from SYB. In all cases the Compos, SYB and Play functions are denoted by a preceding module name qualified. In some instances, a single operate function can be written the same in both SYB and Play -- where this is possible we have done so. Where possible, type signatures have been left absent -- these are a form of boilerplate that Haskell already deals with.
 
 We explicitly do not focus on the execution time for these operations, instead leaving this to the next section.
 
-\subsection{Single Type Examples from Compos}
+\subsection{Simple Examples from This Paper}
 
-\begin{figure}
-\begin{code}
-data Exp = Abs String Exp
-         | App Exp Exp
-         | Var String
-\end{code}
-\caption{Data structure from Compos}
-\label{fig:compos1}
-\end{figure}
+Here we simply give variations for the code shown before. Since our existing coding is so short, we have replicated it.
 
-All these examples come from Section 3 of the Compos paper. For completeness, we have replicated the data structure from that paper in Figure \ref{fig:compos1}.
-
-\subsubsection{The |rename| function}
-
-Now let us examine the |rename| function, which renames all variables to have a leading underscore
+\subsubsection{|variables|}
 
 \begin{code}
-operate (Abs  s x  )  = Abs  ("_" ++ s) x
-operate (Var  s    )  = Var  ("_" ++ s)
-operate x             = x
+Play.variables x = [y | NVar y <- everything x]
 
-Play.rename = traverse operate
+SYB.variables = everything (++) ([] `mkQ` f)
+    where  f (NVar y)  = [y]
+           f _         = []
 
-SYB.rename = everywhere (mkT operate)
-
-Compos.rename e = case e of
-    Abs x b  -> Abs ("_" ++ x) (Compos.rename b)
-    Var x    -> Var ("_" ++ x)
-    _        -> composOp Compos.rename e
+Comp.variables :: Expr a -> [String]
+Comp.variables x = case x of
+    Var y -> [y]
+    _ -> composOpFold [] (++) Comp.variables x
 \end{code}
 
-Note that in the Compos version there is only one function, in contrast to two in the Play version. However, in the Play version the traversal code is at the top, whereas with Compos it is the base case. Also note that in |Abs| Compos has to continue the recursion, if the |(rename b)| call was missed then this would not work - Play takes care of this detail automatically.
+In this example only Compos has been given a type signature, this is because in the other examples one can be automatically inferred -- but not for Compos. We note that list comprehensions are wonderful for queries.
 
-\subsubsection{The |free| function}
+\subsubsection{|zeroCount|}
 
-\begin{code} % compos
-free :: Exp -> [String]
-free e = case e of
-    EAbs x b -> delete x (free b)
-    EVar x -> [x]
-    _ -> composOpFold [] union free e
-\end{code}
-\begin{code} % play
-free :: Exp -> [String]
-free = fold unions $ \e y -> case e of
-    EAbs s x -> delete s y
-    EVar s -> [s]
-    x -> y
-    where unions = nub . concat
+\begin{code}
+Play.zeroCount x = length [() | Div _ (Val 0) <- everything x]
+
+SYB.zeroCount = SYB.everything (+) (0 `mkQ` f)
+    where  f (Div _ (Val 0))  = 1
+           f _                  = 0
+
+Comp.zeroCount :: Expr a -> Int
+Comp.zeroCount x = case x of
+    Div y (Val 0) -> 1 + Comp.zeroCount y
+    _ -> composOpFold 0 (+) Comp.zeroCount x
 \end{code}
 
-In this function the two approaches are relatively similar, in Compos the fold information is at the bottom, in Play it is at the top. Play gives slightly more freedom by allowing the combining function to combine a list in the heirarchy at a time, while Compos only lets a merge function merge two elements.
+Note here that the returning of a list of |()| is not as neat as it could be. Also, note the continuation in the Compos solution -- if this was missed (which is easy) it wouldn't work. This shows that manually continuing the traversal could be dangerous in some cases.
 
+\subsubsection{|simplify|}
 
-\subsubsection{The |fresh| function}
+\begin{code}
+simp (Sub x y)           = Add x (Neg y)
+simp (Add x y) | x == y  = Mul (Val 2) x
+simp x                   = x
 
-\begin{code} % compos
-fresh :: Exp -> Exp
-fresh x = evalState (f [] x) names
-    where
-        names = ["_" ++ show n | n <- [0..]]
-        f vs t = case t of
-            EAbs x b -> do
-                y:fs <- get
-                put fs
-                liftM (EAbs y) (f ((x,y):vs) b)
-            EVar x ->
-                return (EVar (fromMaybe x (lookup x vs)))
-            _ -> composOpM (f vs) t
-\end{code}
-\begin{code} % play
-fresh :: Exp -> Exp
-fresh x = evalState (f [] x) names
-    where
-        names = ["_" ++ show n | n <- [0..]]
-        f vs t = case t of
-            EAbs x b -> do
-                y:fs <- get
-                put fs
-                liftM (EAbs y) (f ((x,y):vs) b)
-            EVar x ->
-                return (EVar (fromMaybe x (lookup x vs)))
-            _ -> composM (f vs) t
+Play.simplify = traverse simp
+
+SYB.simplify = everywhere (mkT simp)
+
+Comp.simplify :: Expr a -> Expr a
+Comp.simplify x = case x of
+    Sub  a b -> Add (Comp.simplify a) (Neg (Comp.simplify b))
+    Add  a b -> case  (Comp.simplify a, Comp.simplify b) of
+                      (a',b') -> if a' == b' then Mul (Val 2) a' else Add a' b'
+    _ -> composOp Comp.simplify x
 \end{code}
 
-    In this particular example, none of the built in traversals provided by Play are much better than Compos, so instead the |compos| operator has been defined in the Play framework. This shows that anything Compos can do, Play can copy at the very least. (The code from the Compos example has been updated to use |Control.Monad.State|, to make it more accessible)
-
+Note here that this situation really calls out for a bottom-up traversal, which we provide, but Compos does not.
 
 
 \subsection{Multi-type Compos Examples}
 
-
-
-    The types manipulated by Secion 4 are:
-
+\begin{figure}
 \begin{code}
-data Stm = SDecl Typ Var
-         | SAss  Var Exp
-         | SBlock [Stm]
-         | SReturn Exp
+data Stm  =  SDecl    Typ Var
+          |  SAss     Var Exp
+          |  SBlock   [Stm]
+          |  SReturn  Exp
 
-data Exp = EStm Stm
-         | EAdd Exp Exp
-         | EVar Var
-         | EInt Int
+data Exp = EStm  Stm
+         | EAdd  Exp Exp
+         | EVar  Var
+         | EInt  Int
 
 data Var = V String
 
-% data Typ = T_int | T_float
+data Typ = T_int | T_float
 \end{code}
+\caption{Data type from Compos.}
+\label{fig:compos}
+\end{figure}
 
-    The first thing done by the Compos paper is to translate this into a GADT, which destroys abstraction. If a data structure representing a program was also defined, then this would have to be merged into the single GADT. Play on the other hand accepts the definition as supplied.
+The types manipulated by Section 4 are given in Figure \ref{fig:compos}. The first thing done by the Compos paper is to translate this into a GADT, which destroys abstraction. If a data structure representing a program was also defined, then this would have to be merged into the single GADT. Play on the other hand accepts the definition as supplied.
 
-
-    The manual PlayEx instances for this data structure are not particularly nice, this is mainly due to the decision to have |EStm| in the |Exp| data type. A much more natural definition would be either to merge |Stm| and |Exp|, or to add |SExp| to |Stm|. If either of these things were done, then the Play instances would be vastly simplified. Because of the ugliness of the manual Play instances, I merely list the instances defined, the code for them is available in the example.
-
-\begin{code}
-instance Play Stm
-instance Play Exp
-instance Play Var
-
-instance PlayEx Stm Stm
-instance PlayEx Exp Exp
-instance PlayEx Stm Exp
-instance PlayEx Exp Stm
-instance PlayEx Stm Var
-instance PlayEx Exp Var
-\end{code}
-
-    Of course, it is possible to write the Play instances using the PlayEx combinators (if we are willing to pay for undecidable instances), and for Exp this is shown:
-
-\begin{code}
-instance Play Exp where
-    replaceChildren x =
-        case x of
-            EStm s -> playMore EStm s
-            EAdd a b -> playTwo EAdd a b
-            x -> playDefault x
-
-instance PlayEx Exp Exp where; replaceChildrenEx = playSelf
-
-instance Play a => PlayEx Exp a where
-    replaceChildrenEx x =
-        case x of
-            EStm a -> play EStm /\ a
-            EAdd a b -> play EAdd /\ a /\ b
-            EVar a -> play EVar /\ a
-            EInt a -> play EInt /\! a
-\end{code}
-
-    These instances are more work than Compos, in particlar two copies have to be written compared to Compos, but they are at least relatively straight forward. If this is still too much work then:
-
-\begin{code}
-data Stm = ... deriving (Data,Typeable)
-data Exr = ... deriving (Data,Typeable)
-data Var = ... deriving (Data,Typeable)
-\end{code}
-
-    This permits the use of the SYB definitions, at the cost of some type safety. No instances need to be written at all.
-
-
-    While the choice of how to write the underlying functions is much more confusing with Play, compared to Compos, there is a good deal of flexibility. Depending on what features a user wishes to leverage, progressively shorter Play definitions can be specified. Hopefully the cost of writing instances will be low, compared to the use of Play functions. In one project the ratio is about 1:50, which supports this argument.
-
+We have not discussed the |warnAssign| function from this paper, as it could be implemented much more neatly as a query.
 
 \subsubsection{The |rename| function}
 
 \begin{code} % compos
-rename :: Tree c -> Tree c
-rename t = case t of
+ren (V x) = V ("_" ++ x)
+
+Play.rename = traverseEx ren
+
+SYB.rename = everywhere (mkT ren)
+
+Compos.rename :: Tree c -> Tree c
+Compos.rename t = case t of
     V x -> V ("_" ++ x)
-    _   -> composOp rename t
-\end{code}
-\begin{code} % play
-rename :: PlayEx x Var => x -> x
-rename = mapUnderEx $ \(V x) -> V ("_" ++ x)
+    _   -> composOp Compos.rename t
 \end{code}
 
-    The first thing to note is the Play function is shorter, there is only one constructor in type |Var|. In contrast Compos has merged all constructors into one GADT, and can not benefit from this. The Compos function works over all trees, including those based on |Typ|, which is meaningless, since types do not contain variables. The Play class only operates on |Exp| and |Stm| types.
-
-
-\subsubsection{The |warnAssign| function}
-
-\begin{code} % compos
-warnAssign :: Tree c -> IO ()
-warnAssign t = case t of
-    SAss _ _ -> putChar (chr 7)
-    _ -> composM_ warnAssign t
-\end{code}
-\begin{code} % play
-warnAssign :: PlayEx x Stm => x -> IO ()
-warnAssign = mapUnderExM_ $ \x -> case x of
-    SAss _ _ -> putChar (chr 7)
-    _ -> return ()
-\end{code}
-
-    Here the traversals are very similar, both threading a Monad through the code. This example shows how monadic actions can be threading through a traversal, however, this is not usually necessary. Using the Play class, a more natural traversal emerges:
-
-\begin{code} % play
-warnAssign :: PlayEx x Stm => x -> IO ()
-warnAssign x = putStr [chr 7 | SAss{} <- allOverEx x]
-\end{code}
-
-    Here the Play class is very concise. The Play approach extracts the relevant bits with a list comprehension. Hopefully this shows how analysis functions can often be implemented with |allOver|, rathern than a traversal. The Compos version could be written using a fold, which would reduce it's complexity, although would still be more complex than the Compos version.
-
+The first thing to note is the Play function is shorter, there is only one constructor in type |Var|. In contrast Compos has merged all constructors into one GADT, and can not benefit from this. The Compos function works over all trees, including those based on |Typ|, which is meaningless, since types do not contain variables. The Play class only operates on |Exp| and |Stm| types.
 
 
 \subsubsection{The |symbols| function}
 
-\begin{code} % compos
-symbols :: Tree c -> [(Tree Var, Tree Typ)]
-symbols t = case t of
+\begin{code}
+Play.symbols x = [(v,t) | NSDecl t v <- everythingEx x]
+
+SYB.symbols = everything (++) ([] `mkQ` f)
+    where  f (NSDecl t v)  = [(v,t)]
+           f _             = []
+
+Compos.symbols :: Tree c -> [(Tree Var, Tree Typ)]
+Compos.symbols x = case x of
     SDecl typ var -> [(var,typ)]
-    _ -> composOpMonoid symbols t
-\end{code}
-\begin{code} % play
-symbols :: PlayEx x Stm => x -> [(Var,Typ)]
-symbols x = [(v,t) | SDecl t v <- allOverEx x]
+    _ -> composOpMonoid Compos.symbols t
 \end{code}
 
-    Here the Compos function does a traversal of the tree, however again the Play class simply extracts the right bits. This example is almost identical to the previous |warnAssign| using Play, however the Compos approach introduces distinctions by requiring a more ordered approach to traversal.
+Here the Compos function does a traversal of the tree, however again the Play class simply extracts the right bits. This example is almost identical to the previous |warnAssign| using Play, however the Compos approach introduces distinctions by requiring a more ordered approach to traversal.
 
 
 \subsubsection{The |constFold| function}
 
-\begin{code} % compos
-constFold :: Tree c -> Tree c
-constFold e = case e of
-    EAdd x y -> case (constFold x, constFold y) of
-                    (EInt n, EInt m) -> EInt (n+m)
-                    (x',y') -> EAdd x' y'
-    _ -> composOp constFold e
+\begin{code}
+optimise (EAdd (EInt n) (EInt m)) = EInt (n+m)
+optimise x = x
+
+Play.constFold = traverseEx optimise
+
+SYB.constFold = everywhere (mkT optimise)
+
+Compos.constFold :: Tree c -> Tree c
+Compos.constFold e = case e of
+    EAdd x y -> case  (f x, f y) of
+                      (CEInt n, CEInt m) -> CEInt (n+m)
+                      (x',y') -> CEAdd x' y'
+    _ -> composOp Compos.constFold e
 \end{code}
-\begin{code} % play
-constFold :: PlayEx x Exp => x -> x
-constFold = mapUnderEx $ \e -> case e of
-    EAdd (EInt n) (EInt m) -> EInt (n+m)
-    x -> x
-\end{code}
 
-    The constant folding operation is a bottom-up traversal, requiring sub expressions to have been replaced before they are examined. Unfortunately Compos only supports top-down traversals, requiring the user to manually do a small traversal in the middle. Play supports both types of traversals, and experience has shown that bottom-up is almost always what the user wants. This allows Play to produce shorter code.
-
-
-
+The constant folding operation is a bottom-up traversal, requiring sub expressions to have been replaced before they are examined. Unfortunately Compos only supports top-down traversals, requiring the user to manually do a small traversal in the middle. Play and SYB both support bottom-up traversals, so this works fine.
 
 
 \subsection{The Paradise Benchmark}
-\subsubsection{Section 7.1.1}
 
-
-    The examples in Section 7.1.1 require lots of data types and lots of different styles of traversal. As such manual Play instances would not really be appropriate for this type of task - the instances would take too long to write. If we use the SYB instances, by importing |Data.PlaySYB| then we can start and take a look at the traversals. For this section, the SYB instance is presented first, followed by the Compos one, followed by the Play one.
-
-
-    For completeness the data definition is reproduced here. For SYB and Play, deriving clauses have to be added. For Compos the whole thing is replaced by a GADT. All the code for Play is in the file |Examples/SYB.hs|.
-
+\begin{figure}
 \begin{code}
-data Company = C [Dept]
-data Dept = D Name Manager [Unit]
-%data Unit = PU Employee | DU Dept
-data Employee = E Person Salary
-data Person = P Name Address
-data Salary = S Float
 type Manager = Employee
 type Name = String
 type Address = String
+
+data Company = C [Dept]
+data Dept = D Name Manager [Unit]
+data Unit = PU Employee | DU Dept
+data Employee = E Person Salary
+data Person = P Name Address
+data Salary = S Integer
 \end{code}
+\caption{Paradise Benchmark data structure.}
+\label{fig:paradise}
+\end{figure}
+
+The Paradise benchmark was introduced in SYB \ref{syb}. The data type is shown in Figure \ref{fig:paradise}. The idea is that this data type represents an XML file, and a Haskell program is being written to perform various operations over it. The Compos paper includes an encoding into a GADT, with tag types for each of the different types.
+
+We have made one alteration to the data type -- |Salary| is no longer of type |Float| but of type |Integer|. In various experiments we found that the floating point numbers could not be guaranteed to have the required accuracy -- making different operations return different results, despite being theoretically the same. This change is of no consequence to the boilerplate code -- although does remind us that storing your salary in a non-exact manner is probably not a great idea!
 
 \subsubsection{The |increase| function}
 
-\begin{code} % syb
-increase :: Data a => Float -> a -> a
-increase k = everywhere (mkT (incS k))
+The first function discussed in the SYB paper is |increase|. This function increases every item of type |Salary| by a given percentage. In order to fit with our modified |Salary| data type, we have chosen to increase all salaries by |k|.
 
-incS :: Float -> Salary -> Salary
-incS k (S s) = S (s * (1+k))
-\end{code}
-\begin{code} % compos
-increase :: Float -> Tree c -> Tree c
-increase k c = case c of
-    S s -> S (s * (1+k))
-    _ -> composOp (increase k) c
-\end{code}
-\begin{code} % play
-increase :: PlayEx x Salary => Float -> x -> x
-increase k = mapUnderEx (\(S s) -> S (s * (1+k)))
+\begin{code}
+incS :: Integer -> Salary -> Salary
+incS k (S s) = S (s + k)
+
+Play.increase k = traverseEx (incS k)
+
+SYB.increase k = everywhere (mkT (incS k))
+
+Comp.increase :: Integer -> Tree c -> Tree c
+Comp.increase k c = case c of
+    S s -> S (s + k)
+    _ -> composOp (Comp.increase k) c
 \end{code}
 
-    Here the Play uses seems to be the most intuative. It requires no rank-2 types, no GADT's, and yet still provides the shortest code. The SYB approach requires separate functions to get the type classes working, and use of rather complex intermediates such as |mkT| and |everywhere|. The Compos function appears to be much simpler than SYB, but by merging all the data constructors has to perform a case on the value. By keeping the original structure intact, Play can simply state the property.
-
+The effect of Compos to transform all constructors into the same set means that instead of just matching on |S|, all constructors must be examined.
 
 \subsubsection{The |incrOne| function}
 
-\begin{code} % syb
-incrOne :: Data a => Name -> Float -> a -> a
-incrOne n k a | isDept n a = increase k a
-              | otherwise = gmapT (incrOne n k) a
+The |incrOne| function performs the same operation as |increase|, but only within a named department. We are able to reuse the |increase| function from the previous section in all cases.
 
-isDept :: Data a => Name -> a -> Bool
-isDept n = False `mkQ` isDeptD n
+\begin{code}
+Play.incrOne name k = traverseEx f
+    where f (D n _ _) = if name == n then Play.increase k d else d
 
-isDeptD :: Name -> Dept -> Bool
-isDeptD n (D n2 _ _) = n==n2
-\end{code}
-\begin{code} % compos
-incrOne :: Name -> Float -> Tree c -> Tree c
-incrOne d k c = case c of
-    D n _ _ | n == d -> increase k c
-    _ -> composOp (incrOne d k) c
-\end{code}
-\begin{code} % play
-incrOne :: PlayEx x Dept => String -> Float -> x -> x
-incrOne name k = mapUnderEx (\d@(D n _ _) -> if name == n then increase k d else d)
+SYB.incrOne n k a  | isDept n a  = SYB.increase k a
+                   | otherwise   = gmapT (SYB.incrOne n k) a
+    where
+        isDept n = False `mkQ` isDeptD n
+        isDeptD n (D n2 _ _) = n==n2
+
+Comp.incrOne :: Name -> Float -> Tree c -> Tree c
+Comp.incrOne d k c = case c of
+    D n _ _ | n == d -> Comp.increase k c
+    _ -> composOp (Comp.incrOne d k) c
 \end{code}
 
-    Here SYB has grown substantially more complex, to accomodate the invariant, requiring two different utility functions. Compos still retains the same structure as before, requiring a case to distinguish between the types of constructor. Play remains shorter - although in this case the complexity is roughly the same as the Compos solution.
-
+Here SYB has grown substantially more complex, to accommodate the invariant, requiring two different utility functions. Compos still retains the same structure as before, requiring a case to distinguish between the types of constructor. Play remains shorter - although in this case the complexity is roughly the same as the Compos solution.
 
 \subsubsection{The |salaryBill| function}
 
-\begin{code} % syb
-salaryBill :: Company -> Float
-salaryBill = everything (+) (0 `mkQ` billS)
+The final function is one which sums all the salaries.
 
-billS :: Salary -> Float
-billS (S f) = f
-\end{code}
-\begin{code} % compos
-salaryBill :: Tree c -> Float
-salaryBill c = case c of
+\begin{code}
+Play.salaryBill x = sum [x | S x <- everythingEx x]
+
+SYB.salaryBill = everything (+) (0 `mkQ` billS)
+   where billS (S f) = f
+
+Comp.salaryBill :: Tree c -> Integer
+Comp.salaryBill c = case c of
     S s -> s
-    _ -> composOpFold 0 (+) salaryBill c
-\end{code}
-\begin{code} % play
-salaryBill :: PlayEx x Salary => x -> Float
-salaryBill x = sum [x | S x <- allOverEx x]
+    _ -> composOpFold 0 (+) Comp.salaryBill c
 \end{code}
 
-    Here the Play instance wins by being able to use a list comprehension to select the salary value out of a Salary object. The Play class is the only one that is able to use the standard Haskell |sum| function, not requiring an explicit fold to be performed. In this case it could easily be argued that |billS| is probably a general function, so the cost of writting it is not really correctly attributed to the SYB approach. If |billS| is a generally defined function, then you can rewrite the Play example as:
-
-\begin{code} % play
-salaryBill2 :: PlayEx x Salary => x -> Float
-salaryBill2 = sum . map billS . allOverEx
-\end{code}
-
-    This solution is nice in that it is a very specification orientated view of the problem. Take all the salaries, get their value, and sum them.
-
+Here the Play instance wins by being able to use a list comprehension to select the salary value out of a Salary object. The Play class is the only one that is able to use the standard Haskell |sum| function, not requiring an explicit fold to be performed. This solution is nice in that it is a very specification orientated view of the problem. Take all the salaries, get their value, and sum them.
 
 
 \section{Implementation Speed}
 
+In order to have a benchmark we pick the following.
+
 note, we change SYB from Float to Int, as otherwise we get stuffed by floating point errors in folds vs sums.
+
+\subsection{PlayManual continuation passing}
+
+
+\subsection{Optimising |everything|}
+
+Mention foldr/build fusion, continuation passing etc.
+
+\subsection{Optimising |PlayData|}
+
+Mention that getChildren is gmapQ, while replaceChildren is a gfoldl, doing both operations in a single pass.
+
+Note the use of case instead of where to make tuples faster.
+
+Discuss the oracle trick in detail.
+
+
 
 \section{Related Work}
 
@@ -1668,367 +1585,6 @@ replaceChildren :: on -> ([on], [on] -> on)
 </ul>
 <p>
     Now I compare the examples in the paper, with the equivalent using Play. The Compos variant is shown in <i>italics</i>.
-</p>
-
-
-<h3>Examples from Section 3</h3>
-
-<p>
-    First off, I replicate the data structure from their paper, along with a Play instance.
-</p>
-<pre>
-data Exp = EAbs String Exp
-         | EApp Exp Exp
-         | EVar String
-         deriving Show
-
-instance Play Exp where
-    replaceChildren x =
-        case x of
-            EAbs a c -> playOne (EAbs a) c
-            EApp c1 c2 -> playTwo EApp c1 c2
-            x -> playDefault x
-</pre>
-
-<h3>The <tt>rename</tt> function</h3>
-
-<p>
-    Now let us examine the <tt>rename</tt> function. In addition to the Compos and Play versions, I first present the version written <i>without</i> any traveral code:
-</p>
-<pre>
-rename :: Exp -> Exp
-rename e = case e of
-    EAbs x b -> EAbs ("_" ++ x) (rename b)
-    EApp c a -> EApp (rename c) (rename a)
-    EVar x   -> EVar ("_" ++ x)
-</pre>
-<p>
-    And now the two variants from the libraries:
-</p>
-<pre class="compos">
-rename :: Exp -> Exp
-rename e = case e of
-    EAbs x b -> EAbs ("_" ++ x) (rename b)
-    EVar x   -> EVar ("_" ++ x)
-    _        -> composOp rename e
-</pre>
-<pre class="play">
-rename :: Exp -> Exp
-rename = mapUnder $ \e -> case e of
-    EAbs s x -> EAbs ("_" ++ s) x
-    EVar s -> EVar ("_" ++ s)
-    x -> x
-</pre>
-<p>
-    Note that in the Compos version there is only one function, in contrast to two in the Play version. However, in the Play version the traversal code is at the top, whereas with Compos it is the base case. Also note that in <tt>EAbs</tt> Compos has to continue the recursion, if the <tt>(rename b)</tt> call was missed then this would not work - Play takes care of this detail automatically.
-</p>
-
-
-<h3>The <tt>free</tt> function</h3>
-
-<pre class="compos">
-free :: Exp -> [String]
-free e = case e of
-    EAbs x b -> delete x (free b)
-    EVar x -> [x]
-    _ -> composOpFold [] union free e
-</pre>
-<pre class="play">
-free :: Exp -> [String]
-free = fold (nub . concat) $ \e y -> case e of
-    EAbs s x -> delete s y
-    EVar s -> [s]
-    x -> y
-</pre>
-<p>
-    In this function the two approaches are relatively similar, in Compos the fold information is at the bottom, in Play it is at the top. Play gives slightly more freedom by allowing the combining function to combine a list in the heirarchy at a time, while Compos only lets a merge function merge two elements.
-</p>
-
-<h3>The <tt>fresh</tt> function</h3>
-
-<pre class="compos">
-fresh :: Exp -> Exp
-fresh x = evalState (f [] x) names
-    where
-        names = ["_" ++ show n | n <- [0..]]
-        f vs t = case t of
-            EAbs x b -> do
-                y:fs <- get
-                put fs
-                liftM (EAbs y) (f ((x,y):vs) b)
-            EVar x ->
-                return (EVar (fromMaybe x (lookup x vs)))
-            _ -> composOpM (f vs) t
-</pre>
-<pre class="play">
-fresh :: Exp -> Exp
-fresh x = evalState (f [] x) names
-    where
-        names = ["_" ++ show n | n <- [0..]]
-        f vs t = case t of
-            EAbs x b -> do
-                y:fs <- get
-                put fs
-                liftM (EAbs y) (f ((x,y):vs) b)
-            EVar x ->
-                return (EVar (fromMaybe x (lookup x vs)))
-            _ -> composM (f vs) t
-</pre>
-<p>
-    In this particular example, none of the built in traversals provided by Play are much better than Compos, so instead the <tt>compos</tt> operator has been defined in the Play framework. This shows that anything Compos can do, Play can copy at the very least. (The code from the Compos example has been updated to use <tt>Control.Monad.State</tt>, to make it more accessible)
-</p>
-
-<h3>Examples from Section 4</h3>
-
-<p>
-    The types manipulated by Secion 4 are:
-</p>
-<pre>
-data Stm = SDecl Typ Var
-         | SAss  Var Exp
-         | SBlock [Stm]
-         | SReturn Exp
-
-data Exp = EStm Stm
-         | EAdd Exp Exp
-         | EVar Var
-         | EInt Int
-
-data Var = V String
-
-% data Typ = T_int | T_float
-</pre>
-<p>
-    The first thing done by the Compos paper is to translate this into a GADT, which destroys abstraction. If a data structure representing a program was also defined, then this would have to be merged into the single GADT. Play on the other hand accepts the definition as supplied.
-</p>
-<p>
-    The manual PlayEx instances for this data structure are not particularly nice, this is mainly due to the decision to have <tt>EStm</tt> in the <tt>Exp</tt> data type. A much more natural definition would be either to merge <tt>Stm</tt> and <tt>Exp</tt>, or to add <tt>SExp</tt> to <tt>Stm</tt>. If either of these things were done, then the Play instances would be vastly simplified. Because of the ugliness of the manual Play instances, I merely list the instances defined, the code for them is available in the example.
-</p>
-<pre>
-instance Play Stm
-instance Play Exp
-instance Play Var
-
-instance PlayEx Stm Stm
-instance PlayEx Exp Exp
-instance PlayEx Stm Exp
-instance PlayEx Exp Stm
-instance PlayEx Stm Var
-instance PlayEx Exp Var
-</pre>
-<p>
-    Of course, it is possible to write the Play instances using the PlayEx combinators (if we are willing to pay for undecidable instances), and for Exp this is shown:
-</p>
-<pre>
-instance Play Exp where
-    replaceChildren x =
-        case x of
-            EStm s -> playMore EStm s
-            EAdd a b -> playTwo EAdd a b
-            x -> playDefault x
-
-instance PlayEx Exp Exp where; replaceChildrenEx = playSelf
-
-instance Play a => PlayEx Exp a where
-    replaceChildrenEx x =
-        case x of
-            EStm a -> play EStm /\ a
-            EAdd a b -> play EAdd /\ a /\ b
-            EVar a -> play EVar /\ a
-            EInt a -> play EInt /\! a
-</pre>
-<p>
-    These instances are more work than Compos, in particlar two copies have to be written compared to Compos, but they are at least relatively straight forward. If this is still too much work then:
-</p>
-<pre>
-data Stm = ... deriving (Data,Typeable)
-data Exr = ... deriving (Data,Typeable)
-data Var = ... deriving (Data,Typeable)
-</pre>
-<p>
-    This permits the use of the SYB definitions, at the cost of some type safety. No instances need to be written at all.
-</p>
-<p>
-    While the choice of how to write the underlying functions is much more confusing with Play, compared to Compos, there is a good deal of flexibility. Depending on what features a user wishes to leverage, progressively shorter Play definitions can be specified. Hopefully the cost of writing instances will be low, compared to the use of Play functions. In one project the ratio is about 1:50, which supports this argument.
-</p>
-
-<h3>The <tt>rename</tt> function</h3>
-
-<pre class="compos">
-rename :: Tree c -> Tree c
-rename t = case t of
-    V x -> V ("_" ++ x)
-    _   -> composOp rename t
-</pre>
-<pre class="play">
-rename :: PlayEx x Var => x -> x
-rename = mapUnderEx $ \(V x) -> V ("_" ++ x)
-</pre>
-<p>
-    The first thing to note is the Play function is shorter, there is only one constructor in type <tt>Var</tt>. In contrast Compos has merged all constructors into one GADT, and can not benefit from this. The Compos function works over all trees, including those based on <tt>Typ</tt>, which is meaningless, since types do not contain variables. The Play class only operates on <tt>Exp</tt> and <tt>Stm</tt> types.
-</p>
-
-<h3>The <tt>warnAssign</tt> function</h3>
-
-<pre class="compos">
-warnAssign :: Tree c -> IO ()
-warnAssign t = case t of
-    SAss _ _ -> putChar (chr 7)
-    _ -> composM_ warnAssign t
-</pre>
-<pre class="play">
-warnAssign :: PlayEx x Stm => x -> IO ()
-warnAssign = mapUnderExM_ $ \x -> case x of
-    SAss _ _ -> putChar (chr 7)
-    _ -> return ()
-</pre>
-<p>
-    Here the traversals are very similar, both threading a Monad through the code. This example shows how monadic actions can be threading through a traversal, however, this is not usually necessary. Using the Play class, a more natural traversal emerges:
-</p>
-<pre class="play">
-warnAssign :: PlayEx x Stm => x -> IO ()
-warnAssign x = putStr [chr 7 | SAss{} <- allOverEx x]
-</pre>
-<p>
-    Here the Play class is very concise. The Play approach extracts the relevant bits with a list comprehension. Hopefully this shows how analysis functions can often be implemented with <tt>allOver</tt>, rathern than a traversal. The Compos version could be written using a fold, which would reduce it's complexity, although would still be more complex than the Compos version.
-</p>
-
-
-<h3>The <tt>symbols</tt> function</h3>
-
-<pre class="compos">
-symbols :: Tree c -> [(Tree Var, Tree Typ)]
-symbols t = case t of
-    SDecl typ var -> [(var,typ)]
-    _ -> composOpMonoid symbols t
-</pre>
-<pre class="play">
-symbols :: PlayEx x Stm => x -> [(Var,Typ)]
-symbols x = [(v,t) | SDecl t v <- allOverEx x]
-</pre>
-<p>
-    Here the Compos function does a traversal of the tree, however again the Play class simply extracts the right bits. This example is almost identical to the previous <tt>warnAssign</tt> using Play, however the Compos approach introduces distinctions by requiring a more ordered approach to traversal.
-</p>
-
-<h3>The <tt>constFold</tt> function</h3>
-
-<pre class="compos">
-constFold :: Tree c -> Tree c
-constFold e = case e of
-    EAdd x y -> case (constFold x, constFold y) of
-                    (EInt n, EInt m) -> EInt (n+m)
-                    (x',y') -> EAdd x' y'
-    _ -> composOp constFold e
-</pre>
-<pre class="play">
-constFold :: PlayEx x Exp => x -> x
-constFold = mapUnderEx $ \e -> case e of
-    EAdd (EInt n) (EInt m) -> EInt (n+m)
-    x -> x
-</pre>
-<p>
-    The constant folding operation is a bottom-up traversal, requiring sub expressions to have been replaced before they are examined. Unfortunately Compos only supports top-down traversals, requiring the user to manually do a small traversal in the middle. Play supports both types of traversals, and experience has shown that bottom-up is almost always what the user wants. This allows Play to produce shorter code.
-</p>
-
-
-<h3>Section 7.1.1</h3>
-
-<p>
-    The examples in Section 7.1.1 require lots of data types and lots of different styles of traversal. As such manual Play instances would not really be appropriate for this type of task - the instances would take too long to write. If we use the SYB instances, by importing <tt>Data.PlaySYB</tt> then we can start and take a look at the traversals. For this section, the SYB instance is presented first, followed by the Compos one, followed by the Play one.
-</p>
-<p>
-    For completeness the data definition is reproduced here. For SYB and Play, deriving clauses have to be added. For Compos the whole thing is replaced by a GADT. All the code for Play is in the file <tt>Examples/SYB.hs</tt>.
-</p>
-<pre>
-data Company = C [Dept]
-data Dept = D Name Manager [Unit]
-%data Unit = PU Employee | DU Dept
-data Employee = E Person Salary
-data Person = P Name Address
-data Salary = S Float
-type Manager = Employee
-type Name = String
-type Address = String
-</pre>
-
-<h3>The <tt>increase</tt> function</h3>
-
-<pre class="syb">
-increase :: Data a => Float -> a -> a
-increase k = everywhere (mkT (incS k))
-
-incS :: Float -> Salary -> Salary
-incS k (S s) = S (s * (1+k))
-</pre>
-<pre class="compos">
-increase :: Float -> Tree c -> Tree c
-increase k c = case c of
-    S s -> S (s * (1+k))
-    _ -> composOp (increase k) c
-</pre>
-<pre class="play">
-increase :: PlayEx x Salary => Float -> x -> x
-increase k = mapUnderEx (\(S s) -> S (s * (1+k)))
-</pre>
-<p>
-    Here the Play uses seems to be the most intuative. It requires no rank-2 types, no GADT's, and yet still provides the shortest code. The SYB approach requires separate functions to get the type classes working, and use of rather complex intermediates such as <tt>mkT</tt> and <tt>everywhere</tt>. The Compos function appears to be much simpler than SYB, but by merging all the data constructors has to perform a case on the value. By keeping the original structure intact, Play can simply state the property.
-</p>
-
-<h3>The <tt>incrOne</tt> function</h3>
-
-<pre class="syb">
-incrOne :: Data a => Name -> Float -> a -> a
-incrOne n k a | isDept n a = increase k a
-              | otherwise = gmapT (incrOne n k) a
-
-isDept :: Data a => Name -> a -> Bool
-isDept n = False `mkQ` isDeptD n
-
-isDeptD :: Name -> Dept -> Bool
-isDeptD n (D n2 _ _) = n==n2
-</pre>
-<pre class="compos">
-incrOne :: Name -> Float -> Tree c -> Tree c
-incrOne d k c = case c of
-    D n _ _ | n == d -> increase k c
-    _ -> composOp (incrOne d k) c
-</pre>
-<pre class="play">
-incrOne :: PlayEx x Dept => String -> Float -> x -> x
-incrOne name k = mapUnderEx (\d@(D n _ _) -> if name == n then increase k d else d)
-</pre>
-<p>
-    Here SYB has grown substantially more complex, to accomodate the invariant, requiring two different utility functions. Compos still retains the same structure as before, requiring a case to distinguish between the types of constructor. Play remains shorter - although in this case the complexity is roughly the same as the Compos solution.
-</p>
-
-<h3>The <tt>salaryBill</tt> function</h3>
-
-<pre class="syb">
-salaryBill :: Company -> Float
-salaryBill = everything (+) (0 `mkQ` billS)
-
-billS :: Salary -> Float
-billS (S f) = f
-</pre>
-<pre class="compos">
-salaryBill :: Tree c -> Float
-salaryBill c = case c of
-    S s -> s
-    _ -> composOpFold 0 (+) salaryBill c
-</pre>
-<pre class="play">
-salaryBill :: PlayEx x Salary => x -> Float
-salaryBill x = sum [x | S x <- allOverEx x]
-</pre>
-<p>
-    Here the Play instance wins by being able to use a list comprehension to select the salary value out of a Salary object. The Play class is the only one that is able to use the standard Haskell <tt>sum</tt> function, not requiring an explicit fold to be performed. In this case it could easily be argued that <tt>billS</tt> is probably a general function, so the cost of writting it is not really correctly attributed to the SYB approach. If <tt>billS</tt> is a generally defined function, then you can rewrite the Play example as:
-</p>
-<pre class="play">
-salaryBill2 :: PlayEx x Salary => x -> Float
-salaryBill2 = sum . map billS . allOverEx
-</pre>
-<p>
-    This solution is nice in that it is a very specification orientated view of the problem. Take all the salaries, get their value, and sum them.
 </p>
 
 

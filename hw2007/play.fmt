@@ -21,6 +21,8 @@
 %format not = "\mathsf{not}"
 %format `mergeVal` = "\sqcap{}"
 
+%format `mkQ` = "\;\textsf{\`{}\!mkQ\!\`{}}\;"
+
 %subst conid a = "\mathsf{" a "}"
 %subst varid a = "\mathsf{" a "}"
 %subst varsym a = "\mathsf{" a "}"
