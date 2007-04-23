@@ -1127,10 +1127,20 @@ Discuss the oracle trick in detail.
 
 \section{Related Work}
 
-note that compos does NOT have trivial instances, they are type based!
+\subsection{SYB}
+
+we only go part way.
+
+\subsection{Compos}
+
+Advantages of Play: Haskell 98 (the Play class), plus multi-parameter type classes (PlayEx only), Does not require GADT's or rank-2 types, No need to change the data structure, Less boilerplate in the traversa, Supports more traversals.
+
+Note both Compos and Play require complex instances, but Compos does not have a tool to generate them (although one could be written), and does not have an easy instance at any level.
+
+Compos works on GADT's.
+
 
 \section{Conclusions and Future Work}
-
 
 
 
@@ -1561,31 +1571,6 @@ replaceChildren :: on -> ([on], [on] -> on)
 </p>
 
 
-<h2>Comparison to the Compos Paper</h2>
-
-<p>
-    The Compos paper provides a similar mechansim, so the obvious question is how they related. A summary of the advantages and disadvantages is provided, followed by reimplementations of their operations using Play and PlayEx. This code can be found in the <tt>ComposPaper</tt> file. This section is designed to be read with a copy of the Compos paper to hand, alternatives are given, but the tasks are not explained in this section.
-</p>
-<p>
-    Advantages of Play:
-</p>
-<ul>
-    <li>Haskell 98 (the Play class), plus multi-parameter type classes (PlayEx only)</li>
-    <li>Does not require GADT's or rank-2 types</li>
-    <li>No need to change the data structure</li>
-    <li>Less boilerplate in the traversal</li>
-    <li>Supports more traversals</li>
-</ul>
-<p>
-    Advantages of Compos:
-</p>
-<ul>
-    <li>Easier to write traversal code (unless using PlaySYB)</li>
-    <li>Supports GADT's</li>
-</ul>
-<p>
-    Now I compare the examples in the paper, with the equivalent using Play. The Compos variant is shown in <i>italics</i>.
-</p>
 
 
 
