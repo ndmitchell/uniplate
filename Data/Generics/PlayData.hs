@@ -96,29 +96,6 @@ getTypeOneWith f a b = case f a of
                            Miss -> b
 
 
-getTypeOne :: (Data a, Typeable a, Typeable b) => a -> [b] -> [b]
-getTypeOne a b = mkQ (concatCont (gmapQ getTypeOne a) b) (:b) a
-
-
-{-
-OLD VERSION USING TWO SEPARATE TRAVERSALS
-
-collect_generate :: (Data on, Play with, Typeable on, Typeable with) => on -> ([with],[with] -> on)
-collect_generate item = (collect, generate)
-    where
-        collect = concat $ gmapQ getChildrenEx item
-
-        generate xs = evalState (gmapM f item) xs
-            where
-                f x = do
-                        ys <- get
-                        let (as,bs) = splitAt (length col) ys
-                        put bs
-                        return $ gen as
-                    where
-                        (col,gen) = replaceChildrenEx x
--}
-
 
 newtype C x a = C {fromC :: CC x a}
 
@@ -150,3 +127,26 @@ collect_generate item = fromC $ gfoldl combine create item
         
         -- forall g . g -> C with g
         create x = C (id, \res -> (x, res))
+
+
+
+
+
+{-
+OLD VERSION USING TWO SEPARATE TRAVERSALS
+
+collect_generate :: (Data on, Play with, Typeable on, Typeable with) => on -> ([with],[with] -> on)
+collect_generate item = (collect, generate)
+    where
+        collect = concat $ gmapQ getChildrenEx item
+
+        generate xs = evalState (gmapM f item) xs
+            where
+                f x = do
+                        ys <- get
+                        let (as,bs) = splitAt (length col) ys
+                        put bs
+                        return $ gen as
+                    where
+                        (col,gen) = replaceChildrenEx x
+-}
