@@ -1225,6 +1225,10 @@ http://www.haskell.org/tmrwiki/WhyAttributeGrammarsMatter
 
 \subsection{Applicative}
 
+\subsection{From Ralf}
+
+Just a few notes. (i) Hugs *does* support rank-2 polymorpism but it does not implement the type class Data I guess, but perhaps it should. Also there is a small chance that hugs' approach to rank-2 is not exactly identical and would trigger issues with SYB. (ii) If you generally prefer exercising a GP setup such that no rank-2 types surface the program, you could use Strafunski. (iii) In particular, have a look at the "polymorphic symphony" paper that uses first-class polymorphism (as opposed to rank-2) and opaque generic function types to set up a library of generic function combinators. Because it uses data types for generic function types, you get full type inference. (iv) You find an older JLAP paper on my web site developing a simple type system for a Stratego-like formal setup.
+
 \section{Conclusions and Future Work}
 
 
