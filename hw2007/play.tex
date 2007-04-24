@@ -896,8 +896,8 @@ Comp.simplify :: Expr a -> Expr a
 Comp.simplify x = case x of
     Sub  a b -> Add (simplify a) (Neg (simplify b))
     Add  a b -> case  (simplify a, simplify b) of
-                      (a',b') | a' == b'   -> Mul (Val 2) a'
-                              | otherwise  -> Add a' b'
+                      (a',b')  | a' == b'   -> Mul (Val 2) a'
+                               | otherwise  -> Add a' b'
     _ -> composOp simplify x
 \end{code}
 
@@ -939,8 +939,8 @@ Play.rename = traverseEx ren
 
 SYB.rename = everywhere (mkT ren)
 
-Compos.rename :: Tree c -> Tree c
-Compos.rename t = case t of
+Comp.rename :: Tree c -> Tree c
+Comp.rename t = case t of
     V x -> V ("_" ++ x)
     _   -> composOp rename t
 \end{code}
@@ -957,8 +957,8 @@ SYB.symbols = everything (++) ([] `mkQ` f)
     where  f (NSDecl t v)  = [(v,t)]
            f _             = []
 
-Compos.symbols :: Tree c -> [(Tree Var, Tree Typ)]
-Compos.symbols x = case x of
+Comp.symbols :: Tree c -> [(Tree Var, Tree Typ)]
+Comp.symbols x = case x of
     SDecl typ var -> [(var,typ)]
     _ -> composOpMonoid symbols t
 \end{code}
@@ -976,8 +976,8 @@ Play.constFold = traverseEx optimise
 
 SYB.constFold = everywhere (mkT optimise)
 
-Compos.constFold :: Tree c -> Tree c
-Compos.constFold e = case e of
+Comp.constFold :: Tree c -> Tree c
+Comp.constFold e = case e of
     EAdd x y -> case  (f x, f y) of
                       (CEInt n, CEInt m) -> CEInt (n+m)
                       (x',y') -> CEAdd x' y'
@@ -1103,13 +1103,13 @@ We suspect there are further places for improvement:
 Our initial |everything| implementation was presented as:
 
 \begin{code}
+everything :: Play on => on -> [on]
 everything x = x : concatMap everything $ getChildren x
 \end{code}
 
 The disadvantage of this code is that the |concatMap| constructs and consumes the list at every level, requiring one reconstruction per level of depth in the data structure. We can fix this by using continuations:
 
 \begin{code}
-everything :: Play on => on -> [on]
 everything x = f x []
     where  f :: Play on => on -> [on] -> [on]
            f x rest = x : concatCont (map f $ getChildren x) rest
@@ -1129,8 +1129,10 @@ Now we can also make |f| a good producer using |build|:
 \begin{code}
 everything :: Play on => on -> [on]
 everything x = build (f x)
-    where  f :: Play on => on -> (on -> res -> res) -> res -> res
-           f x cons nil = x `cons` concatCont (map (\x -> f x cons) $ getChildren x) nil
+    where
+    f :: Play on => on -> (on -> res -> res) -> res -> res
+    f x cons nil = x `cons`
+        concatCont (map (flip f cons) $ getChildren x) nil
 \end{code}
 
 

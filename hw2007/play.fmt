@@ -22,6 +22,7 @@
 %format `mergeVal` = "\sqcap{}"
 
 %format `mkQ` = "\;\textsf{\`{}\!mkQ\!\`{}}\;"
+%format `cons` = "\;\textsf{\`{}\!cons\!\`{}}\;"
 
 %subst conid a = "\mathsf{" a "}"
 %subst varid a = "\mathsf{" a "}"
