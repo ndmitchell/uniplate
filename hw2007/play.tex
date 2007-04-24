@@ -758,34 +758,38 @@ Unfortunately this requires undecidable instances. A Play instance still needs t
 
 \subsection{In terms of |Data|}
 
- To define Play and PlayEx instances for all types, in all combinations, simply:
+We are able to make use of the existing |Data| and |Typeable| instances provided by the SYB approach to define Play classes. To have access to all |Play| and |PlayEx| instances simply:
 
-import Data.PlaySYB
+\begin{code}
+import Data.Generics.PlayData
+import Data.Generics
 
 data Expr ... deriving (Typeable, Data)
+\end{code}
 
-The disadvatages of this are the lack of type safety - you can now do entirely meaningless operations, which the earlier definitions would have spotted as being an error. This code will also only work where Data.Generics is supported, namely GHC at the present time.
-
-The clear advantage is that there is almost no work to creating Play instances.
+The disadvantages of this are the lack of type safety - you can now do entirely meaningless operations, which the earlier definitions would have spotted as being an error. This code will also only work where Data.Generics is supported, namely GHC at the present time. The clear advantage is that there is almost no work to creating Play instances.
 
 \begin{figure}
 \begin{code}
-collect_generate :: (Data on, Play with, Typeable on, Typeable with) => on -> ([with],[with] -> on)
-collect_generate item = (collect, generate)
+repChildren  :: (Data alpha, Play beta, Typeable alpha, Typeable beta)
+             => alpha -> ([beta],[beta] -> alpha)
+repChildren item = (collect, generate)
     where
         collect = concat $ gmapQ getChildrenEx item
 
         generate xs = evalState (gmapM f item) xs
-            where
-                f x = do
-                        ys <- get
-                        let (as,bs) = splitAt (length col) ys
-                        put bs
-                        return $ gen as
-                    where
-                        (col,gen) = replaceChildrenEx x
+        f x = do  let (col,gen) = replaceChildrenEx x
+                  (as,bs) <- liftM (splitAt $ length col) get
+                  put bs
+                  return $ gen as
 \end{code}
+\caption{Code for |Play| in terms of |Data|.}
+\label{fig:playdata}
 \end{figure}
+
+How do we implement these classes? The fundamental operation is given in Figure \ref{fig:playdata}. The outer class uses the same method as given in the |Typeable| derivation, and if the program does need to descend, then this is done by |repChildren|. The operation to get the children can be done using |gmapQ|. The operation to replace the children is more complex, requiring a state monad to keep track of the items to insert.
+
+This instance is not optimised for speed, in particular the |splitAt|/|length| portion will take traverse the list more than is necessary. We discuss how to come up with an optimised version in \S0.
 
 \section{PlayOn}
 
@@ -871,8 +875,8 @@ SYB.zeroCount = SYB.everything (+) (0 `mkQ` f)
 
 Comp.zeroCount :: Expr a -> Int
 Comp.zeroCount x = case x of
-    Div y (Val 0) -> 1 + Comp.zeroCount y
-    _ -> composOpFold 0 (+) Comp.zeroCount x
+    Div y (Val 0) -> 1 + zeroCount y
+    _ -> composOpFold 0 (+) zeroCount x
 \end{code}
 
 Note here that the returning of a list of |()| is not as neat as it could be. Also, note the continuation in the Compos solution -- if this was missed (which is easy) it wouldn't work. This shows that manually continuing the traversal could be dangerous in some cases.
@@ -890,10 +894,11 @@ SYB.simplify = everywhere (mkT simp)
 
 Comp.simplify :: Expr a -> Expr a
 Comp.simplify x = case x of
-    Sub  a b -> Add (Comp.simplify a) (Neg (Comp.simplify b))
-    Add  a b -> case  (Comp.simplify a, Comp.simplify b) of
-                      (a',b') -> if a' == b' then Mul (Val 2) a' else Add a' b'
-    _ -> composOp Comp.simplify x
+    Sub  a b -> Add (simplify a) (Neg (simplify b))
+    Add  a b -> case  (simplify a, simplify b) of
+                      (a',b') | a' == b'   -> Mul (Val 2) a'
+                              | otherwise  -> Add a' b'
+    _ -> composOp simplify x
 \end{code}
 
 Note here that this situation really calls out for a bottom-up traversal, which we provide, but Compos does not.
@@ -937,7 +942,7 @@ SYB.rename = everywhere (mkT ren)
 Compos.rename :: Tree c -> Tree c
 Compos.rename t = case t of
     V x -> V ("_" ++ x)
-    _   -> composOp Compos.rename t
+    _   -> composOp rename t
 \end{code}
 
 The first thing to note is the Play function is shorter, there is only one constructor in type |Var|. In contrast Compos has merged all constructors into one GADT, and can not benefit from this. The Compos function works over all trees, including those based on |Typ|, which is meaningless, since types do not contain variables. The Play class only operates on |Exp| and |Stm| types.
@@ -955,7 +960,7 @@ SYB.symbols = everything (++) ([] `mkQ` f)
 Compos.symbols :: Tree c -> [(Tree Var, Tree Typ)]
 Compos.symbols x = case x of
     SDecl typ var -> [(var,typ)]
-    _ -> composOpMonoid Compos.symbols t
+    _ -> composOpMonoid symbols t
 \end{code}
 
 Here the Compos function does a traversal of the tree, however again the Play class simply extracts the right bits. This example is almost identical to the previous |warnAssign| using Play, however the Compos approach introduces distinctions by requiring a more ordered approach to traversal.
@@ -976,7 +981,7 @@ Compos.constFold e = case e of
     EAdd x y -> case  (f x, f y) of
                       (CEInt n, CEInt m) -> CEInt (n+m)
                       (x',y') -> CEAdd x' y'
-    _ -> composOp Compos.constFold e
+    _ -> composOp constFold e
 \end{code}
 
 The constant folding operation is a bottom-up traversal, requiring sub expressions to have been replaced before they are examined. Unfortunately Compos only supports top-down traversals, requiring the user to manually do a small traversal in the middle. Play and SYB both support bottom-up traversals, so this works fine.
@@ -1020,7 +1025,7 @@ SYB.increase k = everywhere (mkT (incS k))
 Comp.increase :: Integer -> Tree c -> Tree c
 Comp.increase k c = case c of
     S s -> S (s + k)
-    _ -> composOp (Comp.increase k) c
+    _ -> composOp (increase k) c
 \end{code}
 
 The effect of Compos to transform all constructors into the same set means that instead of just matching on |S|, all constructors must be examined.
@@ -1031,17 +1036,17 @@ The |incrOne| function performs the same operation as |increase|, but only withi
 
 \begin{code}
 Play.incrOne name k = traverseEx f
-    where f (D n _ _) = if name == n then Play.increase k d else d
+    where f (D n _ _) = if name == n then increase k d else d
 
-SYB.incrOne n k a  | isDept n a  = SYB.increase k a
-                   | otherwise   = gmapT (SYB.incrOne n k) a
+SYB.incrOne n k a  | isDept n a  = increase k a
+                   | otherwise   = gmapT (incrOne n k) a
     where  isDept n = False `mkQ` isDeptD n
            isDeptD n (D n2 _ _) = n == n2
 
 Comp.incrOne :: Name -> Float -> Tree c -> Tree c
 Comp.incrOne d k c = case c of
     D n _ _ | n == d -> Comp.increase k c
-    _ -> composOp (Comp.incrOne d k) c
+    _ -> composOp (incrOne d k) c
 \end{code}
 
 Here SYB has grown substantially more complex, to accommodate the invariant, requiring two different utility functions. Compos still retains the same structure as before, requiring a case to distinguish between the types of constructor. Play remains shorter - although in this case the complexity is roughly the same as the Compos solution.
@@ -1157,13 +1162,20 @@ contains x = if isAlgType dtyp then concatMap f ctrs else []
 
 The |contains| function takes a value which is does not examine, and is always |undefined| in this context. It then returns all fields, and |typeOf| can be performed on each one.
 
+This list of types and their containers can have its transitive closure taken, and all types can be divided into 3 sets -- the singleton set containing the target, the set of types which may contain the target, and the set of types which do not. When examining a node, if its type is a member of the set which does not contain the target, we can prune the search at this point.
+
+This trick is surprisingly effective. Take for example an operation over |Bool| on the value |(True,"Haskell")|. The SYB approach will find 16 nodes, Play will only touch 3 nodes -- as soon as it notices the |String| it will stop. By increasing the length of the string, SYB performs increasingly more work -- Play does not.
+
+We compute the good set for each type only once by using a CAF inside the class to store it. The cost of computing the set is relatively small, and in some larger traversals will pay off during the initial traversal.
 
 
 \section{Related Work}
 
+This library is intended to be a way to remove the boilerplate for Haskell programs, and it is certainly not the first library to attempt this. Below we compare against some of the more popular alternatives. We have deliberately focused on functional programming -- often generic approaches feel the need to compare to the object-orientated Visitor pattern -- we see it as a different approach for different people.
+
 \subsection{SYB}
 
-Many of the examples from the original SYB paper are recapped in the Compos paper, so have been covered in the next section. This section focuses on the underlying traversal mechanism employed by both types.
+Perhaps the most popular boilerplate removal system in Haskell is the SYB approach. One of the reasons for this success is that integration with the GHC compiler, lowering the barrier to use. We have compared directly against traversals written in SYB in the previous section, and also covered how to implement Play in terms of SYB.
 
 \todo{image here}
 
@@ -1172,16 +1184,16 @@ Both traversals are based on the idea of finding the immediate children of a nod
 While the SYB approach is clearly more logical in an untyped language, in a typed language it requires a considerable amount of trickery to get the types correct. The primary SYB traversal function is:
 
 \begin{code}
-gfoldl :: (forall a b. Term a => w (a -> b)
-                              -> a -> w b)
-       -> (forall g. g -> w g)
-       -> a -> w a
+gfoldl  ::  (forall a b . Data a => c (a -> b) -> a -> c b)
+        ->  (forall g . g -> c g)
+        ->  a -> c a
+
+replaceChildren :: on -> ([on], [on] -> on)
 \end{code}
 
-In the original SYB paper the authors note ``Trying to understand the type of <tt>gfoldl</tt> directly can lead to brain damage.'' When compared to the type of <tt>replaceChildren</tt>, it is easy to see which is simpler at the type level.
+In the original SYB paper the authors note ``Trying to understand the type of |gfoldl| directly can lead to brain damage.'' When compared to the type of |replaceChildren|, it is easy to see which is simpler at the type level.
 
 \begin{code}
-replaceChildren :: on -> ([on], [on] -> on)
 \end{code}
 
 The basic difference between SYB and Play is the choice of the notion of children. It is reasonably easy to see that SYB is more powerful - there are many nodes in the above example that Play cannot reach. However in a typed language this has come at the cost of substantial type based thought. Play on the other hand simplified things with its alternative definition of child.
@@ -1192,11 +1204,9 @@ We are one of the few traversals who do not have the problem that SYB is compile
 
 \subsection{Compos}
 
-Advantages of Play: Haskell 98 (the Play class), plus multi-parameter type classes (PlayEx only), Does not require GADT's or rank-2 types, No need to change the data structure, Less boilerplate in the traversa, Supports more traversals.
+The Compos approach is newer than SYB, requiring the GADT's extension along with rank-2 types. While the Compos library can operate over GADT's, it is somewhat restricted to them, requiring an existing data structure to be rewritten as a GADT. The conversion from standard Haskell data structures to GADT's presents several problems: they are GHC specific; deriving is not supported on GADT's; they require explicit type signatures. Some of these problems come about as a result of GADT's being a recent addition.
 
-Note both Compos and Play require complex instances, but Compos does not have a tool to generate them (although one could be written), and does not have an easy instance at any level.
-
-Compos works on GADT's.
+The Compos approach is also harder to write instances for, having no simple instance generation framework, and no automatic derivation tool (although one could be written). The inner |composOp| operator is very powerful, and indeed we have chosen to replicate it in our library as |descend|. In contrast the Compos library is unable to replicate the query to a list, or the bottom-up traversal.
 
 \subsection{Stratego}
 
@@ -1212,6 +1222,7 @@ http://www.cs.uu.nl/wiki/HUT/AttributeGrammarSystem
 
 http://www.haskell.org/tmrwiki/WhyAttributeGrammarsMatter
 
+\subsection{Applicative}
 
 \section{Conclusions and Future Work}
 
