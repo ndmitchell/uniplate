@@ -248,8 +248,10 @@ increase_raw k = rawPar2 c
 incrone = task "incrone" [incrone_play n v, incrone_syb n v, incrone_comp n v, incrone_raw n v]
     where v = 100; n = "" -- most common department name
 
-incrone_play name k = playPar2 $ traverseEx
-    (\d@(ND n _ _) -> if name == n then increase_play_int k d else d)
+incrone_play name k = playPar2 $ descendEx $ f name k
+    where
+        f name k a@(ND n _ _) | name == n = increase_play_int k a
+                              | otherwise = descend (f name k) a
 
 incrone_syb n k = sybPar2 $ f n k
     where
