@@ -74,12 +74,6 @@ instance (Data a, Typeable a) => Play a where
         where
             answer :: Box a
             answer = containsMatch (undefined :: a) (undefined :: a)
-    
-    getChildren = \x -> concatCont (gmapQ (getTypeOneWith (fromBox answer)) x) []
-        where
-            answer :: Box a
-            answer = containsMatch (undefined :: a) (undefined :: a)
-    
 
 
 instance (Data a, Data b, Play b, Typeable a, Typeable b) => PlayEx a b where
@@ -87,21 +81,6 @@ instance (Data a, Data b, Play b, Typeable a, Typeable b) => PlayEx a b where
         where
             answer :: Box b
             answer = containsMatch (undefined :: a) (undefined :: b)
-
-    getType = \x -> getTypeOneWith (fromBox answer) x []
-        where
-            answer :: Box b
-            answer = containsMatch (undefined :: a) (undefined :: b)
-
-
-getTypeOneWith :: (Data a, Typeable a, Typeable b) =>
-                  (forall a . Typeable a => a -> Answer b) -> a -> [b] -> [b]
-getTypeOneWith oracle a b =
-    case oracle a of
-         Hit i -> i:b
-         Follow -> concatCont (gmapQ (getTypeOneWith oracle) a) b
-         Miss -> b
-
 
 
 newtype C x a = C {fromC :: CC x a}
