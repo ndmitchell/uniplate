@@ -15,8 +15,8 @@ import Data.Generics.PlayOn
 class Play to => PlayEx from to where
     replaceType :: ReplaceType from to
     
-    getType :: from -> [to]
-    getType = fst . replaceType
+getType :: PlayEx from to => from -> [to]
+getType = fst . replaceType
 
 
 -- * The Operations

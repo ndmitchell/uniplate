@@ -13,8 +13,8 @@ type ReplaceChildren on = on -> ([on], [on] -> on)
 class Play on where
     replaceChildren :: ReplaceChildren on
     
-    getChildren :: on -> [on]
-    getChildren = fst . replaceChildren
+getChildren :: Play on => on -> [on]
+getChildren = fst . replaceChildren
 
 
 -- * The Operations
