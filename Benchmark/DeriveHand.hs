@@ -7,15 +7,6 @@ import Data.Generics.PlayEx
 
 
 instance Play NExpr where
-    getChildren x =
-        case x of
-            NNeg  a    -> [a]
-            NAdd  a b  -> [a,b]
-            NSub  a b  -> [a,b]
-            NMul  a b  -> [a,b]
-            NDiv  a b  -> [a,b]
-            _         ->  []
-
     replaceChildren x =
         case x of
             NNeg  a    -> ([a]    , \(a':_)    -> NNeg  a'     )
@@ -66,17 +57,6 @@ instance PlayEx NStm NStm where
     replaceType x = ([x], \(x':_) -> x')
 
 instance Play NStm where
-    getChildren x =
-        case x of
-            NSBlock a -> a
-            NSAss _ a -> f a
-            NSReturn a -> f a
-            _ -> []
-        where
-            f (NEStm x) = [x]
-            f (NEAdd x y) = f x ++ f y
-            f _ = []
-
     replaceChildren x =
         case x of
             NSAss a b -> (get,\xs -> NSAss a (gen xs))
@@ -116,12 +96,6 @@ instance Play NExp where
 
 
 instance PlayEx NCompany NSalary where
-    getType (NC x) = concatMap d x
-        where
-            d (ND _ (NE _ x) y) = x : concatMap u y
-            u (NPU (NE _ x)) = [x]
-            u (NDU x) = d x
-
     replaceType (NC xs) = (get, \xs -> NC (gen xs))
         where (get,gen) = replaceType xs
 
@@ -135,7 +109,6 @@ instance PlayEx NUnt NSalary where
         where (get,gen) = replaceType x
 
 instance Play NSalary where
-    getChildren _ = []
     replaceChildren x = ([], \_ -> x)
 
 instance PlayEx NCompany NDept where
