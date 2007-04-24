@@ -1,4 +1,5 @@
-{-# OPTIONS_GHC -fglasgow-exts -cpp #-}
+{-# OPTIONS_GHC -fglasgow-exts #-}
+{-# LANGUAGE CPP #-}
 
 module Data.Generics.PlayInternal(
     unsafeCast, inlinePerformIO, builder, concatCont
