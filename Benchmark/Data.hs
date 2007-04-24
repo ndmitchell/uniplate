@@ -25,7 +25,7 @@ data NExpr  =  NVal  Int         -- a literal value
             |  NSub  NExpr  NExpr  -- subtraction
             |  NMul  NExpr  NExpr  -- multiplication
             |  NDiv  NExpr  NExpr  -- division
-            deriving (Eq,Data,Typeable)
+            deriving (Show,Eq,Data,Typeable)
 
 
 data DExpr
