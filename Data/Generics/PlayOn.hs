@@ -33,7 +33,7 @@ rewriteOnM replaceType f x = liftM generate $ mapM (rewriteM f) current
 
 
 descendOn :: Play to => ReplaceType from to -> (to -> to) -> from -> from
-descendOn replaceType f x = generate $ map (descend f) current
+descendOn replaceType f x = generate $ map f current
     where (current, generate) = replaceType x
 
 
