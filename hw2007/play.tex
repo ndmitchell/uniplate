@@ -137,6 +137,23 @@ Of course, this isn't the first technique for removing the boilerplate, the area
 
 We have implemented all our code, and encourage you to download it and try it out. It can be obtained from the website at \texttt{http://www.cs.york.ac.uk/~ndm/play/}. A copy of the library has also been released, and is on Hackage.
 
+\subsection{Goals}
+
+The idea behind the Play class is that there exists a data structure, usually with a reasonable number of constructors, which is often transformed or analysed. The usual example of this would be a compiler, which has at its core an expression type. This can be seen as a form of generic programming.
+
+The Play class has the following goals:
+
+\begin{itemize}
+\item Adding a new constructor should require very few changes
+\item Traversals should have a minimal amount of boiler plate
+\item The obvious code should ``just work''
+\item Haskell 98, where possible
+\item Writing new types of traverals should be easy
+\item The default traversals cover most cases
+\end{itemize}
+
+The ideas behind the Play class have been used extensively, in both the Yhc compiler and the Catch tool. In Catch there are 109 traversals using the Play class (as at Nov 2006), showing that the Play class gets extensive use.
+
 \subsection{Road map}
 
 \S\ref{sec:combinators} introduces the traversal combinators that we propose, along with short examples. \S\ref{sec:implementation} discusses how these combinators are implemented in terms of a single primitive. \S\ref{sec:multiplay} shows how to extend this approach to more complex data types, at the cost of requiring multi-parameter type classes. \S\ref{sec:rules} lists some properties of our system, and how they can be used for optimisation. \S\ref{sec:syb} gives an implementation of our class in terms of the built in compiler support in GHC. \S\ref{sec:comparison} compares our approach with others, including the ``paradise'' benchmark. \S\ref{sec:performance} gives performance measurements of the various traversal mechanisms. \S\ref{sec:conclusion} makes concluding remarks and suggests directions for future work.
@@ -469,38 +486,29 @@ forall x ys `o`  length ys == length children =>
 
 Secondly, after inserting a new set of children, getting those children must return them back.
 
-While the |replaceChildren| function is sufficient to implement all methods, the class also contains one additional function, with a suitable default:
-
-\begin{code}
-getChildren :: alpha -> [alpha]
-getChildren = fst . replaceChildren
-\end{code}
-
-The reason for the addition of |getChildren| is for performance reasons -- some of the operations such as |everything| only require the extraction -- and in some cases it can be implemented more efficient -- see \S\ref{sec:syb_play}.
-
 
 \subsection{Operations in terms of |replaceChildren|}
 
-Defining operations in terms of |replaceChildren| is easy, we implement the three most common as an example. None is more than a handful of lines long, and none has great deep complexity:
+Defining operations in terms of |replaceChildren| is easy, we implement the four most common as an example. None is more than a handful of lines long, and none has great deep complexity:
 
 \begin{code}
 everything :: Play alpha => alpha -> [alpha]
 everything x = x : concatMap everything $ getChildren x
 
-descend :: Play alpha => (alpha -> alpha) -> alpha -> alpha
-descend f x = generate $ map f current
+traverse :: Play on => (on -> on) -> on -> on
+traverse f x = f $ generate $ map (traverse f) current
     where (current, generate) = replaceChildren x
 
+traverseM :: (Monad m, Play on) => (on -> m on) -> on -> m on
+traverseM f x = mapM (traverseM f) current >>= f . generate
+    where (current, generate) = replaceChildren x
 
-descendM :: (Monad m, Play alpha) => (alpha -> m alpha) -> alpha -> m alpha
-descendM f x = liftM generate $ mapM f current
+descend :: Play on => (on -> on) -> on -> on
+descend f x = generate $ map f current
     where (current, generate) = replaceChildren x
 \end{code}
 
-The common pattern is to call replace children, then perform some action on the current children, before combining them back.
-
-Of these operations, some may be slightly optimised -- |everything| requires an excessive number of concatentations -- one for each depth of the tree. In practice an optimised version based on continuation passing is used, still only five lines long.
-
+The common pattern is to call replace children, then perform some action on the current children, before combining them back. The |everything| function may be optimised further -- something we return to in \S0.
 
 \subsection{Writing |Play| instances}
 
@@ -1092,10 +1100,10 @@ The results are presented in Table n, and graphs in Figure n and m. This shows t
 
 We suspect there are further places for improvement:
 
-\begin{enumerate}
+\begin{itemize}
 \item Continuation passing style may eliminate tuple construction and consumption.
 \item List fusion may be able to eliminate some of the lists in |replaceChildren|.
-\end{enumerate}
+\end{itemize}
 
 \subsection{PlayManual continuation passing}
 
@@ -1233,381 +1241,6 @@ Just a few notes. (i) Hugs *does* support rank-2 polymorpism but it does not imp
 
 \section{Conclusions and Future Work}
 
-
-
-\begin{comment}
-
-
-
-<h2>Motivation and Use Cases</h2>
-
-<p>
-    The idea behind the Play class is that there exists a data structure, usually with a reasonable number of constructors, which is often transformed or analysed. The usual example of this would be a compiler, which has at its core an expression type. This can be seen as a form of generic programming.
-</p>
-<p>
-    The Play class has the following goals:
-</p>
-<ul>
-    <li>Adding a new constructor should require very few changes</li>
-    <li>Traversals should have a minimal amount of boiler plate</li>
-    <li>The obvious code should "just work"</li>
-    <li>Haskell 98, where possible</li>
-    <li>Writing new types of traverals is easy</li>
-    <li>The default traversals cover most cases</li>
-</ul>
-<p>
-    The ideas behind the Play class have been used extensively, in both the Yhc compiler and the Catch tool. In Catch there are 109 traversals using the Play class (as at Nov 2006), showing that the Play class gets extensive use.
-</p>
-
-
-<h2>Using Play</h2>
-
-<p>
-    These examples revolve around a small arithmetic language, given here:
-
-</p>
-<pre>
-import Data.Play
-
-data Expr = Val Int
-          | Add Expr Expr
-          | Sub Expr Expr
-          | Div Expr Expr
-          | Mul Expr Expr
-          | Neg Expr
-          deriving (Show, Eq)
-</pre>
-<p>
-    Assume that a Play class has already been written; so now <tt>instance Play Expr</tt> is available to us. Some examples are presented, in rough order of increasingly complexity. These examples are all available in the <tt>Examples/Expr.hs</tt> file.
-</p>
-
-<h3>Checking for division by zero</h3>
-
-<pre class="define">
-allOver :: Play on => on -> [on]
-</pre>
-<p>
-    If an expression is divided by zero, this causes a runtime error in our language. As part of the compiler, it's nice to give the user a warning message about this. This can be done with the following test:
-</p>
-<pre>
-hasDivZero :: Expr -> Bool
-hasDivZero x = not $ null [() | Div _ (Val 0) <- allOver x]
-</pre>
-<p>
-    Here the only Play method being used is <tt>allOver</tt>. Given a tree, <tt>allOver</tt> returns all the root of the tree, and all it's subtrees at all levels. This can be used to quickly flatten a tree structure into a list, for quick analysis via list comprehensions, as is done above. For each division by zero found, any value is created in the list comprehension, and then this is checked to see if anything did match. Returning the count of divide by zero errors is trivial, simply use <tt>length</tt> instead of <tt>not $ null</tt>.  Extra context could perhaps be given by printing some of the value that is being divided by zero, to help narrow down the error.
-</p>
-<p>
-    <i>Exercise:</i> Write a function to find all literals that occur in an expression, together with their count.
-</p>
-
-<h3>Basic optimisation</h3>
-
-<pre class="define">
-mapUnder :: Play on => (on -> on) -> on -> on
-</pre>
-<p>
-    If we are negating a literal value, this computation can be performed in advance, so let's write a function to do this.
-</p>
-<pre>
-optimise :: Expr -> Expr
-optimise = mapUnder $ \x -> case x of
-    Neg (Val i) -> Val (negate i)
-    x -> x
-</pre>
-<p>
-    Here the Play method being used is <tt>mapUnder</tt>. This applies the given function to all the children of an expression, before applying it to the parent. This can be thought of as bottom-up traversal of the data structure. There is an equivalent <tt>mapOver</tt> defined, but generally <tt>mapUnder</tt> is used about 90% of the time. The optimise code merely pattern matches on the negation of a literal, and replaces it with the literal. Using mapUnder means that <tt>Neg (Neg (Val 1))</tt> is reduced to <tt>1</tt>, using mapOver would only perform the inner most reduction.
-
-</p>
-<p>
-    Now lets add another optimisation into the same pass, just before the <tt>x -> x</tt> line insert:
-</p>
-<pre>
-%    Add x y | x == y -> Mul x (Val 2)
-</pre>
-<p>
-    This takes an addition where two terms are equal and changes it into a multiplication, causing the nested expression to be executed only once. This shows that normal Haskell applies, the Play lets you write code as before.
-</p>
-<p>
-    <i>Exercise:</i> Extend the optimisation to so that adding <tt>x</tt> to <tt>Mul x (Val 2)</tt> produces a multiplication by 3.
-</p>
-
-
-<h3>Elimination of Negation</h3>
-
-<pre class="define">
-mapOver :: Play on => (on -> on) -> on -> on
-</pre>
-<p>
-    It is possible to eliminate negation entirely, and perhaps this would be a useful computation to perform:
-</p>
-<pre>
-noNegate :: Expr -> Expr
-noNegate = mapOver $ \x -> case x of
-    Neg (Val i) -> Val (negate i)
-    Neg (Neg x) -> x
-    Neg (Sub a b) -> Sub b a
-    Neg (Add a b) -> Add (Neg a) (Neg b)
-    Neg (Div a b) -> Div (Neg a) b
-    Neg (Mul a b) -> Mul (Neg a) b
-    x -> x
-</pre>
-<p>
-    This is an example where a bottom up traversal would not work, as information is being pushed from the top downwards. Note how each line states a mathematical property, which can be proved in isolation, and that the Play class handles the traverals.
-</p>
-<p>
-    <i>Exercise:</i> Write a similar transformation to eliminate subtraction. These two transformations can be composed, to give a reduced expression language. Can any other expressions be eliminated?
-</p>
-
-
-<h3>Depth of an expression</h3>
-
-<pre class="define">
-fold :: Play on => ([res] -> tmp) -> (on -> tmp -> res) -> on -> res
-</pre>
-<p>
-    Now lets imagine that programmers in your language are paid by the depth of expression they produce, so lets write a function that computes the maximum depth of an expression.
-</p>
-<pre>
-depth :: Expr -> Int
-depth = fold (foldr max 0) $ const (+1)
-</pre>
-<p>
-    This function performs a fold over the data structure. The <tt>foldr max</tt> is being used as maximum, with a starting value of <tt>0</tt>. The next bit simply says that for each iteration, add one to the previous depth.  An evaluator for this expression language can also be modelled as a <tt>fold</tt>, see inside the example directory to see an implementation.
-</p>
-<p>
-    Each <tt>fold</tt> collects all the values from the children of an expression, combines them using the first function, then generates a new value based on the expression. Often the combining function will simply be <tt>id</tt>.
-</p>
-<p>
-    <i>Exercise:</i> Write a function that counts the maximum depth of addition only.
-</p>
-
-<h3>Renumbering literals</h3>
-
-<pre class="define">
-mapUnderM :: (Monad m, Play on) => (on -> m on) -> on -> m on
-</pre>
-<p>
-    The literal values need to be replaced with a sequence of numbers, each unique. This is unlikely for an arithmetic expression, but consider bound variables in lambda calculus and it starts to become a bit more plausible:
-</p>
-<pre>
-uniqueLits :: Expr -> Expr
-uniqueLits x = evalState (mapUnderM f x) [0..]
-    where
-        f (Val i) = do
-            y:ys <- get
-            put ys
-            return (Val y)
-        f x = return x
-</pre>
-<p>
-    Here a monadic computation is required, the program needs to keep track of what the next item in the list to use is, and replace the current item. By using the state monad, this can be done easily.
-</p>
-<p>
-    <i>Exercise:</i> Allow each literal to occur only once, when a second occurance is detected, replace that literal with zero.
-</p>
-
-<h3>Generating mutants</h3>
-
-<pre class="define">
-allOverContext :: Play on => on -> [(on, on -> on)]
-</pre>
-<p>
-    The person who is inputting the expression thinks they made a mistake, they suspect they got one of the values wrong by plus or minus one. Generate all the expressions they might have written.
-</p>
-<pre>
-mutate :: Expr -> [Expr]
-mutate x = concat [[gen $ Val $ i-1, gen $ Val $ i+1]
-%                   | (Val i, gen) <- allOverContext x]
-</pre>
-<p>
-   The <tt>mapUnder</tt> function is useful for doing an operation to all nodes in a tree, but sometimes you only want to apply a transformation once. This is less common, but is sometimes required. The idea is that the context provides the information required to recreate the original expression, but with this node altered.
-</p>
-<p>
-    <i>Exercise:</i> Replace one multiplication with addition, if there are no multiplications return the original expression.
-</p>
-
-<h3>Reverse notation</h3>
-
-<pre class="define">
-replaceChildren :: Play on => on -> ([on], [on] -> on)
-</pre>
-<p>
-    In general, <tt>allOver</tt> and <tt>mapUnder</tt> are used most of the time, and <tt>fold</tt> is used occasionally. The Play class is built upon the operation <tt>replaceChildren</tt>, which takes an expression, and returns a pair with the children of that expression, and a function to generate that expression with a new set of children in place. This operation can be directly exploited if required, although should be handled with caution.
-</p>
-<p>
-    Let us make a function that reverses the order of all the inputs, say if the user is working in Right-to-Left mode on their computer:
-</p>
-<pre>
-reverseExpr :: Expr -> Expr
-reverseExpr = mapUnder f
-    where
-        f x = generate $ reverse collect
-            where (collect,generate) = replaceChildren x
-</pre>
-<p>
-    This expression does a standard <tt>mapUnder</tt>, but at each iteration calls <tt>replaceChildren</tt>, then reverses the children set before regenerating the original expression. This shows the underlying mechanism on which the library is based, and isn't recommended for average users.
-</p>
-
-
-<h2>Defining a Play instance</h2>
-
-<p>
-    As shown in the reversal example (just above), the only method in the Play class is <tt>replaceChildren</tt>. The Play class is defined as:
-</p>
-<pre class="define">
-class Play on where
-    replaceChildren :: on -> ([on], [on] -> on)
-</pre>
-<p>
-    The idea is that given an item, you want to return all the children, and a function that will replace all the children. An invariant is that the list given to the second function will be the same length as that returned in the first element of the pair. Let's start by constructing the Play instance for the expression type.
-</p>
-<pre>
-instance Play Expr of
-    replaceChildren x =
-        case x of
-            Add a b -> ([a,b], \[a,b] -> Add a b)
-            ...
-            Neg a -> ([a], \[a] -> Neg a)
-            Val i -> ([], \[] -> Val i)
-</pre>
-<p>
-    A short study of the code should show how this works. The other constructors such as <tt>Mul</tt> follow the same pattern as <tt>Add</tt>. There are some additional combinators defined in the Play class to make this a bit easier.
-</p>
-<pre>
-instance Play Expr of
-    replaceChildren x =
-        case x of
-            Add x y -> playTwo Add x y
-            ...
-            Neg x   -> playOne Neg x
-            x -> playDefault x
-</pre>
-<p>
-    Here <tt>playTwo</tt> takes a constructor of two expressions, and the expressions within them. The function <tt>playOne</tt> operates similarly on one expression. The remaining <tt>playDefault</tt>, which handles <tt>Val</tt> is for expressions with no recursive element.
-</p>
-
-
-<h2>Using PlayEx</h2>
-
-<p>
-    The PlayEx class is not standard Haskell, requiring multi-parameter type classes. Where possible try and use the standard Play class. The PlayEx class is necessary when working with a data structure that has multiple types within it.
-</p>
-<pre class="define">
-class Play with => PlayEx on with where
-    replaceChildrenEx :: on -> ([with], [with] -> on)
-</pre>
-<p>
-    The <tt>replaceChildrenEx</tt> method operates much like the <tt>replaceChildren</tt>, except for the different types.  When the types of <tt>on</tt> and <tt>with</tt> are different, <tt>replaceChildrenEx</tt> returns the closest children of the requested type. When the types are the same, this function returns the root element, not it's children.
-</p>
-<p>
-    There are three mechanisms for writing <tt>PlayEx</tt> instances:
-</p>
-<ul>
-    <li>Manually - this is quite complex, requires a large number of instance definitions, but needs only multi-parameter type classes, and has a high degree of type safety.</li>
-    <li>Combinators - this is reasonably straightforward, requires s moderate number of instance definitions, but needs undecidable instances.</li>
-    <li>Scrap Your Boilerplate - this requires SYB support in the compiler (currently GHC only), requires no instance definitions, and has relatively low type safety.</li>
-</ul>
-
-<h3>Using the operations from PlayEx</h3>
-
-<p>
-    To see various operations being used from the PlayEx class, take a look at <tt>Examples/ComposPaper.hs</tt>. Typically the operations are just the same as Play, with Ex on the end. To use the Ex methods either import Data.PlayMPTC or Data.PlaySYB - depending on how the instances are to be written.
-</p>
-<pre class="define">
-mapUnderEx :: PlayEx on with => (with -> with) -> on -> on
-mapUnderExM :: (Monad m, PlayEx on with) => (with -> m with) -> on -> m on
-allOverEx :: PlayEx on with => on -> [with]
-</pre>
-
-<h3>Defining PlayEx manually</h3>
-
-<p>
-    To see an example of this style of definition, see <tt>Examples/ComposBasic.hs</tt>. Here the useful combinations for definitions are:
-</p>
-<pre class="define">
-playExDefault :: (Play on, PlayEx on with) => on -> ([with], [with] -> on)
-playSelf :: a -> ([a], [a] -> a)
-playMore :: PlayEx a b => (a -> c) -> a -> ([b],[b] -> c)
-</pre>
-<p>
-    The <tt>playSelf</tt> function simply operates on values of the same data type, so typically a defintion will be created such as:
-</p>
-<pre>
-instance PlayEx Expr Expr where
-    replaceChildrenEx = playSelf
-</pre>
-<p>
-    The <tt>playExDefault</tt> takes on the same role as <tt>playDefault</tt> - when there are remaining definitions without any further interesting elements in. The <tt>playMore</tt> is designed to continue on the recursion, where elements on interest may lay within other elements.
-</p>
-<p>
-    Defining a PlayEx class using these combinations and direct operations is quite hard, and quite error prone. It is not recommend unless there is no alternative due to implementation restrictions. Note however than even if a PlayEx class is defined with the more powerful tools, an equivalent requiring only MPTC's does exist, so your code is not tied to the extensions forever.
-</p>
-
-<h3>Using the PlayEx combinators</h3>
-
-<p>
-    To define the <tt>PlayEx</tt> class, there are three combinatiors that can be used. These automate much of the definition:
-</p>
-<pre class="define">
-play :: on -> ([with],[with] -> on)
-(/\) :: PlayEx item with => ([with], [with] -> item -> on) -> item -> ([with], [with] -> on)
-(/\!) :: ([with], [with] -> item -> on) -> item -> ([with], [with] -> on)
-</pre>
-<p>
-    Note, the above are presented with type signatures for completeness. They are intended to be used mechanically, without excessive thought.
-</p>
-<p>
-    To define a PlayEx instance for the Expr type introduced earlier:
-</p>
-<pre>
-instance PlayEx Expr a where
-    replaceChildrenEx x =
-        case x of
-            Val a -> play Val /\! a
-            Add a b -> play Add /\ a /\ b
-            Sub a b -> play Sub /\ a /\ b
-            ...
-            Neg a -> play Neg /\ a
-</pre>
-<p>
-    The definition follows mechanically. The only choice a user makes is whether to use the <tt>(/\)</tt> operator (which recurses into the child on the right), or the <tt>(/\!)</tt> operator, which doesn't. For example, here we have decided not to traverse inside the <tt>Int</tt> of <tt>Val</tt>. This can be changed, and would require a PlayEx instance for <tt>Int</tt>.
-</p>
-<p>
-    If using this style of definition, a special instance must be defined for the self case:
-</p>
-<pre>
-instance PlayEx Expr Expr where
-    replaceChildrenEx = playSelf
-</pre>
-<p>
-    Unfortunately this requires undecidable instances. A Play instance still needs to be written for each definition.
-</p>
-
-<h3>Using Scrap Your Boilerplate instances</h3>
-
-<p>
-    To define Play and PlayEx instances for all types, in all combinations, simply:
-</p>
-<pre>
-import Data.PlaySYB
-
-data Expr ... deriving (Typeable, Data)
-</pre>
-<p>
-    The disadvatages of this are the lack of type safety - you can now do entirely meaningless operations, which the earlier definitions would have spotted as being an error. This code will also only work where <tt>Data.Generics</tt> is supported, namely GHC at the present time.
-</p>
-<p>
-    The clear advantage is that there is almost no work to creating Play instances.
-</p>
-
-
-
-
-% \appendix
-% \section{Appendix Title}
-%
-% Here is the text of the appendix, if you need one.
-\end{comment}
 \acks
 
 The first author is a PhD student supported by a studentship from the Engineering and Physical Sciences Research Council of the UK. Thanks to Bj\"{o}rn Bringert for feedback on an earlier version of this document, Eric Mertens for various ideas and code snippets and Stefan O'Rear for work on the \textsc{Derive} tool.
