@@ -1035,8 +1035,9 @@ The effect of Compos to transform all constructors into the same set means that 
 The |incrOne| function performs the same operation as |increase|, but only within a named department. We are able to reuse the |increase| function from the previous section in all cases.
 
 \begin{code}
-Play.incrOne name k = traverseEx f
-    where f (D n _ _) = if name == n then increase k d else d
+Play.incrOne n k = descendEx f
+    where f x@(ND name _ _)  | name == n  = increase k x
+                             | otherwise  = descend f x
 
 SYB.incrOne n k a  | isDept n a  = increase k a
                    | otherwise   = gmapT (incrOne n k) a
@@ -1049,7 +1050,7 @@ Comp.incrOne d k c = case c of
     _ -> composOp (incrOne d k) c
 \end{code}
 
-Here SYB has grown substantially more complex, to accommodate the invariant, requiring two different utility functions. Compos still retains the same structure as before, requiring a case to distinguish between the types of constructor. Play remains shorter - although in this case the complexity is roughly the same as the Compos solution.
+Here SYB has grown substantially more complex, to accommodate the invariant, requiring two different utility functions. Compos still retains the same structure as before, requiring a case to distinguish between the types of constructor. A simple |traverse| would not suffice here as if a department is contained within a department of the same name, then the employees would have their salaries increased twice.
 
 \subsubsection{The |salaryBill| function}
 
