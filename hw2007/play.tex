@@ -528,14 +528,14 @@ instance Play Expr where
 \label{fig:play_expr}
 \end{figure}
 
-We construct a |Play| instance for the |Expr| type in Figure \ref{fig:play_expr}. The pattern of the instance can be seen easily. The default clause has no children of type |Expr|, meaning the leaves have been reached. Some simple combinators are provided to allow these derivations to be written more compactly, but they are not introduced here as they only serve to complicate the story.
-
+We construct a |Play| instance for the |Expr| type in Figure \ref{fig:play_expr}. The pattern of the instance can be seen easily. The default clause has no children of type |Expr|, meaning the leaves have been reached.
 
 \subsection{Derivation Rules}
 
-\todo{Move to explicit sum and product rules}
-
-The distinguishing feature of our libraries is that the children are defined in terms of their type -- while this makes the traversals and queries simpler, it does mean that the definition is dependent on the types of the constructors. We can model the type of an operation with the following construction:
+The distinguishing feature of our libraries is that the children are defined in terms of their type -- while this makes the traversals and queries simpler, it does mean that the definition is dependent on the types of the constructors. In order to model the constructors it is sufficient to define combinators for each function.
+ 
+ 
+ We can model the type of an operation with the following construction:
 
 \begin{code}
 data Type  =  None
@@ -655,7 +655,25 @@ data Stmt  =  Assign String Expr
            |  While Expr Stmt
 \end{code}
 
-We can define a |Play| instance for |Stmt|, and perform queries and traversals upon it. Unfortunately, if we wish to start with a |Stmt| and extract the |Expr| values from inside, this is not possible with |Play|. To allow this behaviour, we introduce the |PlayEx| class -- a multiparameter type class.
+We can define a |Play| instance for |Stmt|, and perform queries and traversals upon it. However, consider the task of extracting all literals from within a |Stmt|. This is not possible with |Play|, so we need to go further.
+
+We first introduce |PlayOn|, a method for playing from a given starting type. Next we generalise this to |PlayEx|
+
+\subsection{PlayOn}
+
+
+
+After having seen the increased power available with |PlayEx|, users of Haskell 98 may be getting jealous. While the |PlayEx| strategy is ultimately the most powerful, there is a restricted solution available.
+
+Imagine that a program mainly manipulates one type, the |Expr| type, but that this type is placed in many containers. Then in this case we can construct the |PlayExpr| type which is equivalent to |PlayEx| but with |Expr| frozen as the second argument. While is is not particularly beautiful, it does make the multi-type operations accessible to more users.
+
+This has been used extensively in the Yhc compiler. Since the Yhc compiler does not support multi-parameter type classes, and is hoped to be bootstrapping shortly, this rules out MPTC.
+
+
+\subsection{PlayEx}
+
+
+Unfortunately, if we wish to start with a |Stmt| and extract the |Expr| values from inside, this is not possible with |Play|. To allow this behaviour, we introduce the |PlayEx| class -- a multiparameter type class.
 
 Alas |PlayEx| takes us outside the realms of Haskell 98, so after presenting |PlayEx| we give a simple encoding back into Haskell 98 in the form of |PlayOn|. While the |PlayEx| class gives greater flexibility, the |PlayOn| class is still a useful alternative when Haskell 98 compatibility is required.
 
@@ -707,7 +725,7 @@ We would also like to automatically derive |Play| from |PlayEx| where possible.
 
 \subsection{Manual instances}
 
-This requires |O(n^2)| but gives the highest performance. Like before these can be automatically generated, and you can move to these instances afterwards. These instances are not quite mechanical, but are certainly easier than |Play|.
+This requires $O(n^2)$ but gives the highest performance. Like before these can be automatically generated, and you can move to these instances afterwards. These instances are not quite mechanical, but are certainly easier than |Play|.
 
 \begin{code}
 instance PlayOne NExpr where
@@ -801,13 +819,6 @@ How do we implement these classes? The fundamental operation is given in Figure 
 
 This instance is not optimised for speed, in particular the |splitAt|/|length| portion will take traverse the list more than is necessary. We discuss how to come up with an optimised version in \S0.
 
-\section{PlayOn}
-
-After having seen the increased power available with |PlayEx|, users of Haskell 98 may be getting jealous. While the |PlayEx| strategy is ultimately the most powerful, there is a restricted solution available.
-
-Imagine that a program mainly manipulates one type, the |Expr| type, but that this type is placed in many containers. Then in this case we can construct the |PlayExpr| type which is equivalent to |PlayEx| but with |Expr| frozen as the second argument. While is is not particularly beautiful, it does make the multi-type operations accessible to more users.
-
-This has been used extensively in the Yhc compiler. Since the Yhc compiler does not support multi-parameter type classes, and is hoped to be bootstrapping shortly, this rules out MPTC.
 
 \section{Properties}
 
