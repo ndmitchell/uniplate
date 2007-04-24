@@ -1138,11 +1138,9 @@ everything x = build (f x)
 
 The |PlayData| instance is an area of the library we are particularly proud of -- being able to use the existing SYB framework which is already built into the GHC compiler makes boilerplate code much easier to write. Managing to both layer |PlayData| over the |Data| instances, and perform better is not something we initially believed to be possible.
 
-The first optimisation built into the |PlayData| framework is the |getChildren| method of the class. This allows children to be extracted, without performing the complex machinery to allow them to be reinserted. The |getChildren| method can be implemented neatly in terms of |gmapQ|.
+The first optimisation was to move from generating the two elements on the |replaceChildren| tuple separately, to doing it as one task. This means that it is no longer possible to use |gmapM|, but instead we must use |gfoldl|. This reduction means that each data constructor gets examined fewer times, and our use of the state monad can be eliminated.
 
-The second optimisation was to move from generating the two elements on the |replaceChildren| tuple separately, to doing it as one task. This means that it is no longer possible to use |gmapM|, but instead we must use |gfoldl|. This reduction means that each data constructor gets examined fewer times, and our use of the state monad can be eliminated.
-
-The next optimisation is to translate to a basic continuation passing style in some places, as per |PlayManual|.
+The second optimisation is to translate to a basic continuation passing style in some places, as per |PlayManual|.
 
 Note the use of case instead of where to make tuples faster.
 
