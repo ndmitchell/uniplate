@@ -129,11 +129,11 @@ collect_generate oracle item = fromC $ gfoldl combine create item
     where
         -- forall a b . Data a => C with (a -> b) -> a -> C with b
         combine (C (c,g)) x = case collect_generate_self oracle x of
-                                  (c2, g2) -> C (c2 . c, regen g2)
+                                  (c2, g2) -> C (c . c2, regen g2)
             where
-                regen g2 i = case g2 i of
-                            (x2,i2) -> case g i2 of
-                                (y2,i3) -> (y2 x2, i3)
+                regen g2 i = case g i of
+                            (x2,i2) -> case g2 i2 of
+                                (y2,i3) -> (x2 y2, i3)
         
         -- forall g . g -> C with g
         create x = C (id, \res -> (x, res))
