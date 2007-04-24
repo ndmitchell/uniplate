@@ -135,6 +135,8 @@ Of course, this isn't the first technique for removing the boilerplate, the area
 \item This library has already been used extensively, importantly outside the friends of the authors. Users have remarked at the ease of learning and deploying the library.
 \end{itemize}
 
+We have implemented all our code, and encourage you to download it and try it out. It can be obtained from the website at \texttt{http://www.cs.york.ac.uk/~ndm/play/}. A copy of the library has also been released, and is on Hackage.
+
 \subsection{Road map}
 
 \S\ref{sec:combinators} introduces the traversal combinators that we propose, along with short examples. \S\ref{sec:implementation} discusses how these combinators are implemented in terms of a single primitive. \S\ref{sec:multiplay} shows how to extend this approach to more complex data types, at the cost of requiring multi-parameter type classes. \S\ref{sec:rules} lists some properties of our system, and how they can be used for optimisation. \S\ref{sec:syb} gives an implementation of our class in terms of the built in compiler support in GHC. \S\ref{sec:comparison} compares our approach with others, including the ``paradise'' benchmark. \S\ref{sec:performance} gives performance measurements of the various traversal mechanisms. \S\ref{sec:conclusion} makes concluding remarks and suggests directions for future work.
@@ -1235,35 +1237,6 @@ Just a few notes. (i) Hugs *does* support rank-2 polymorpism but it does not imp
 
 \begin{comment}
 
-There have been several attempts at generic traversal/query methods in Haskell. One initial paper was <a href="http://doi.acm.org/10.1145/604174.604179">"Scrap your boilerplate: a practical design pattern for generic programming"</a> (<a href="http://www.cs.vu.nl/boilerplate/tldi03.pdf">free copy</a>) - which I will refer to as SYB. Another mechanism is <a href="http://doi.acm.org/10.1145/1159803.1159834">"A Pattern for Almost Compositional Functions"</a> (<a href="http://www.cs.chalmers.se/%7Ebringert/publ/composOp/composOp.pdf">free copy</a>) - which I refer to as Compos (after the name of their class).
-
-The principle advantage of the Play class over these two papers is that it requires no type system extensions, compared to rank-2 types for SYB and GADT's for Compos. The simplicity of the types required means that the user is free to concentrate on the operations within the class, without requiring thought as to the type trickery required. The Play pattern has been implemented in Yhc for the Core data type, and in Catch on several data types within the program.
-</p>
-<p>
-    This document proceeds as follows:
-</p>
-<ol>
-    <li>The motivation and use cases for Play</li>
-    <li>How to use the Play class</li>
-    <li>Derivation of a Play instance for your own data type</li>
-    <li>Extension to PlayEx</li>
-    <li>A comparison to the SYB paper</li>
-    <li>A comparison to the Compos paper</li>
-</ol>
-<p>
-    All the examples used in this document can be found in the darcs repository, under the <tt>Examples</tt> directory.
-</p>
-<pre>
-darcs get --partial <a href="http://www.cs.york.ac.uk/fp/darcs/play">http://www.cs.york.ac.uk/fp/darcs/play</a>
-</pre>
-<p>
-    If you only wish to read a small fraction of this document, can I suggest you pay particular attention to <tt>mapUnder</tt> and <tt>allOver</tt> - these are by far the most common transformational patterns.
-</p>
-
-<h3>Acknowledgements</h3>
-
-<p>
-</p>
 
 
 <h2>Motivation and Use Cases</h2>
