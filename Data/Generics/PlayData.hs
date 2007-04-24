@@ -1,4 +1,4 @@
-{-# OPTIONS_GHC -fglasgow-exts -fallow-undecidable-instances #-}
+{-# LANGUAGE MultiParamTypeClasses, UndecidableInstances #-}
 
 module Data.Generics.PlayData(
     module Data.Generics.PlayEx

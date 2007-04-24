@@ -1,4 +1,4 @@
-{-# OPTIONS_GHC -fglasgow-exts -fallow-undecidable-instances #-}
+{-# LANGUAGE MultiParamTypeClasses, UndecidableInstances #-}
 
 -- this module should not be imported directly
 
