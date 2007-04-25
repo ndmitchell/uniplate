@@ -32,6 +32,10 @@
 %format \? = "\;"
 %format \! = "\!"
 
+%format _T = "\mathcal{T}"
+%format _C = "\mathcal{C}"
+%format _D = "\mathcal{D}"
+
 %format x1  = "\Varid{x_1}"
 %format x2  = "\Varid{x_2}"
 %format xn  = "\Varid{x_n}"

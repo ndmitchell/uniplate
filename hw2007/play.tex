@@ -133,24 +133,10 @@ Of course, this isn't the first technique for removing the boilerplate, the area
 \item Writing additional traversals is trivial, within the reach of even casual users of the library.
 \item We compare the relative performance of some traversal mechanisms, something that has been neglected in previous papers.
 \item This library has already been used extensively, importantly outside the friends of the authors. Users have remarked at the ease of learning and deploying the library.
+\item Our choice of traversals is new, we shun some traditionally provided operations, and provide some which have not been seen before.
 \end{itemize}
 
-We have implemented all our code, and encourage you to download it and try it out. It can be obtained from the website at \texttt{http://www.cs.york.ac.uk/~ndm/play/}. A copy of the library has also been released, and is on Hackage.
-
-\subsection{Goals}
-
-The idea behind the Play class is that there exists a data structure, usually with a reasonable number of constructors, which is often transformed or analysed. The usual example of this would be a compiler, which has at its core an expression type. This can be seen as a form of generic programming.
-
-The Play class has the following goals:
-
-\begin{itemize}
-\item Adding a new constructor should require very few changes
-\item Traversals should have a minimal amount of boiler plate
-\item The obvious code should ``just work''
-\item Haskell 98, where possible
-\item Writing new types of traverals should be easy
-\item The default traversals cover most cases
-\end{itemize}
+We have implemented all our code, and encourage you to download it and try it out. It can be obtained from the website at \url{http://www.cs.york.ac.uk/~ndm/play/}. A copy of the library has also been released, and is on Hackage.
 
 The ideas behind the Play class have been used extensively, in both the Yhc compiler and the Catch tool. In Catch there are 109 traversals using the Play class (as at Nov 2006), showing that the Play class gets extensive use.
 
@@ -171,7 +157,7 @@ This library provides a single method for implementing queries, the |everything|
 everything :: Play alpha => alpha -> [alpha]
 \end{code}
 
-This function takes a data structure, and returns a list of all data structures of the appropriate type found within it. Given a tree, |everything| returns the root of the tree, and all it's subtrees at all levels. This can be used to quickly flatten a tree structure into a list, for quick analysis via list comprehensions, as is done above. For example:
+This function takes a data structure, and returns a list of all data structures of the appropriate type found within it. Given a tree, |everything| returns the root of the tree, and all it's subtrees at all levels. This can be used to quickly flatten a tree structure into a list, for quick analysis via list comprehensions, as is done in the Inroduction. For example:
 
 \begin{code}
 everything (Add (Neg (Var "x")) (Val 12)) =
@@ -275,9 +261,9 @@ Obviously the disadvantage of |rewrite| is that if the rule modifies a tree only
 
 \subsubsection{Rewrite as Bottom-Up}
 
-Given a rewrite |f :: alpha -> Maybe alpha|, we can construct |f' :: alpha -> alpha| by |f' x = maybe x id x|. Now what are the preconditions on |f| such that |forall x `o` rewrite f x == traverse f' x|?
+Given a rewrite |f :: alpha -> Maybe alpha|, we can construct |f' :: alpha -> alpha| by |f' x = maybe x id (f x)|. Now what are the preconditions on |f| such that |forall x `o` rewrite f x == traverse f' x|?
 
-There answer is that in |f| the root matching of any equation may not overlap with any of the constructors introduced freshly on the right hand side. For example, taking the traversals from the previous section:
+The answer is that in |f| the root matching of any equation may not overlap with any of the constructors introduced freshly on the right hand side. For example, taking the traversals from the previous section:
 
 \begin{code}
 f (Sub x y)           = Just $ Add x (Neg y)
@@ -493,26 +479,26 @@ Defining operations in terms of |replaceChildren| is easy, we implement the four
 
 \begin{code}
 everything :: Play alpha => alpha -> [alpha]
-everything x = x : concatMap everything $ getChildren x
+everything x = x : concatMap everything $ fst $ replaceChildren x
 
-traverse :: Play on => (on -> on) -> on -> on
+traverse :: Play alpha => (alpha -> alpha) -> alpha -> alpha
 traverse f x = f $ generate $ map (traverse f) current
     where (current, generate) = replaceChildren x
 
-traverseM :: (Monad m, Play on) => (on -> m on) -> on -> m on
+traverseM :: (Monad m, Play alpha) => (alpha -> m alpha) -> alpha -> m alpha
 traverseM f x = mapM (traverseM f) current >>= f . generate
     where (current, generate) = replaceChildren x
 
-descend :: Play on => (on -> on) -> on -> on
+descend :: Play alpha => (alpha -> alpha) -> alpha -> alpha
 descend f x = generate $ map f current
     where (current, generate) = replaceChildren x
 \end{code}
 
-The common pattern is to call replace children, then perform some action on the current children, before combining them back. The |everything| function may be optimised further -- something we return to in \S0.
+The common pattern is to call replace children, then perform some action on the current children, before combining them back. Writing additional traversals with different properties can be done ni a simple manner. The |everything| function may be optimised further -- something we return to in \S0.
 
 \subsection{Writing |Play| instances}
 
-While in some generics libraries it is trivial to write the instances, in our case it is more challenging. This is not of a big concern, we have developed automated approaches to deriving these libraries within the \textsc{Derive} tool.
+The distinguishing feature of our libraries is that the children are defined in terms of their type -- while this makes the traversals and queries simpler, it does mean that the instance definition is dependent on the types of the constructors. While in some generics libraries it is trivial to write the instances, in our case it is more challenging. This is not of a big concern -- we have developed automated approaches to deriving these libraries within the \textsc{Derive} tool. By optionally making use of Multi-Parameter Type Classes we are able to eliminate some of this complexity, see \S0.
 
 \begin{figure}
 \begin{code}
@@ -532,57 +518,97 @@ We construct a |Play| instance for the |Expr| type in Figure \ref{fig:play_expr}
 
 \subsection{Derivation Rules}
 
-The distinguishing feature of our libraries is that the children are defined in terms of their type -- while this makes the traversals and queries simpler, it does mean that the definition is dependent on the types of the constructors. In order to model the constructors it is sufficient to define combinators for each function.
- 
- 
- We can model the type of an operation with the following construction:
+In order to model the derivation of an instance, it is necessary to have a model of the types that are being manipulated:
 
 \begin{code}
-data Type  =  None
-           |  Target
-           |  List  Type
-           |  Pair  Type Type
+type Name  = String
+type Var   = String
+
+data Data  = Data Name [Var] [Ctor]
+data Ctor  = Ctor Name [Type]
+data Type  = TyPrim | TyVar Var | TyApp Data [Type]
 \end{code}
 
-While arbitrary sized tuples are supported, along with the |Maybe| type, their rules are no more complex and fit easily into the framework we develop. With this, we define the |<|| `o` ||>| operation, using this we can write a |getChildren| clause as:
+When writing a |Play| instance for a particular data type, we can consider this particular type to be the target. We can define how to produce a function for each |Data| type that is used, using the |_D| function:
 
 \begin{code}
-getChildren (C (x1::t1) .. (xn::tn))
-    = concat [ <| t1 |> x1, .. , <| tn |> xn]
+_D (Data name vars ctors) = unwords $
+    ['d':name] ++ vars ++ ["x ="]
+    ["case x of {"] ++
+        separate ";" (map _C ctors) ++
+    ["}"]
+    
+_C (Ctor name typs) =
+    [name] ++ vars ++ [" -> "] ++
+    ["unit"] ++ [name] ++
+    separate "<>" (zipWith (:) vars (map _T typs)) ++
+    where vars = ['v':show i | i <- [1..length typs]]
 
-<| Type         |> :: Type -> [alpha]
-<| None         |> = const []
-<| Target       |> = (:[])
-<| Pair  t1 t2  |> = \(x1,x2) -> <| t1 |> x1 ++ <| t2 |> x2
-<| List  t1     |> = concatMap \? <| t1 |>
+_T (TyPrim       ) = ["unit"]
+_T (TyVar  v     ) = [v]
+_T (TyApp  d ts  )
+    | isTarget d  = ["target"]
+    | otherwise   = ['d':dataName d] ++ map _T ts
+
+separate sep xs = concat $ intersperse [sep] xs
 \end{code}
 
-Having implemented |getChildren|, we can imagine that it may be natural to implement |setChildren|, which could be combined to create |replaceChildren|. For efficiency reasons these two operations are combined into one, requiring only one examination of each constructor, but we present these two methods separately.
+Using this derivation, the |Expr| type comes out as:
 
 \begin{code}
+dExpr x = case x of
+    Val v1     -> unit Val  <> unit v1
+    Var v1     -> unit Val  <> dList unit v1
+    Neg v1     -> unit Neg  <> target v1
+    Add v1 v2  -> unit Add  <> target v1 <> target v2
+    Sub v1 v2  -> unit Sub  <> target v1 <> target v2
+    Mul v1 v2  -> unit Mul  <> target v1 <> target v2
+    Div v1 v2  -> unit Div  <> target v1 <> target v2
+
+dList a x = case x of
+    []         -> unit []
+    (:) v1 v2  -> unit (:) <> a v1 <> dList a v2
+\end{code}
+
+This now provides sufficient information for use to define the |replaceChildren| in several ways. If we are willing to limit ourselves to target types which have no type arguments. The simplest way is to define:
+
+\begin{code}
+instance Play Expr where
+    replaceChildren x = (getChildren x, setChildren x)
+\end{code}
+
+
+\subsubsection{|getChildren|}
+
+Now we can define |getChildren| as:
+
+\begin{code}
+getChildren x = dExpr x
+
+unit = const []
+target = (:[])
+(<>) = (++)
+\end{code}
+
+From these definitions we can do some reasoning. For example, |dList| is actually equivalent to |concatMap|. From this property, we can see that |concatMap (const [])| is equivalent to |const []|.
+
+\subsubsection{|setChildren|}
+
+We can equally define |setChildren| as:
+
+\begin{code}
+setChildren x = value (dExpr x)
+
 type Cont t = [alpha] -> (t,[alpha])
 
-setChildren (C (x1::t1) .. (xn::tn))
-    = value' $ const' C <> <| t1 |> x1 <> .. <> <| tn |> xn
+unit :: t -> Cont t
+unit x ns = (x,ns)
 
-<| Type         |> :: Type -> Cont t
-<| None         |> x = const' x
-<| Target       |> x = id' x
-<| Pair t1 t2   |> (x1,x2) = const' (,) <> <| t1 |> x1 <> <| t2 |> x2
-<| List t       |> xs = list' <| t |> xs
-    where
-        list' fn []      = const' []
-        list' fn (x:xs)  = const' (:) <> fn x <> list' fn xs
+target :: alpha -> Cont alpha
+target x (n:ns) = (n,ns)
 
-
-const' :: t -> Cont t
-const' x ns = (x,ns)
-
-id' :: alpha -> Cont alpha
-id' x (n:ns) = (n,ns)
-
-value' :: Cont t -> [alpha] -> t
-value' c ns = fst $ c ns
+value :: Cont t -> [alpha] -> t
+value c ns = fst $ c ns
 
 (<>) :: Cont (a->b) -> Cont a -> Cont b
 (<>) a b ns1 = let (a',ns2) = a ns1
@@ -595,9 +621,9 @@ Of course, all these tuples are very bad for the soul, and should be removed wit
 \begin{code}
 type Cont t = [alpha] -> (t -> [alpha] -> r) -> r
 
-const' x ns c = c x ns
-id' x (n:ns) c = c n ns
-value' c ns = c ns const
+unit x ns c = c x ns
+target x (n:ns) c = c n ns
+value c ns = c ns const
 
 (<>) a b ns c =  a ns $ \a' ns ->
                  b ns $ \b' ns ->
