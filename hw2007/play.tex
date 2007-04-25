@@ -49,6 +49,8 @@
 \newcommand{\gap}{\;\;}
 \newcommand{\dom}{\text{dom}}
 
+\newcommand{\derive}{\textsc{Derive}}
+
 
 \begin{document}
 
@@ -291,7 +293,7 @@ f x                   = x
 This approach guarantees that the traversal is a rewrite, but in fact only one of those |f| calls is necessary, the one attached to the construction of an |Add| value.
 
 
-\subsubsection{Rewrite at Top-Down}
+\subsubsection{Rewrite as Top-Down}
 
 Now we pose the same question: under what circumstances is a top-down traversal a rewrite, and what modifications can be made to ensure it becomes so?
 
@@ -537,7 +539,7 @@ _D (Data name vars ctors) = unwords $
     ["case x of {"] ++
         separate ";" (map _C ctors) ++
     ["}"]
-    
+
 _C (Ctor name typs) =
     [name] ++ vars ++ [" -> "] ++
     ["unit"] ++ [name] ++
@@ -630,45 +632,41 @@ value c ns = c ns const
                  c (a' b') ns
 \end{code}
 
-In reality all but the |list'| function are expanded out inline.
-
-
 \subsection{Using Derive}
 
-Apply the presented derivation rules is quite time consuming, and does not produce the cleanest instances. Take for example the type:
+Applying the presented derivation rules is quite time consuming, and is itself a form of boilerplate -- albeit one specific for each type. The DrIFT tool is well known for defining instances which can be constructed purely from the information contained in type definition. However, there are limitations to the DrIFT tool -- it is unable to operate within the presence of certain Haskell extensions, and requires a separate pre-processing stage on all compilers.
+
+As a separate project, we have developed the \derive{} tool \ref{derive}, in collaboration with Stefan O'Rear. We have extended \derive{} to allow seamless derivation of the |Play| instance. The tool is based on Template Haskell \ref{template_haskell}, but allows Haskell code to be generated which can be appended to the current file.
+
+Taking an example:
 
 \begin{code}
 data Term  =  Name String
            |  Apply Term [Term]
+              deriving ( {-! \textsf{Play} !-} )
 \end{code}
 
-The generated code for the instances would be:
+When running the \derive{} tool over this file, the generated code is:
 
 \begin{code}
-replaceChildren (Name x1) =
-    (concat [const [] x1]
-    ,value $ Name <> const' x1
-    )
+instance Play Term where
+    replaceChildren (Name x1) =
+        ([], \_ -> Name x1)
 
-replaceChildren (Apply x1 x2) =
-    (concat [(:[]) x1, concatMap (:[]) x2]
-    ,value $ Apply <> id' x1 <> list' x2
-    )
+    replaceChildren (Apply x1 x2) =
+        (x1:x2, \(n:ns) -> Apply n ns)
 \end{code}
 
-Through transformation these can be written as:
+This code follows from the definition, but \derive{} has special mechanisms to optimise out redundant patterns to produce cleaner code.
+
+If the user of \derive{} wishes, they can automatically invoke the derivation at compile time using Template Haskell as supported by GHC. This can be acheived with the following command:
 
 \begin{code}
-replaceChildren (Name x1) =
-    ([], \_ -> Name x1)
-
-replaceChildren (Apply x1 x2) =
-    (x1:x2, \(n:ns) -> Apply n ns)
+$( derive makePlay {-"\;{}^{\prime\prime}"-}Term)
 \end{code}
 
-Note that the |setChildren| in the |Apply| case changes the strictness -- but assuming the |getChildren| case has been executed first, this is still the same overall strictness.
+This allows the user to not worry about separate pre-processing.
 
-These transformations are automatically performed by derive.
 
 \section{Multi-type Queries and Traversals}
 
@@ -683,29 +681,96 @@ data Stmt  =  Assign String Expr
 
 We can define a |Play| instance for |Stmt|, and perform queries and traversals upon it. However, consider the task of extracting all literals from within a |Stmt|. This is not possible with |Play|, so we need to go further.
 
-We first introduce |PlayOn|, a method for playing from a given starting type. Next we generalise this to |PlayEx|
+This general form can be seen as operating on items of type |alpha|, but starting an item of type |beta|. Typically the type |beta| will be a container of |alpha|. We can extend our operations by specifying how to find the |alpha|'s within the |beta|'s, and then perform the standard Play operations upon the |alpha|. In the above example, our |alpha| would be |Expr|, and our |beta| would be |Stmt|.
+
+We first introduce |PlayOn|, which requires an explicit function to move between the |alpha| and |beta|. Next we make use of MPTC's to generalise this function into a type class, named |PlayEx|.
 
 \subsection{PlayOn}
 
+In order to define operations such as |everythingOn|, we require an explicit notion of how to move from the containing type to the contained type. We call this operation |replaceType|.
 
+\begin{code}
+type ReplaceType beta alpha = beta -> ([alpha], [alpha] -> beta)
+replaceType :: ReplaceType beta alpha
+\end{code}
 
-After having seen the increased power available with |PlayEx|, users of Haskell 98 may be getting jealous. While the |PlayEx| strategy is ultimately the most powerful, there is a restricted solution available.
+The semantics of |replaceType| are that starting from |beta|, the function should return the highest children in the tree of type |alpha|. This particular requirement means that if |alpha == beta| then:
 
-Imagine that a program mainly manipulates one type, the |Expr| type, but that this type is placed in many containers. Then in this case we can construct the |PlayExpr| type which is equivalent to |PlayEx| but with |Expr| frozen as the second argument. While is is not particularly beautiful, it does make the multi-type operations accessible to more users.
+\begin{code}
+replaceType x = ([x], [x'] -> x')
+\end{code}
+
+We can now define |everythingOn| and |traverseOn| which take an explicit |replaceType| function:
+
+\begin{code}
+everythingOn :: Play to => ReplaceType beta alpha -> beta -> [alpha]
+everythingOn replaceType x =
+    concatMap everything $ fst $ replaceType x
+
+traverseOn ::  Play to => ReplaceType beta alpha ->
+               (alpha -> alpha) -> beta -> beta
+traverseOn replaceType f x =
+    generate $ map (traverse f) current
+    where (current, generate) = replaceType x
+\end{code}
+
+We note that these operations are very similar to the original |everything| and |traverse|, and perform one layer of traversal -- using the original functions once the correct type has been reached.
+
+Passing this extra |replaceType| argument is a little tedious, a much better approach would be to encapsulate this in a type class, and have it passed as a dictionary argument. Alas this requires MPTC's, which we wish to avoid just slightly longer.
+
+By making a simplifying assumption, we are able to achieve slightly more elegant code, abstracting away the |replaceType| argument. Take for example the Yhc.Core library, part of the York Haskell Compiler (Yhc), which makes use of |Play|. In this library, the central types, along with which types they include, are:
+
+\begin{code}
+data Core = Core String [String] [CoreData] [CoreFunc]
+
+data CoreFunc = CoreFunc String String CoreExpr
+
+data CoreExpr  =  CoreVar   String
+               |  CoreApp   CoreExpr  [CoreExpr]
+               |  CoreCase  CoreExpr  [(CoreExpr, CoreExpr)]
+               |  CoreLet   [(CoreVarName, CoreExpr)] CoreExpr
+               |  ...
+\end{code}
+
+Most boilerplate operations to be written are done on the |CoreExpr| type, however it is often convenient to start from one of the other types. Take for example the |coreSimplify| operation -- it simplifies expressions, but may be called upon one individual expression, a function, or a program. If we are willing to freeze the type of |alpha| as |CoreExpr| we can write a class:
+
+\begin{code}
+class  PlayExpr beta where
+       replaceTypeExpr :: ReplaceType beta CoreExpr
+
+everythingExpr = everythingOn replaceTypeExpr
+traverseExpr = everythingOn replaceTypeExpr
+
+instance PlayExpr Core where ...
+instance PlayExpr CoreFunc where ...
+instance PlayExpr CoreExpr where ...
+instance PlayExpr beta => PlayExpr [beta] where ...
+\end{code}
 
 This has been used extensively in the Yhc compiler. Since the Yhc compiler does not support multi-parameter type classes, and is hoped to be bootstrapping shortly, this rules out MPTC.
 
-
 \subsection{PlayEx}
 
+If we are willing to make use of the MPTC extension, we may introduce a class |PlayEx| which includes the |replaceType| function.
 
-Unfortunately, if we wish to start with a |Stmt| and extract the |Expr| values from inside, this is not possible with |Play|. To allow this behaviour, we introduce the |PlayEx| class -- a multiparameter type class.
+\begin{code}
+class  PlayEx beta alpha where
+       replaceType :: ReplaceType beta alpha
+\end{code}
 
-Alas |PlayEx| takes us outside the realms of Haskell 98, so after presenting |PlayEx| we give a simple encoding back into Haskell 98 in the form of |PlayOn|. While the |PlayEx| class gives greater flexibility, the |PlayOn| class is still a useful alternative when Haskell 98 compatibility is required.
+This takes us outside the realm of Haskell 98, however we feel that the MPTC is conceptually simple to understand. We have not required functional dependencies, and our code is all able to execute on both Hugs and GHC.
 
-\subsection{Queries}
+We can now implement |everythingEx| and |traverseEx| in terms of their |On| counterparts:
 
-In \S\ref{whatever} we presented a query |variables| that extracted all the variables within an |Expr|. Now using |PlayEx| we are able to generalise this query so that it operates on all structures containing |Expr| values inside:
+\begin{code}
+traverseEx :: PlayEx beta to => (alpha -> alpha) -> beta -> beta
+traverseEx = traverseOn replaceType
+
+everythingEx :: PlayEx beta alpha => beta -> [alpha]
+everythingEx = everythingOn replaceType
+\end{code}
+
+We now present two examples from the original section, but implemented using |PlayEx|, so they would work if given either an |Expr| or a |Stmt|.
 
 \begin{code}
 variables :: PlayEx beta Expr => beta -> [String]
@@ -714,40 +779,19 @@ variables x = [y | Var y <- everythingEx x]
 
 Note that the only change to the a actual code is the addition of the |Ex| suffix to |everything|. The type signature has changed so that instead of |Expr -> [String]| we have replaced |Expr| with |PlayEx beta Expr => beta|. Another way of looking at this is instead of requiring the input to be an |Expr|, we merely require that from the input we know how to reach an |Expr|.
 
-Other than these small changes, the query code remains much the same.
-
-\subsection{Traversals}
-
 \begin{code}
 simplify x = traverseEx f x
     where  f (Sub x y)  = Add x (Neg y)
            f x          = x
 \end{code}
 
-In a similar manner to before, we simply add an |Ex| at the end. Nice and simple.
-
+In a similar manner to before, we simply add an |Ex| at the end. The actual code changes are minimal.
 
 \section{Implementing PlayEx}
 
+The complicating feature of |replaceType| is that when defining |PlayEx| where |alpha == beta| the program does not descend to the children, but simply returns this particular node. This ``same type'' restriction can be captured either using the type system, or using |Typeable|. We present three methods for defining a |PlayEx| instance -- offering a trade-off between performance, compatibility and volume of code. The first method, Manual, requires $O(n^2)$ instances but is the highest performance and fewest extensions -- and can be automated. The second method makes use of the |Typeable| class providing reasonable speed with $O(n)$ instances and no further Haskell extensions. The final method makes use of the |Data| class, providing fully automatic instances on GHC, but requiring the use of rank-2 types, and performing the slowest.
 
-\begin{figure}
-\begin{code}
-class Play alpha => PlayEx beta alpha where
-    replaceType :: beta -> ([alpha], [alpha] -> beta)
-
-    getType :: beta -> [alpha]
-    getType = fst . replaceType
-\end{code}
-\caption{|PlayEx| class.}
-\label{fig:playex}
-\end{figure}
-
-
-The |PlayEx| class is defined in Figure \ref{fig:playex}. Consider |alpha| to be the type on which to perform operations, and |beta| to be the initial type -- which contains examples of |alpha|. The idea of the |replaceType| function is much the same as |replaceChildren|, but instead of finding then children of this node, you find the occurrences of |alpha| within |beta|.
-
-One thing to note, when defining |PlayEx| where |alpha == beta| the program does not descend to the children, but simply returns this particular node. This ``same type'' restriction can be captured using |Typeable|. There are two separate methods for defining a |PlayEx| instance -- using only MPTC's and overlapping instances (in a safe way). One requires the use of Typeable, and a set of combinators to define classes, the other requires the use of |Data| -- and consequently rank-2 types -- but can be automatically derived by GHC.
-
-We would also like to automatically derive |Play| from |PlayEx| where possible.
+The |PlayEx| is a nice abstract, which allows any of the three methods to be used underneath. This flexibility allows the user to start with the simplest instance scheme available to them -- and change the instances to gain increased performance and compatibility. All the schemes also provide a simplified mechanism for writing |Play| instances.
 
 \subsection{Manual instances}
 
