@@ -795,63 +795,80 @@ The |PlayEx| is a nice abstract, which allows any of the three methods to be use
 
 \subsection{Manual instances}
 
-This requires $O(n^2)$ but gives the highest performance. Like before these can be automatically generated, and you can move to these instances afterwards. These instances are not quite mechanical, but are certainly easier than |Play|.
+Writing manual instances requires the |Data.Generics.PlayManual| module to be imported. This style requires $O(n^2)$ instance definitions, but gives the highest performance. Like before these can be automatically generated, and you can move to these instances afterwards. These instances are not quite mechanical, but are certainly easier than |Play|.
 
 \begin{code}
-instance PlayOne NExpr where
+instance PlayOne Expr where
     playOne x =
         case x of
-            NNeg  a    -> play NNeg |* a
-            NAdd  a b  -> play NAdd |* a |* b
-            NSub  a b  -> play NSub |* a |* b
-            NMul  a b  -> play NMul |* a |* b
-            NDiv  a b  -> play NDiv |* a |* b
-            _          -> play x
+            Neg  a    -> play Neg  |* a
+            Add  a b  -> play Add  |* a |* b
+            Sub  a b  -> play Sub  |* a |* b
+            Mul  a b  -> play Mul  |* a |* b
+            Div  a b  -> play Div  |* a |* b
+            _         -> play x
 \end{code}
 
-There are 5 combinators available, go through all of them.
+The basic idea is that you use one of 4 combinators -- |||*|, |||+|, |||-| and |||||*| to indicate the structure of the field to the right. The |||*| combinator says that the value on the right is of the target type, |||+| says that the target type is contained within the value, |||-| says that the target type is not in the value, and |||||*| says that the value to the right is a list of the target type. We can use the law that |play f ||- x| is equivalent to |play (f x)| to obtain the definition presented above.
 
-The advantage of this is that you don't need to search into deep corners.
+This style of definition naturally expands to the multi-type traversal, for example:
+
+\begin{code}
+instance PlayAll Stmt Expr where
+    playAll x =
+        case x of
+            Assign a b -> play Assign |- a |* b
+            Sequence a -> play Sequence |+ a
+            If a b c -> play If |* a |+ b |+ c
+            While a b -> play While |* a |+ b
+\end{code}
+
+Note that in these two examples we have defined |PlayOne| and |PlayAll|. From these definitions the library can infer |Play| and |PlayEx| with the appropriate semantics. The information we have provided with |||-| and |||+| can be used to direct the search more precisely -- cutting out redundant search down branches that do not have the containing type. The use of |||||*| is an optimisation that allows the list to be directly manipulated with |replaceChildren| -- instead of producing and consuming the list twice.
+
+This approach requires increasingly large number of definitions, one for container/contained pair. While this has the potential of reaching $n^2$, in reality this is rarely the case. Often very specific traversal pairs will dominate, and only those actually invoked by the code need to specified.
+
+This approach also allows a simpler instance definition for |Play| to be computed.
+
+We have named this approach ``Manual'' even though it makes full use of library provided primitives to structure the instances. The reason for referring to this as manual is that the person (or tool) writing the instances must be aware of the types -- not simply applying syntactic rules. We have also found that if a person was to take the root of specifying these instances directly, they would probably face significant complication, while at the same time failing to outperform this approach.
 
 
 \subsection{In terms of |Typeable|}
 
-Writing |PlayEx| can be done following a similar scheme to |Play|. However, the freedom to use multi-parameter type classes can give us a little more freedom. By using overlapping instances, we can use the |/\| combinator:
-
-
-To define the PlayEx class, there are three combinatiors that can be used. These automate much of the definition:
+Instead of writing $n^2$ classes to capture the notion of which target is being looked for, we can instead use the |Typeable| class to test at runtime which instance is present. We again present derivations much as before, based on the combinators |||+| and |||-|:
 
 \begin{code}
-play :: on -> ([with],[with] -> on)
-(/\) :: PlayEx item with => ([with], [with] ->
-    item -> on) -> item -> ([with], [with] -> on)
-(/\!) :: ([with], [with] -> item -> on) ->
-    item -> ([with], [with] -> on)
-\end{code}
-
-Note, the above are presented with type signatures for completeness. They are intended to be used mechanically, without excessive thought.
-
-To define a PlayEx instance for the Expr type introduced earlier:
-
-\begin{code}
-instance PlayEx Expr a where
-    replaceChildrenEx x =
+instance (Typeable a, Play a) => PlayAll Expr a where
+    playAll x =
         case x of
-            Val a -> play Val /\! a
-            Add a b -> play Add /\ a /\ b
-            Sub a b -> play Sub /\ a /\ b
-            ...
-            Neg a -> play Neg /\ a
+            Neg a    ->  play Neg  |+ a
+            Add a b  ->  play Add  |+ a |+ b
+            Sub a b  ->  play Sub  |+ a |+ b
+            Mul a b  ->  play Mul  |+ a |+ b
+            Div a b  ->  play Div  |+ a |+ b
+            _        ->  play x
+
+instance (Typeable a, Play a) => PlayAll Stm a where
+    playAll x =
+        case x of
+            Assign a b -> play Assign |- a |+ b
+            Sequence a -> play Sequence |+ a
+            If a b c -> play If |+ a |+ b |+ c
+            While a b -> play While |+ a |+ b
 \end{code}
 
-The definition follows mechanically. The only choice a user makes is whether to use the |(/\)| operator (which recurses into the child on the right), or the |(/\!)| operator, which doesn't. For example, here we have decided not to traverse inside the Int of Val. This can be changed, and would require a PlayEx instance for Int.
+This time we have no |||*| combinator, which should not come as a surprise -- this time we have no notion of which type we are searching for so could not possible answer as to whether we had found it. The |||+| combinator is the standard one, continuing. However, if we were to use it when the right hand value was an |Int|, or other primitive type we did not wish to examine, we would require a |PlayAll| definition for |Int|. To omit these unnecessary instances, we can use |||-| to indicate that the type is not of interest.
 
-If using this style of definition, a special instance must be defined for the self case:
+The PlayTypeable library is able to automatically infer |PlayEx| instances given a |PlayAll|. Alas this is not the case for |Play|. Instead we must manually write:
 
-instance PlayEx Expr Expr where
-    replaceChildrenEx = playSelf
+\begin{code}
+instance Play Expr where
+    replaceChildren = replaceChildrenAll
 
-Unfortunately this requires undecidable instances. A Play instance still needs to be written for each definition.
+instance Play Stmt where
+    replaceChildren = replaceChildrenAll
+\end{code}
+
+We may think we could define this easily, but it is not the case. This would require co-inductive or recursive dictionaries -- something that GHC has, but which Hugs does not. To allow continuing compatibility with Hugs, and the use of fewer extensions, we require the user to write these explicitly for each type.
 
 
 \subsection{In terms of |Data|}
