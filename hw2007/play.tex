@@ -954,7 +954,7 @@ everything == tails
 \section{Coding Benchmarks}
 
 In this section we compare specific examples of operations using the |Play| framework versus other frameworks. In particular the alternatives we focus on are Scrap Your Boilerplate and Compos. We start by using the first three operations on |Expr| from this paper. We then move on to the multi-type traversals from Compos. Finally, we move on to the ``Paradise Benchmark'' from SYB.
- 
+
 In all cases the Compos, SYB and Play functions are denoted by a preceding module name. In some instances, a single operate function can be written the same in both SYB and Play -- where this is possible we have done so. Where possible, type signatures have been left absent -- these are a form of boilerplate that Haskell already deals with.
 
 We explicitly do not focus on the execution time for these operations, instead leaving this to the next section.
@@ -1196,7 +1196,7 @@ Compos requires explicit type signatures. Compos and SYB both require folds wher
 Something that has been neglected in previous papers on boilerplate is the performance aspects. The first SYB paper gives the quotation ``Our benchmarks show that generic programs are reasonably efficient'', and gives a slow down of 3.5 times for the salary increase program. We choose to benchmark on all the examples shown in the previous section. Our benchmark uses the code as presented in that section. We also benchmark against a hand-coded operation with no boilerplate. The four |Play| derivations are provided by:
 
 \begin{description}
-\item[Hand Coded:] These are |Play| and |PlayEx| instances written by hand. We have chosen not to use continuation-passing to implement these instances, as it quickly becomes deeply complex. We have implemented both |getChildren| and |replaceChildren|.
+\item[Hand Coded:] These are |Play| and |PlayEx| instances written by hand. We have chosen not to use continuation-passing to implement these instances, as it quickly becomes deeply complex.
 \item[Manual:] These instances use the manual combinators, defined a required.
 \item[Typeable:] These instances use the standard typeable combinators.
 \item[Data:] These instances use the SYB |Data| instances directly.
@@ -1204,9 +1204,23 @@ Something that has been neglected in previous papers on boilerplate is the perfo
 
 In many cases there are several equivalent |Play| methods that could be used, we choose only the simplest.
 
-First all data structures used have 100 particular values randomly generated and saved. In order to ensure a fair comparison, we define one data structure which is the same as the original, and one which is a GADT encoding. All operations take these original data structures, transform them into the appropriate structure, apply the operation and then unwrap them. We measure all results relative to the time taken for a raw transformation as 1. We compiled all programs with -O2.
+First all data structures used have 100 particular values randomly generated and saved. In order to ensure a fair comparison, we define one data structure which is the same as the original, and one which is a GADT encoding. All operations take these original data structures, transform them into the appropriate structure, apply the operation and then unwrap them. We measure all results relative to the time taken for a raw transformation as 1. We compiled all programs with GHC 6.6 and -O2 on Windows XP.
 
-The results are presented in Table n, and graphs in Figure n and m. This shows that using well tuned instances, Compos is the same speed as Play. Using Data instances, we are still able to outperform Scrap Your Boilerplate -- for whom Data instances are perfect! At first glance, these results may well seem surprising, given the intermediate list of children created and examined at each stage. We first discuss the manual Play instances, and how they are optimized -- primarily by using continuations. We then focus on our optimization of |everything|, again using continuation passing -- and additionally using some |foldr|/|build| fusion properties. Finally we turn to our |PlayData| module, and how we are able to outperform SYB using their instances underneath.
+\begin{figure*}
+\begin{tabular*}{\textwidth}{l||rrrrrrrrr||rrr||rr||r}
+ & 	simp & 	vars & 	zeros & 	const & 	ren & 	syms & 	bill & 	incr & 	incr1 & 	expr & 	 stm & 	par & 	query & 	traverse & 	all \\
+raw & 	1.00 & 	1.00 & 	1.00 & 	1.00 & 	1.00 & 	1.00 & 	1.00 & 	1.00 & 	1.00 & 	1.00 & 	1.00 & 	 1.00 & 	1.00 & 	1.00 & 	1.00 \\
+comp & 	1.34 & 	1.17 & 	1.74 & 	1.21 & 	1.22 & 	1.30 & 	2.49 & 	1.52 & 	1.57 & 	1.42 & 	1.24 & 	 1.86 & 	1.68 & 	1.37 & 	1.51 \\
+play hand & 	1.16 & 	1.44 & 	2.64 & 	1.28 & 	1.36 & 	1.48 & 	2.28 & 	1.27 & 	1.08 & 	1.75 & 	 1.37 & 	1.55 & 	1.96 & 	1.23 & 	1.55 \\
+play man & 	1.22 & 	1.61 & 	3.28 & 	1.42 & 	1.18 & 	1.38 & 	2.35 & 	1.19 & 	1.16 & 	2.04 & 	1.33 & 	 1.56 & 	2.15 & 	1.23 & 	1.64 \\
+play typ & 	1.43 & 	2.09 & 	4.81 & 	1.84 & 	1.37 & 	2.63 & 	5.86 & 	1.53 & 	1.53 & 	2.78 & 	1.95 & 	 2.97 & 	3.85 & 	1.54 & 	2.57 \\
+play data & 	2.30 & 	4.64 & 	12.70 & 	2.30 & 	1.89 & 	3.60 & 	10.70 & 	2.07 & 	1.69 & 	 6.55 & 	2.60 & 	4.82 & 	7.91 & 	2.05 & 	4.65 \\
+syb & 	2.21 & 	5.88 & 	16.62 & 	1.27 & 	2.13 & 	5.56 & 	24.29 & 	3.12 & 	2.35 & 	8.24 & 	 2.99 & 	9.92 & 	13.09 & 	2.21 & 	7.05 \\
+\end{tabular*}
+\end{figure*}
+
+
+The results are presented in Table n, and graphs in Figure n and m. This shows that using well tuned instances, Compos is the same speed as Play. Using Data instances, we are still able to outperform Scrap Your Boilerplate -- for whom Data instances are perfect! At first glance, these results may well seem surprising, given the intermediate list of children created and examined at each stage. We first discuss the manual Play instances, and how they are optimised -- primarily by using continuations. We then focus on our optimisation of |everything|, again using continuation passing -- and additionally using some |foldr|/|build| fusion properties. Finally we turn to our |PlayData| module, and how we are able to outperform SYB using their instances underneath.
 
 We suspect there are further places for improvement:
 
