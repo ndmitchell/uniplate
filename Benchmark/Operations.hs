@@ -98,7 +98,7 @@ simplify_raw = rawExpr2 f
         f (NNeg x) = NNeg (f x)
         f x = x
 
-simp (NSub x y)           = NAdd x (NNeg y)
+simp (NSub x y)           = simp $ NAdd x (NNeg y)
 simp (NAdd x y) | x == y  = NMul (NVal 2) x
 simp x                    = x
 
@@ -115,7 +115,7 @@ simplify_syb = sybExpr2 $ everywhere (mkT simp)
 simplify_compos = compExpr2 f
     where
         f :: GExpr a -> GExpr a
-        f (CSub x y) = CAdd (f x) (CNeg (f y))
+        f (CSub x y) = f $ CAdd (f x) (CNeg (f y))
         f (CAdd x y) = if x1 == y1 then CMul (CVal 2) x1 else CAdd x1 y1
             where (x1,y1) = (f x,f y)
         f x = composOp f x
