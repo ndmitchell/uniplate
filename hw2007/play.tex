@@ -1207,6 +1207,8 @@ In many cases there are several equivalent |Play| methods that could be used, we
 First all data structures used have 100 particular values randomly generated and saved. In order to ensure a fair comparison, we define one data structure which is the same as the original, and one which is a GADT encoding. All operations take these original data structures, transform them into the appropriate structure, apply the operation and then unwrap them. We measure all results relative to the time taken for a raw transformation as 1. We compiled all programs with GHC 6.6 and -O2 on Windows XP.
 
 \begin{figure*}
+\caption{Table of results.}
+\label{fig:results}
 \begin{tabular*}{\textwidth}{l||rrrrrrrrr||rrr||rr||r}
  & 	simp & 	vars & 	zeros & 	const & 	ren & 	syms & 	bill & 	incr & 	incr1 & 	expr & 	 stm & 	par & 	query & 	traverse & 	all \\
 raw & 	1.00 & 	1.00 & 	1.00 & 	1.00 & 	1.00 & 	1.00 & 	1.00 & 	1.00 & 	1.00 & 	1.00 & 	1.00 & 	 1.00 & 	1.00 & 	1.00 & 	1.00 \\
@@ -1220,7 +1222,7 @@ syb & 	2.21 & 	5.88 & 	16.62 & 	1.27 & 	2.13 & 	5.56 & 	24.29 & 	3.12 & 	2.35 & 
 \end{figure*}
 
 
-The results are presented in Table n, and graphs in Figure n and m. This shows that using well tuned instances, Compos is the same speed as Play. Using Data instances, we are still able to outperform Scrap Your Boilerplate -- for whom Data instances are perfect! At first glance, these results may well seem surprising, given the intermediate list of children created and examined at each stage. We first discuss the manual Play instances, and how they are optimised -- primarily by using continuations. We then focus on our optimisation of |everything|, again using continuation passing -- and additionally using some |foldr|/|build| fusion properties. Finally we turn to our |PlayData| module, and how we are able to outperform SYB using their instances underneath.
+The results are presented in Table \ref{fig:results}, and graphs in Figure 0. This shows that using well tuned instances, Compos is the same speed as Play. Using Data instances, we are still able to outperform Scrap Your Boilerplate -- for whom Data instances are perfect! At first glance, these results may well seem surprising, given the intermediate list of children created and examined at each stage. We first discuss the manual Play instances, and how they are optimised -- primarily by using continuations. We then focus on our optimisation of |everything|, again using continuation passing -- and additionally using some |foldr|/|build| fusion properties. Finally we turn to our |PlayData| module, and how we are able to outperform SYB using their instances underneath.
 
 We suspect there are further places for improvement:
 
