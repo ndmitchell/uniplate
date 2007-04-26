@@ -1,78 +1,80 @@
-= EXPR =
-== simplify ==
-raw                 	     984
-comp                	    1078
-play man            	    1156
-play                	    1171
-play typ            	    1328
-play data           	    1703
-syb                 	    1890
-== variables ==
-raw                 	     250
-comp                	     281
-play                	     328
-play man            	     359
-play typ            	     484
-play data           	     875
-syb                 	    1140
-== zeros ==
-raw                 	      62
-comp                	     109
-play                	     187
-play man            	     187
-play typ            	     312
-play data           	     671
-syb                 	     968
+SIMPLIFY
+raw                         1046
+play                        1218
+play man                    1281
+comp                        1406
+play typ                    1500
+syb                         2312
+play data                   2406
 
-= STM =
-== constFold ==
-raw                         1265
-play man                    1515
-comp                        1609
-play                        1640
-play typ                    1796
-play data                   2140
-syb                         2531
-== rename ==
-raw                 	    1375
-comp                	    1531
-play man            	    1593
-play typ            	    1671
-play                	    1734
-play data           	    2171
-syb                 	    2453
-== symbols ==
-raw                 	     250
-play                	     296
-play man            	     328
-comp                	     343
-play typ            	     593
-play data           	    1031
-syb                 	    1546
 
-= PAR =
-== bill ==
-raw                 	      15
-play                	      46
-play man            	      46
-comp                	      62
-play typ            	     187
-play data           	     437
-syb                 	     781
-== increase ==
-raw                 	     468
-play man            	     515
-play                	     546
-comp                	     562
-play typ            	     671
-play data           	     828
-syb                 	    1265
-== incrone ==
-raw                 	     437
-play                	     468
-play man            	     468
-comp                	     593
-play typ            	     687
-play data           	     703
-syb                 	     953
+VARIABLES
+raw                         1000
+comp                        1171
+play                        1437
+play man                    1609
+play typ                    2093
+play data                   4640
+syb                         5875
+
+
+ZEROS
+raw                         1078
+comp                        1875
+play                        2843
+play man                    3531
+play typ                    5187
+play data                  13687
+syb                        17921
+
+
+RENAME
+raw                         1578
+play man                    1859
+comp                        1921
+play                        2140
+play typ                    2156
+play data                   2984
+syb                         3359
+
+
+SYMBOLS
+raw                         1140
+comp                        1484
+play man                    1578
+play                        1687
+play typ                    3000
+play data                   4109
+syb                         6343
+
+
+BILL
+raw                         1437
+play                        3281
+play man                    3375
+comp                        3578
+play typ                    8421
+play data                  15375
+syb                        34906
+
+
+INCREASE
+raw                         1328
+play man                    1578
+play                        1687
+comp                        2015
+play typ                    2031
+play data                   2750
+syb                         4140
+
+
+INCRONE
+raw                         1296
+play                        1406
+play man                    1500
+play typ                    1984
+comp                        2031
+play data                   2187
+syb                         3046
+
 
