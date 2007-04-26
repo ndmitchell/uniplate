@@ -14,11 +14,18 @@ import Generate
 import Data
 import OperationsAll
 
+{-
+Command line options are:
 
+gen - do random generation
+expr|stm|par|all - which section to run
+#n - number of tests to run
+!n - which test to execute
+-}
 
 main = getArgs >>= main2
 
-main2 [x] = case (dropWhile (== '-') x) of
+main2 args = case head norm of
     "gen" -> do generateExpr 100 >>= print
                 generateStm  100 >>= print
                 generatePar  100 >>= print
@@ -27,11 +34,13 @@ main2 [x] = case (dropWhile (== '-') x) of
     "par" -> par
     "all" -> expr >> stm >> par
     where
-        expr = exec "expr" (n*10) testsExpr tasksExpr
-        stm = exec "stm" (n*3) testsStm tasksStm
-        par = exec "par" (n*1) testsPar tasksPar
+        norm = filter (isAlpha . head) args
+        count = head $ [read n | '#':n <- args] ++ [1]
+        pick  = head $ [read n | '!':n <- args] ++ [-1]
     
-        n = 10 ^ length (takeWhile (== '-') x)
+        expr = exec "expr" count pick testsExpr tasksExpr
+        stm  = exec "stm"  count pick testsStm  tasksStm
+        par  = exec "par"  count pick testsPar  tasksPar
 
 
 groupOn f xs = groupBy ((==) `on` f) $ sortBy (compare `on` f) xs
@@ -40,12 +49,13 @@ on g f x y = g (f x) (f y)
 
 fst3 (a,b,c) = a
 
-exec :: String -> Int -> [a] -> [(String,String,a -> String)] -> IO ()
-exec name count tsts ops = do
+exec :: String -> Int -> Int -> [a] -> [(String,String,a -> String)] -> IO ()
+exec name count only tsts ops = do
         putStrLn $ "= " ++ map toUpper name ++ " ="
-        mapM_ (uncurry $ execTask count tsts) (map f tasks)
+        mapM_ (uncurry $ execTask count tsts) (map f task2)
         putStrLn ""
     where
+        task2 = if only == -1 then tasks else [tasks !! only]
         tasks = groupOn fst3 ops
         f xs = (fst3 (head xs), Map.toList $ Map.fromList [(b,c) | (a,b,c) <- xs])
 
