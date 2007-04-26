@@ -28,6 +28,16 @@ play data                  13687
 syb                        17921
 
 
+CONSTFOLD
+raw                         1343
+play man                    1625
+play                        1703
+comp                        1718
+play typ                    1906
+play data                   2468
+syb                         3093
+
+
 RENAME
 raw                         1578
 play man                    1859
