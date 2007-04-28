@@ -74,7 +74,7 @@
 \maketitle
 
 \begin{abstract}
-Generic traversals and queries are often referred to as boilerplate code -- they remain relatively similar as the action performed by the code changes, and can often outnumber the actual intent of the code in terms of lines. While other generic traversal schemes have shown how powerful new features can be added to compilers, and how the type system can be manipulated into accepting these operations, this paper focuses on a conceptually simpler generic concept. The |Play| class is introduced, which abstracts over common traversals and queries in a simple manner.
+Generic traversals and queries are often referred to as boilerplate code -- they remain relatively similar as the action performed by the code changes, and can often outnumber the actual intent of the code in terms of lines. While other generic traversal schemes have required extensions to the type system, this paper focuses on a conceptually simpler generic concept. The |Play| class is introduced, which abstracts over common traversals and queries in a simple manner.
 \end{abstract}
 
 \section{Introduction}
@@ -109,36 +109,33 @@ This code has lots of bad properties:
 \begin{itemize}
 \item Adding a new constructor would require the program to change.
 \item The action part is the first line, but is obscured by the rest of the code.
-\item The code is repetitive, and uninteresting.
+\item The code is repetitive, uninteresting and unnecessarily long.
 \item The volume of the code, and the repetitive nature, can lead to subtle bugs, which are easy to overlook.
-\item The code is too long.
 \end{itemize}
 
-The problem is referred to as the \textit{boilerplate} problem. The boilerplate is that code which doesn't have any interesting meaning, but is there only as a tax on the programmer. Using the framework developed in this paper the above example can be rewritten as:
+This problem is referred to as the \textit{boilerplate} problem. The boilerplate is that code which doesn't have any interesting meaning, but is there only as a tax on the programmer. Using the library developed in this paper, the above example can be rewritten as:
 
 \begin{code}
 variables :: Expr -> [String]
 variables x = [y | Var y <- everything x]
 \end{code}
 
-Note that in the above example the type signature is optional, and would be inferred automatically if left absent.
+Note that in the above example the type signature is optional, and would be inferred automatically if left absent. This example requires only Haskell 98, and for more advanced examples we require multi-parameter type classes -- but no rank-2 types, functional dependencies or GADTs. We have deliberately attempted common cases easy, and the reasonably difficult cases possible, and leave the obscure cases alone. By focusing on simplicity we bring real benefits to the programmer.
 
 \subsection{Contribution}
 
 Of course, this isn't the first technique for removing the boilerplate, the area has been researched extensively. There are a number of novel features in our approach:
 
 \begin{itemize}
-\item We restrict ourselves to Haskell 98 where possible, introducing multi-parameter type classes only for more complex problems. Most contrasting approaches requires rank-2 types and/or GADT's.
-\item We aim to make the common cases easy, and the reasonably difficult cases possible, and leave the obscure cases alone. By focusing on simplicity we bring real benefits to the programmer.
-\item We require the programmer to write only one single function per type to gain access to the operations we provide.
-\item We are able make use of the existing compiler support for deriving |Typeable| and |Data|, to provide automatic derivation of our class.
-\item Writing additional traversals is trivial, within the reach of even casual users of the library.
+\item We make use of \textit{list-comprehensions} for succinct queries.
+\item We require no extensions for single-type traversals, and only multi-parameter type classes for multi-type traversals.
+\item Our choice of operations is new: we shun some traditionally provided operations, and provide some which have not been seen before.
+\item We are able to implement our class on top of |Typeable| and |Data|, making using of the built in compiler, support if available.
 \item We compare the relative performance of some traversal mechanisms, something that has been neglected in previous papers.
-\item This library has already been used extensively, importantly outside the friends of the authors. Users have remarked at the ease of learning and deploying the library.
-\item Our choice of traversals is new, we shun some traditionally provided operations, and provide some which have not been seen before.
+\item Our scheme requires less boilerplate than alternatives in almost all cases.
 \end{itemize}
 
-We have implemented all our code, and encourage you to download it and try it out. It can be obtained from the website at \url{http://www.cs.york.ac.uk/~ndm/play/}. A copy of the library has also been released, and is on Hackage.
+We have implemented all our code, and encourage you to download it and try it out. It can be obtained from the website at \url{http://www.cs.york.ac.uk/~ndm/play/}. A copy of the library has also been released, and is on Hackage\footnote{\url{http://hackage.haskell.org/}}.
 
 The ideas behind the Play class have been used extensively, in both the Yhc compiler and the Catch tool. In Catch there are 109 traversals using the Play class (as at Nov 2006), showing that the Play class gets extensive use.
 
@@ -148,6 +145,7 @@ The ideas behind the Play class have been used extensively, in both the Yhc comp
 
 
 \section{Queries and Traversals}
+\label{sec:use_play}
 
 We define various queries and traversals, using the |Expr| type defined in the introduction as an example throughout. All the traversals rely on the class |Play|, an instance of which is defined for |Expr|. This instance and definition are covered in \S\ref{sec:implementation}.
 
@@ -449,6 +447,7 @@ We present all our methods in Figure \ref{fig:play}, including several monadic v
 
 
 \section{Implementing Play}
+\label{sec:implement_play}
 
 Requiring each class to implement nine separate methods would be overly arduous. Instead we implement all of these operations on top of just a single method:
 
@@ -669,6 +668,7 @@ This allows the user to not worry about separate pre-processing.
 
 
 \section{Multi-type Queries and Traversals}
+\label{sec:use_playex}
 
 We have introduced |Play| which operates on values of type |Expr|. Now let us imagine that our |Expr| type is merely the expression type in a language with statements:
 
@@ -788,6 +788,7 @@ simplify x = traverseEx f x
 In a similar manner to before, we simply add an |Ex| at the end. The actual code changes are minimal.
 
 \section{Implementing PlayEx}
+\label{sec:implement_playex}
 
 The complicating feature of |replaceType| is that when defining |PlayEx| where |alpha == beta| the program does not descend to the children, but simply returns this particular node. This ``same type'' restriction can be captured either using the type system, or using |Typeable|. We present three methods for defining a |PlayEx| instance -- offering a trade-off between performance, compatibility and volume of code. The first method, Manual, requires $O(n^2)$ instances but is the highest performance and fewest extensions -- and can be automated. The second method makes use of the |Typeable| class providing reasonable speed with $O(n)$ instances and no further Haskell extensions. The final method makes use of the |Data| class, providing fully automatic instances on GHC, but requiring the use of rank-2 types, and performing the slowest.
 
@@ -914,6 +915,7 @@ This instance is not optimised for speed, in particular the |splitAt|/|length| p
 
 
 \section{Properties}
+\label{sec:properties}
 
 This section discusses various properties that hold. Some of these could be turned into GHC optimisation rules, but this has not been done.
 
@@ -951,7 +953,8 @@ everything == tails
 
 
 
-\section{Coding Benchmarks}
+\section{Results and Evaluation}
+\label{sec:results}
 
 In this section we compare specific examples of operations using the |Play| framework versus other frameworks. In particular the alternatives we focus on are Scrap Your Boilerplate and Compos. We start by using the first three operations on |Expr| from this paper. We then move on to the multi-type traversals from Compos. Finally, we move on to the ``Paradise Benchmark'' from SYB.
 
@@ -1307,6 +1310,7 @@ We compute the good set for each type only once by using a CAF inside the class 
 
 
 \section{Related Work}
+\label{sec:related}
 
 This library is intended to be a way to remove the boilerplate for Haskell programs, and it is certainly not the first library to attempt this. Below we compare against some of the more popular alternatives. We have deliberately focused on functional programming -- often generic approaches feel the need to compare to the object-orientated Visitor pattern -- we see it as a different approach for different people.
 
@@ -1366,6 +1370,7 @@ http://www.haskell.org/tmrwiki/WhyAttributeGrammarsMatter
 Just a few notes. (i) Hugs *does* support rank-2 polymorpism but it does not implement the type class Data I guess, but perhaps it should. Also there is a small chance that hugs' approach to rank-2 is not exactly identical and would trigger issues with SYB. (ii) If you generally prefer exercising a GP setup such that no rank-2 types surface the program, you could use Strafunski. (iii) In particular, have a look at the "polymorphic symphony" paper that uses first-class polymorphism (as opposed to rank-2) and opaque generic function types to set up a library of generic function combinators. Because it uses data types for generic function types, you get full type inference. (iv) You find an older JLAP paper on my web site developing a simple type system for a Stratego-like formal setup.
 
 \section{Conclusions and Future Work}
+\label{sec:conclusion}
 
 \acks
 
