@@ -477,7 +477,7 @@ class Play alpha where
 \label{fig:play}
 \end{figure}
 
-We present all our methods in Figure \ref{fig:play}, including several monadic variants. We consider these methods encapsulate most of the common operations. In our experience, the most common operations are |everything| and |traverse|, with |traverseM| being the next most common.
+We present all our methods in Figure \ref{fig:play}, including several monadic variants. We consider these methods encapsulate most of the common operations. In our experience, the most common operations are |everything| and |traverse|, followed by |traverseM| and |descend|.
 
 
 \section{Implementing Play}
@@ -490,22 +490,18 @@ replaceChildren :: Play alpha => alpha -> ([alpha], [alpha] -> alpha)
 replaceChildren x = (children,generate)
 \end{code}
 
-Given |x|, the function |replaceChildren| will return a tuple comprising of: |children| - all the children of the same type; |generate| - a function to generate a new value with a different set of children. The caller of |generate| must ensure that the length of the list given to it is the same as the length of |children|. The implementor must ensure two conditions:
+Given |x|, the function |replaceChildren| will return a tuple comprising of: |children| - all the children of the same type; |generate| - a function to generate a new value with a different set of children. The caller of |generate| must ensure that the length of the list given to it is the same as the length of |children|. The implementor of |replaceChildren| must ensure two conditions:
 
 \begin{code}
 forall x `o` x == generate children
     where (children,generate) = replaceChildren x
-\end{code}
 
-Firstly, generating a new value using the existing children must give the same value back.
-
-\begin{code}
 forall x ys `o`  length ys == length children =>
                  fst (replaceChildren (generate ys)) == ys
     where (children,generate) = replaceChildren
 \end{code}
 
-Secondly, after inserting a new set of children, getting those children must return them back.
+Firstly, generating a new value using the existing children must give the same value back. Secondly, after inserting a new set of children, getting those children must return them back.
 
 
 \subsection{Operations in terms of |replaceChildren|}
@@ -514,7 +510,8 @@ Defining operations in terms of |replaceChildren| is easy, we implement the four
 
 \begin{code}
 everything :: Play alpha => alpha -> [alpha]
-everything x = x : concatMap everything $ fst $ replaceChildren x
+everything x = x :
+    concatMap everything $ fst $ replaceChildren x
 
 traverse :: Play alpha => (alpha -> alpha) -> alpha -> alpha
 traverse f x = f $ generate $ map (traverse f) current
@@ -529,11 +526,9 @@ descend f x = generate $ map f current
     where (current, generate) = replaceChildren x
 \end{code}
 
-The common pattern is to call replace children, then perform some action on the current children, before combining them back. Writing additional traversals with different properties can be done ni a simple manner. The |everything| function may be optimised further -- something we return to in \S0.
+The common pattern is to call replace children, then perform some action on the current children, before combining them back. Writing additional traversals with different properties can be done in a similar manner. The |everything| function may be optimised further -- something we return to in \S\ref{sec:optimise_everything}.
 
 \subsection{Writing |Play| instances}
-
-The distinguishing feature of our libraries is that the children are defined in terms of their type -- while this makes the traversals and queries simpler, it does mean that the instance definition is dependent on the types of the constructors. While in some generics libraries it is trivial to write the instances, in our case it is more challenging. This is not of a big concern -- we have developed automated approaches to deriving these libraries within the \textsc{Derive} tool. By optionally making use of Multi-Parameter Type Classes we are able to eliminate some of this complexity, see \S0.
 
 \begin{figure}
 \begin{code}
@@ -551,6 +546,9 @@ instance Play Expr where
 
 We construct a |Play| instance for the |Expr| type in Figure \ref{fig:play_expr}. The pattern of the instance can be seen easily. The default clause has no children of type |Expr|, meaning the leaves have been reached.
 
+The distinguishing feature of our library is that the children are defined in terms of their type. While this feature keeps the queries and traversals simple, it does mean that the instance definition is dependent on the types of the constructors. We now describe the derivation rules, followed by information on the \derive{} tool that performs this task automatically. By optionally making use of Multi-Parameter Type Classes we are able to eliminate some of this complexity, see \S\ref{sec:implement_playex}.
+
+
 \subsection{Derivation Rules}
 
 In order to model the derivation of an instance, it is necessary to have a model of the types that are being manipulated:
@@ -564,7 +562,7 @@ data Ctor  = Ctor Name [Type]
 data Type  = TyPrim | TyVar Var | TyApp Data [Type]
 \end{code}
 
-When writing a |Play| instance for a particular data type, we can consider this particular type to be the target. We can define how to produce a function for each |Data| type that is used, using the |_D| function:
+When writing a |Play| instance for a particular data type, |isTarget| will return True for that data type. We can define how to produce a function for each |Data| type that is used, using the |_D| function:
 
 \begin{code}
 _D (Data name vars ctors) = unwords $
@@ -605,7 +603,7 @@ dList a x = case x of
     (:)  v1 v2  -> unit (:) <> a v1 <> dList a v2
 \end{code}
 
-This now provides sufficient information for use to define the |replaceChildren| in several ways. If we are willing to limit ourselves to target types which have no type arguments. The simplest way is to define:
+This derivation now provides sufficient information for use to define |replaceChildren| in several ways. If we are willing to limit ourselves to target types which have no type arguments. The simplest way is to define:
 
 \begin{code}
 instance Play Expr where
@@ -620,16 +618,16 @@ Now we can define |getChildren| as:
 \begin{code}
 getChildren x = dExpr x
 
-unit = const []
-target = (:[])
-(<>) = (++)
+unit    = const []
+target  = (:[])
+(<>)    = (++)
 \end{code}
 
-From these definitions we can do some reasoning. For example, |dList| is actually equivalent to |concatMap|. From this property, we can see that |concatMap (const [])| is equivalent to |const []|.
+From these definitions we can do some reasoning. For example, |dList| is equivalent to |concatMap|. From this property, we can see that |concatMap (const [])| is equivalent to |const []|. This information can be used to simplify some instances.
 
 \subsubsection{|setChildren|}
 
-We can equally define |setChildren| as:
+We can define |setChildren| as:
 
 \begin{code}
 setChildren x = value (dExpr x)
@@ -646,22 +644,22 @@ value :: Cont t -> [alpha] -> t
 value c ns = fst $ c ns
 
 (<>) :: Cont (a->b) -> Cont a -> Cont b
-(<>) a b ns1 = let (a',ns2) = a ns1
-                   (b',ns3) = b ns2
-               in  (a' b',ns3)
+(<>) a b ns1 =  let  (a'  ,ns2  ) = a  ns1
+                     (b'  ,ns3  ) = b  ns2
+                in   (a' b',ns3)
 \end{code}
 
-Of course, all these tuples are very bad for the soul, and should be removed with continuation passing style:
+While this derivation does provide the correct instances, we can improve the simplification opportunities and runtime speed by moving to continuations:
 
 \begin{code}
 type Cont t = [alpha] -> (t -> [alpha] -> r) -> r
 
-unit x ns c = c x ns
-target x (n:ns) c = c n ns
-value c ns = c ns const
+unit    x  ns      c  = c x ns
+target  x  (n:ns)  c  = c n ns
+value   c  ns         = c ns const
 
-(<>) a b ns c =  a ns $ \a' ns ->
-                 b ns $ \b' ns ->
+(<>) a b ns c =  a  ns $ \a'  ns ->
+                 b  ns $ \b'  ns ->
                  c (a' b') ns
 \end{code}
 
@@ -1272,6 +1270,7 @@ We suspect there are further places for improvement:
 
 
 \subsection{Optimising |everything|}
+\label{sec:optimise_everything}
 
 Our initial |everything| implementation was presented as:
 
@@ -1310,6 +1309,7 @@ everything x = build (f x)
 
 
 \subsection{Optimising |PlayData|}
+\label{sec:optimise_playdata}
 
 The |PlayData| instance is an area of the library we are particularly proud of -- being able to use the existing SYB framework which is already built into the GHC compiler makes boilerplate code much easier to write. Managing to both layer |PlayData| over the |Data| instances, and perform better is not something we initially believed to be possible.
 
