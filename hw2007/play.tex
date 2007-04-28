@@ -381,7 +381,7 @@ While we have decided that top-down traversals are unnecessary for our library, 
 descend :: Play alpha => (alpha -> alpha) -> alpha -> alpha
 \end{code}
 
-The |descend| function applies a function to all children of a node, then reconstructs a new result using those results. It is a useful function to have, and often is a better choice than top-down traversals, as it preserves the order you would require, but makes more things explicit. 
+The |descend| function applies a function to all children of a node, then reconstructs a new result using those results. It is a useful function to have, and often is a better choice than top-down traversals, as it preserves the order you would require, but makes more things explicit.
 Consider the addition of the constructor |Let String Expr Expr| -- binding the variable introduced. Now let us replace free variables with given expressions. In order to determine which variables are used in an unbound manner, we need to ``remember'' which variables have been introduced as we descend. Now we can write out function as:
 
 \begin{code}
@@ -480,7 +480,7 @@ class Play alpha where
 We present all our methods in Figure \ref{fig:play}, including several monadic variants. We consider these methods encapsulate most of the common operations. In our experience, the most common operations are |everything| and |traverse|, followed by |traverseM| and |descend|.
 
 
-\section{Implementing Play}
+\section{Implementing the |Play| class}
 \label{sec:implement_play}
 
 Requiring each class to implement nine separate methods would be overly arduous. Instead we implement all of these operations on top of just a single method:
@@ -665,9 +665,9 @@ value   c  ns         = c ns const
 
 \subsection{Using Derive}
 
-Applying the presented derivation rules is quite time consuming, and is itself a form of boilerplate -- albeit one specific for each type. The DrIFT tool is well known for defining instances which can be constructed purely from the information contained in type definition. However, there are limitations to the DrIFT tool -- it is unable to operate within the presence of certain Haskell extensions, and requires a separate pre-processing stage on all compilers.
+Applying the presented derivation rules is quite time consuming, and is itself a form of boilerplate -- albeit one specific for each type. The DrIFT tool \cite{drift} is well known for defining instances which can be constructed purely from the information contained in type definition. However, there are limitations to the DrIFT tool -- it is unable to operate with the presence of certain Haskell extensions, and requires a separate pre-processing stage on all compilers.
 
-As a separate project, we have developed the \derive{} tool \ref{derive}, in collaboration with Stefan O'Rear. We have extended \derive{} to allow seamless derivation of the |Play| instance. The tool is based on Template Haskell \ref{template_haskell}, but allows Haskell code to be generated which can be appended to the current file.
+As a separate project, we have developed the \derive{} tool \cite{derive}, in collaboration with Stefan O'Rear. We have extended \derive{} to allow seamless derivation of the |Play| instance. The tool is based on Template Haskell \cite{template_haskell}, but allows Haskell code to be generated which can be appended to the current file.
 
 Taking an example:
 
@@ -688,32 +688,30 @@ instance Play Term where
         (x1:x2, \(n:ns) -> Apply n ns)
 \end{code}
 
-This code follows from the definition, but \derive{} has special mechanisms to optimise out redundant patterns to produce cleaner code.
-
-If the user of \derive{} wishes, they can automatically invoke the derivation at compile time using Template Haskell as supported by GHC. This can be acheived with the following command:
+This code follows from the definition, but \derive{} has special mechanisms to optimise out redundant patterns to produce cleaner code. If the user of \derive{} wishes, they can take advantage of the Template Haskell support ni GHC by writing:
 
 \begin{code}
 $( derive makePlay {-"\;{}^{\prime\prime}"-}Term)
 \end{code}
 
-This allows the user to not worry about separate pre-processing.
+The use of \derive{} removes the need for a user to understand the rules to create an instance of the |Play| class.
 
 
 \section{Multi-type Queries and Traversals}
 \label{sec:use_playex}
 
-We have introduced |Play| which operates on values of type |Expr|. Now let us imagine that our |Expr| type is merely the expression type in a language with statements:
+We have introduced |Play| which operates on values of type |Expr|. Now let us imagine that |Expr| is merely the expression type in a language with statements:
 
 \begin{code}
-data Stmt  =  Assign String Expr
-           |  Sequence [Stmt]
-           |  If Expr Stmt Stmt
-           |  While Expr Stmt
+data Stmt  =  Assign    String  Expr
+           |  Sequence  [Stmt]
+           |  If        Expr    Stmt Stmt
+           |  While     Expr    Stmt
 \end{code}
 
-We can define a |Play| instance for |Stmt|, and perform queries and traversals upon it. However, consider the task of extracting all literals from within a |Stmt|. This is not possible with |Play|, so we need to go further.
+We can define a |Play| instance for |Stmt|, and perform queries and traversals upon it. However, we may run into limitations. Consider the task of extracting all literals from within a |Stmt| -- this task is not possible with |Play|.
 
-This general form can be seen as operating on items of type |alpha|, but starting an item of type |beta|. Typically the type |beta| will be a container of |alpha|. We can extend our operations by specifying how to find the |alpha|'s within the |beta|'s, and then perform the standard Play operations upon the |alpha|. In the above example, our |alpha| would be |Expr|, and our |beta| would be |Stmt|.
+The |Play| class takes a value of type |alpha|, and operates on its children of type |alpha|. What we now require is something that takes a value of type |beta|, but operates on the children of type |alpha| within it -- we call this class |PlayEx|. Typically the type |beta| will be a container of |alpha|. We can extend our operations by specifying how to find the |alpha|'s within the |beta|'s, and then perform the standard Play operations upon the |alpha|. In the above example, our |alpha| would be |Expr|, and our |beta| would be |Stmt|.
 
 We first introduce |PlayOn|, which requires an explicit function to move between the |alpha| and |beta|. Next we make use of MPTC's to generalise this function into a type class, named |PlayEx|.
 
