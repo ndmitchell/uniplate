@@ -353,12 +353,11 @@ As a result we consider top-down traversals to be more complex and less function
 
 We include |rewrite| but suspect that most users would be better suited with |traverse|, modified as described above.
 
-
 \subsection{Action Traversals}
 
-We have introduced rewrite traversals, where the intention was to apply a set of rules until a fixed point was found. The alternative is action traversals, where the order each node wants to be visited and transformed. The |descend| and |traverse| actions can be used to perform this, but a standard technique for allowing actions is to thread a monad through the actions. We do this by introducing |traverseM|, |descendM| and |rewriteM|.
+We have introduced rewrite traversals, where the intention was to apply a set of rules until a fixed point was found. The alternative is an action traversal, where each node is visited and transformed once. The |descend| and |traverse| actions can be used to perform this, but a standard technique is to thread a monad through the actions. We do this by introducing |traverseM| and |rewriteM|.
 
-Let us assume that each variable wants to be renamed so it is unique.
+Let us assume that each variable wants to be renamed so it is unique:
 
 \begin{code}
 uniqueVars :: Expr -> Expr
@@ -374,18 +373,16 @@ uniqueVars x = evalState (traverseM f x) vars
 
 Here a monadic computation is required, the program needs to keep track of what the next item in the list to use is, and replace the current item. By using the state monad, this can be done easily.
 
-
 \subsection{Top-Down Descending}
 
-While we have decided that top-down traversals are unnecessary for our library, we still believe that some traversals operate more naturally in a top-down manner. An extension to the top-down traversal includes one where information is pushed downwards at the same time.
-
-Consider the addition of the constructor |Let String Expr Expr| -- binding the variable introduced. In order to determine which variables are used in an unbound manner, we need to ``remember'' which variables have been introduced as we descend. We introduced the |descend| function, taken from the Compos paper \cite{compos}.
+While we have decided that top-down traversals are unnecessary for our library, we still believe that some traversals operate more naturally in a top-down manner. An extension to the top-down traversal includes one where information is pushed downwards at the same time. We introduce the |descend| function, inspired by the Compos paper \cite{compos}.
 
 \begin{code}
 descend :: Play alpha => (alpha -> alpha) -> alpha -> alpha
 \end{code}
 
-Now we can write out function with:
+The |descend| function applies a function to all children of a node, then reconstructs a new result using those results. It is a useful function to have, and often is a better choice than top-down traversals, as it preserves the order you would require, but makes more things explicit. 
+Consider the addition of the constructor |Let String Expr Expr| -- binding the variable introduced. Now let us replace free variables with given expressions. In order to determine which variables are used in an unbound manner, we need to ``remember'' which variables have been introduced as we descend. Now we can write out function as:
 
 \begin{code}
 replaceVars :: [(String,Expr)] -> Expr -> Expr
@@ -398,18 +395,17 @@ replaceVars rep x =
           _ -> descend (replaceVars rep) x
 \end{code}
 
-Note that although this function is finished, we have only specified what to do in the two interesting cases, namely |Let| and |Var|.
-
-The |descend| function applies a function to all children of a node, then reconstructs a new result using those results. It is a useful function to have, and often is a better choice than top-down traversals, as it preserves the order you would require, but makes more things explicit.
-
 
 \subsection{Folds}
 
-Traditionally in Haskell a fold replaces each constructor with an alternative. To define a complete fold on a data type, each constructor must be represented, and there is no obvious library function to abstract over this process. A more useful fold for a library such as this would be to allow a default operation. To do this we have:
+Traditionally in Haskell a fold replaces each constructor with an alternative. To define a complete fold on a data type, each constructor must be represented, and there is no obvious library function to abstract over this process. more useful fold for a library such as this would be to allow a default operation. To do this we have:
 
 \begin{code}
 fold :: Play alpha => ([r] -> t) -> (alpha -> t -> r) -> alpha -> r
+fold combine operate = ...
 \end{code}
+
+This fold takes two functional arguments: |combine| takes a value representing each child of an expression, and combines them into a token |t|; |operate| takes a token representing the children and the element into a result |r|.
 
 Now lets imagine that programmers are paid by the depth of expression they produce, so lets write a function that computes the maximum depth of an expression.
 
@@ -420,12 +416,23 @@ depth = fold (foldr max 0) $ const (+1)
 
 Our |fold| function takes two functions, one which combines a list of values representing each child, and one which generates a new value given the value for the children and this particular node. In the above example we have used |foldr max 0| to combine all the children -- |maximum| is inappropriate, as |maximum [] = {-"\bot"-}|. The second function |const (+1)| simply adds one to the previous depth.
 
+Our choice of fold operator seems a little unusual at first, one might have expected that only one functional argument was required. We can define such a fold, and implement |depth| in terms of it:
+
+\begin{code}
+foldId :: Play alpha => (alpha -> [r] -> r) -> alpha -> r
+foldId = fold id
+
+depth = foldId (foldr max 0 . map (+1))
+\end{code}
+
+This function is a perfectly common pattern, although by having a slightly more general version we allow more boilerplate to be removed in some examples -- particularly when some constructors require different operations.
+
 
 \subsection{EverythingContext}
 
 The final operation in the library is a curious one -- we have not seen it referenced in any other library, even in those which attempt to include all variations \cite{replib}. However, if the user requires this particular function, they really do need it -- faking it from other operations requires a lot of monadic complexity. This function was actually contributed by a user, which we feel enhances our claim that average users can construct their own operations upon our framework.
 
-Imagine that you wish to change the value of one literal by one, either increasing or decreasing. This particular operation could be useful for mutation testing. To do this we require the function:
+Imagine that you wish to change the value of \textit{a single} literal by 1, either increasing or decreasing. This particular operation could be useful for mutation testing. To do this we provide the function:
 
 \begin{code}
 everythingContext :: Play alpha => alpha -> [(alpha, alpha -> alpha)]
@@ -438,7 +445,7 @@ forall x `o` everything x == map fst (everythingContext x)
 forall x `o` all (== x) [b a | (a,b) <- everythingContext x]
 \end{code}
 
-Now we are in a situation to write our function:
+Now we are able to easily write our function:
 
 \begin{code}
 mutants :: Expr -> [Expr]
