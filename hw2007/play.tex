@@ -141,13 +141,13 @@ The ideas behind the Play class have been used extensively, in both the Yhc comp
 
 \subsection{Road map}
 
-\S\ref{sec:combinators} introduces the traversal combinators that we propose, along with short examples. \S\ref{sec:implementation} discusses how these combinators are implemented in terms of a single primitive. \S\ref{sec:multiplay} shows how to extend this approach to more complex data types, at the cost of requiring multi-parameter type classes. \S\ref{sec:rules} lists some properties of our system, and how they can be used for optimisation. \S\ref{sec:syb} gives an implementation of our class in terms of the built in compiler support in GHC. \S\ref{sec:comparison} compares our approach with others, including the ``paradise'' benchmark. \S\ref{sec:performance} gives performance measurements of the various traversal mechanisms. \S\ref{sec:conclusion} makes concluding remarks and suggests directions for future work.
+\S\ref{sec:use_play} introduces the traversal combinators that we propose, along with short examples. \S\ref{sec:implement_play} discusses how these combinators are implemented in terms of a single primitive. \S\ref{sec:use_playex} extends this approach to multi-type traversals, and \S\ref{sec:implement_playex} covers the extended implementation. \S\ref{sec:properties} lists some properties of the functions in our library. \S\ref{sec:results} gives code comparisons to other examples, including the ``paradise'' benchmark, and performance measurements. \S\ref{sec:conclusion} makes concluding remarks and suggests directions for future work.
 
 
 \section{Queries and Traversals}
 \label{sec:use_play}
 
-We define various queries and traversals, using the |Expr| type defined in the introduction as an example throughout. All the traversals rely on the class |Play|, an instance of which is defined for |Expr|. This instance and definition are covered in \S\ref{sec:implementation}.
+We define various queries and traversals, using the |Expr| type defined in the introduction as an example throughout. All the traversals rely on the class |Play|, an instance of which is defined for |Expr|. This instance and definition are covered in \S\ref{sec:implement_play}.
 
 \subsection{Queries}
 
@@ -157,7 +157,7 @@ This library provides a single method for implementing queries, the |everything|
 everything :: Play alpha => alpha -> [alpha]
 \end{code}
 
-This function takes a data structure, and returns a list of all data structures of the appropriate type found within it. Given a tree, |everything| returns the root of the tree, and all it's subtrees at all levels. This can be used to quickly flatten a tree structure into a list, for quick analysis via list comprehensions, as is done in the Inroduction. For example:
+This function takes a data structure, and returns a list of all data structures of the appropriate type found within it. Imagining a data structure as a tree, |everything| returns the root of the tree, and all it's subtrees at all levels. For example:
 
 \begin{code}
 everything (Add (Neg (Var "x")) (Val 12)) =
@@ -167,6 +167,7 @@ everything (Add (Neg (Var "x")) (Val 12)) =
     ,Val 12]
 \end{code}
 
+\begin{comment}
 \begin{figure}
 \pic{everything2}
 \caption{Graphical representation of |everything|.}
@@ -174,22 +175,20 @@ everything (Add (Neg (Var "x")) (Val 12)) =
 \end{figure}
 
 A visual representation of this example is given in Figure \ref{fig:everything}.
+\end{comment}
 
-One use of this mechanism for querying was given in the introduction. For another example, consider the task of seeing how many divisions by the literal 0 there are -- as this will cause a runtime error.
+One use of this mechanism for querying was given in the introduction. We have found that the pattern of using a list-comprehension to examine the results is particularly handy. For another example, consider the task of seeing how many divisions by the literal 0 there are -- as this will cause a runtime error.
 
 \begin{code}
 countDivZero :: Expr -> Int
 countDivZero x = length [() | Div _ (Val 0) <- everything x]
 \end{code}
 
-Note that we make essential use of the feature of list comprehensions that if a pattern does not match, then no errors are returned. In other places of the Haskell language, failing to match a pattern results in a pattern-match error.
-
-Extra context could perhaps be given by printing some of the value that is being divided by zero, to help narrow down the error. Using the \C{everything} function, all queries can be expressed very quickly and directly.
+Note that we make essential use of the feature of list comprehensions that if a pattern does not match, then the item is skipped. In other places of the Haskell language, failing to match a pattern results in a pattern-match error. Using the \C{everything} function, all queries can be expressed very quickly and directly -- thanks to the power of Haskell's list processing.
 
 \subsection{Bottom-up Traversals}
 
-Another common operation covered by many boilerplate removal systems is the traversal.
-We define as our standard traversal a bottom up traversal.
+Another common operation covered by many boilerplate removal systems is the traversal -- a function that traverses the entire data structure making modifications. We define as our standard traversal a bottom up traversal.
 
 \begin{code}
 traverse :: Play alpha => (alpha -> alpha) -> alpha -> alpha
@@ -209,9 +208,7 @@ simplify x = traverse f x
            f x          = x
 \end{code}
 
-This code can be read as applying the subtraction rule where you can, and where you can not, doing nothing.
-
-Adding additional rules is trivial, let us take the example of:
+This code can be read as applying the subtraction rule where you can, and where you can not, doing nothing. Adding additional rules is trivial, let us take the example of:
 
 \begin{code}
 x + y | x == y = 2 * x
@@ -283,12 +280,12 @@ traverse  f'  x = Add (Var "q") (Neg (Var "q"))
 So is it possible to easily remedy this situation? The answer is yes, whenever the right-hand side introduces a new constructor, an additional onward call can be made:
 
 \begin{code}
-f (Sub x y)           = f $ Add x (f $ Neg y)
-f (Add x y) | x == y  = f $ Mul (f $ Val 2) x
-f x                   = x
+f' (Sub x y)           = f' $ Add x (f' $ Neg y)
+f' (Add x y) | x == y  = f' $ Mul (f' $ Val 2) x
+f' x                   = x
 \end{code}
 
-This approach guarantees that the traversal is a rewrite, but in fact only one of those |f| calls is necessary, the one attached to the construction of an |Add| value.
+This approach guarantees that the traversal is a rewrite, but in fact only one of those |f'| calls is necessary, the one attached to the construction of an |Add| value.
 
 
 \subsubsection{Rewrite as Top-Down}
@@ -318,9 +315,6 @@ traverse' f x = Add (Lit 5) (Lit -2)
 \end{code}
 
 Now, are we able to find a simple mechanism to go back to obtaining full rewrite behaviour? No. One option is to perform the traversals on the matches of the first equation before doing the match, perhaps a |case| expression -- effectively resulting in a bottom-up traversal. The other option is do rewrite on the entire new right-hand side -- modelling the behaviour of rewrite.
-
-
-\subsubsection{Summary}
 
 As a result we consider top-down traversals to be more complex and less functional than bottom-up traversals, and we do not include them in our library. An initial version of this library included top-down traversals -- we found they were rarely the correct choice. After investigating further, we discovered that most uses of top-down traversals were to model rewrites where information was pushed down, and most of these functions were wrong in corner cases. This experience lead us to the decision that top-down traversals do not deserve library support.
 
