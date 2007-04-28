@@ -258,9 +258,28 @@ Obviously the disadvantage of |rewrite| is that if the rule modifies a tree only
 
 \subsubsection{Rewrite as Bottom-Up}
 
-Given a rewrite |f :: alpha -> Maybe alpha|, we can construct |f' :: alpha -> alpha| by |f' x = maybe x id (f x)|. Now what are the preconditions on |f| such that |forall x `o` rewrite f x == traverse f' x|?
+Given a rewrite |f :: alpha -> Maybe alpha|, we can construct |f'|:
 
-The answer is that in |f| the root matching of any equation may not overlap with any of the constructors introduced freshly on the right hand side. For example, taking the traversals from the previous section:
+\begin{code}
+f' :: alpha -> alpha
+f' x = maybe x id (f x)
+\end{code}
+
+What are the preconditions on |f| such that |forall x `o` rewrite f x == traverse f' x|? We start by creating a slightly more abstract model of the operation, as a set of tree rewrites. We can imagine |f| as a set of tree rewrite rules, where the tree on the left corresponds to the pattern matching, and the tree on the right corresponds to the generated value.
+
+\begin{code}
+type Rewrite  = [(Tree,Tree)]
+data Tree     = Branch String [Tree] | Leaf
+
+treeEq (Branch s1 t1) (Branch s2 t2) =
+    s1 == s2 && zipWith treeEq t1 t2
+treeEq _ _ = True
+
+equal rs =  not $ or  [treeEq a b | a <- map fst rs
+                      ,b <- concatMap (everything . snd) rs]
+\end{code}
+
+The answer is that if |equal| on the rule-set returns True, the traversal and rewrite are equivalent. This can be read as if any of the generated values at any level overlaps with the root of any pattern match, then the traversal is not a rewrite. Taking the |simplify| traversal from from the previous section:
 
 \begin{code}
 f (Sub x y)           = Just $ Add x (Neg y)
@@ -268,7 +287,7 @@ f (Add x y) | x == y  = Just $ Mul (Val 2) x
 f _                   = Nothing
 \end{code}
 
-Here |Add| occurs on the right-hand side of the first line, and on the left-hand side of the second. When applied as a single traversal, we can construct a value where the two alternatives differ:
+Here |Add| occurs on the right-hand side of the first line, and on the left-hand side of the second. From this we can construct a value where the two alternatives differ:
 
 \begin{code}
 let x = Sub (Neg (Var "q")) (Var "q")
@@ -294,31 +313,45 @@ Now we pose the same question: under what circumstances is a top-down traversal 
 
 Before we can answer this question, we must first reflect on what a top-down traversal means. The usual answer is that a modification is on the original tree, at the root. After being modified, the action is re-run upon each of the children.
 
-A sufficient restriction to impose on |f| is that the leaves of left-hand side matches must be distinct from the constructions on the right hand side, although this condition is overly strict. To obtain the correct restriction requires a complete analysis of both the left and right sides.
+With this, we can define the operation which tests these two alternatives for equality:
 
-Note that this restriction is neither strictly more restrictive or less restrictive than the one imposed on bottom-up traversals. \todo{Example}
+\begin{code}
+equal rs =  not $ or  [treeEq a b | a <- map snd rs
+                      ,b <- concatMap (everything . fst) rs]
+\end{code}
 
-In a similar manner to bottom-up traversals, we wonder if it is possible to modify |f| minimally to permit a rewrite traversal. The answer is no, consider:
+The only change from the previous requirement is that the |fst| and |snd| applications have been switched. It is necessary for the root values constructed on the right to not match anywhere on the left. Note that this restriction is neither more or less restrictive than the one imposed on bottom-up traversals, and in the |simplify| examples both produce the same result.
+
+In a similar manner to bottom-up traversals, we wonder if it is possible to modify |f| minimally to permit a rewrite traversal. The answer is yes, but is effectively an encoding of bottom-up. To see the scheme requires multi-level matches on the left-hand side:
 
 \begin{code}
 f (Add (Lit x) (Lit y)  ) = Lit (x+y)
-f (Neg (Lit x)          ) = Lit (negate x)
+f (Mul (Lit 1) y        ) = y
 \end{code}
 
-Now choose the value:
+\noindent becomes:
 
 \begin{code}
-let x = Add (Lit 5) (Neg (Lit 2))
-
-rewrite f x = Lit 3
-traverse' f x = Add (Lit 5) (Lit -2)
+f (Add x y) = case  (f x     , f y     ) of
+                    (Lit x'  , Lit y'  ) -> Lit (x'+y')
+                    _ -> Add x y
+f (Mul x y) = case  f x of
+                    Lit 1 -> f y
+                    _ -> Mul x y
 \end{code}
 
-Now, are we able to find a simple mechanism to go back to obtaining full rewrite behaviour? No. One option is to perform the traversals on the matches of the first equation before doing the match, perhaps a |case| expression -- effectively resulting in a bottom-up traversal. The other option is do rewrite on the entire new right-hand side -- modelling the behaviour of rewrite.
+\noindent Or alternatively, making use of GHC's pattern-guards:
+
+\begin{code}
+f (Add  x y) | Lit x'  <- f x, Lit y' <- f y = Lit (x'+y')
+f (Mul  x y) | Lit 1   <- f x = f y
+\end{code}
+
+Note that we have both explicitly continued the execution \textit{before} performing a pattern match, and in the last branch where a leaf is returned, we have to explicitly continue \textit{afterwards}.
 
 As a result we consider top-down traversals to be more complex and less functional than bottom-up traversals, and we do not include them in our library. An initial version of this library included top-down traversals -- we found they were rarely the correct choice. After investigating further, we discovered that most uses of top-down traversals were to model rewrites where information was pushed down, and most of these functions were wrong in corner cases. This experience lead us to the decision that top-down traversals do not deserve library support.
 
-We include |rewrite| but suspect that most users would be better suited with |traverse|.
+We include |rewrite| but suspect that most users would be better suited with |traverse|, modified as described above.
 
 
 \subsection{Action Traversals}
