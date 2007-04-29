@@ -1305,7 +1305,7 @@ We suspect there are further places for improvement:
 \item List fusion may be able to eliminate some of the lists in |replaceChildren|.
 \end{itemize}
 
-\subsection{Optimising |everything|}
+\subsection{Optimising the |everything| function}
 \label{sec:optimise_everything}
 
 Our initial |everything| implementation was presented as:
@@ -1315,7 +1315,7 @@ everything :: Play on => on -> [on]
 everything x = x : concatMap everything $ getChildren x
 \end{code}
 
-The disadvantage of this code is that the |concatMap| constructs and consumes the list at every level, requiring one reconstruction per level of depth in the data structure. We can fix this by using continuations:
+The disadvantage of this code is that |concatMap| produces and consumes the list at every level, requiring one reconstruction per level of depth in the data structure. We can fix this by using continuations:
 
 \begin{code}
 everything x = f x []
@@ -1326,13 +1326,7 @@ concatCont []     rest  =  rest
 concatCont (x:xs) rest  =  x (concatCont xs rest)
 \end{code}
 
-Now we only perform one reconstruction per level. However, we can do better still using GHC's list fusion. The user of everything is likely to be a good consumer, if it is a list comprehension. We can now make |concatCont| a good consumer:
-
-\begin{code}
-concatCont xs rest = foldr ($) rest xs
-\end{code}
-
-Now we can also make |f| a good producer using |build|:
+Now we only perform one reconstruction. We can do better using GHC's list fusion. The user of everything is likely to a list comprehension, which is a good consumer. We can make |concatCont| a good consumer, and |f| a good producer:
 
 \begin{code}
 everything :: Play on => on -> [on]
@@ -1341,13 +1335,14 @@ everything x = build (f x)
     f :: Play on => on -> (on -> res -> res) -> res -> res
     f x cons nil = x `cons`
         concatCont (map (flip f cons) $ getChildren x) nil
-\end{code}
 
+concatCont xs rest = foldr ($) rest xs
+\end{code}
 
 \subsection{Optimising |PlayData|}
 \label{sec:optimise_playdata}
 
-The |PlayData| instance is an area of the library we are particularly proud of -- being able to use the existing SYB framework which is already built into the GHC compiler makes boilerplate code much easier to write. Managing to both layer |PlayData| over the |Data| instances, and perform better is not something we initially believed to be possible.
+The |Play| instance implemented in terms of |Data| is an area of the library we are particularly proud of. By using the existing SYB framework which is already built into the GHC compiler makes boilerplate code much easier to write. Managing to both layer |Play| over the |Data| instances, and perform better is not something we initially believed to be possible.
 
 The first optimisation was to move from generating the two elements on the |replaceChildren| tuple separately, to doing it as one task. This means that it is no longer possible to use |gmapM|, but instead we must use |gfoldl|. This reduction means that each data constructor gets examined fewer times, and our use of the state monad can be eliminated.
 
