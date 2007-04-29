@@ -93,7 +93,7 @@ data Expr  =  Val  Int         -- a literal value
            |  Div  Expr  Expr  -- division
 \end{code}
 
-This is a small expression language for integer expressions, which permits free variables. To evaluate an expression an initial environment must be supplied mapping the required variables to values. A precondition on this environment is that every variable present in the expression must have a corresponding entry in the environment. This naturally leads to the requirement to specify a function which returns a list of all the variables:
+This type represents a small expression language for integer expressions, which permits free variables. To evaluate an expression, an initial environment must be supplied, mapping the required variables to values. A precondition on this environment is that every variable present in the expression must have a corresponding entry in the environment. To check this precondition requires a function which returns a list of all the variables:
 
 \begin{code}
 variables :: Expr -> [String]
@@ -111,35 +111,35 @@ This code has lots of bad properties:
 \begin{itemize}
 \item Adding a new constructor would require the program to change.
 \item The action part is the first line, but is obscured by the rest of the code.
-\item The code is repetitive, uninteresting and unnecessarily long.
-\item The volume of the code, and the repetitive nature, can lead to subtle bugs, which are easy to overlook.
+\item The code is repetitive and uninteresting -- leading to subtle bugs which are hard to spot.
+\item The code is unnecessarily long.
 \end{itemize}
 
-This problem is referred to as the \textit{boilerplate} problem. The boilerplate is that code which doesn't have any interesting meaning, but is there only as a tax on the programmer. Using the library developed in this paper, the above example can be rewritten as:
+This problem is referred to as the \textit{boilerplate} problem. Using the library developed in this paper, the above example can be rewritten as:
 
 \begin{code}
 variables :: Expr -> [String]
 variables x = [y | Var y <- everything x]
 \end{code}
 
-Note that in the above example the type signature is optional, and would be inferred automatically if left absent. This example requires only Haskell 98, and for more advanced examples we require multi-parameter type classes -- but no rank-2 types, functional dependencies or GADTs. We have deliberately attempted common cases easy, and the reasonably difficult cases possible, and leave the obscure cases alone. By focusing on simplicity we bring real benefits to the programmer.
+In the above example the type signature is optional, and would be inferred automatically if left absent. This example requires only Haskell 98, and for more advanced examples we require multi-parameter type classes -- but no rank-2 types, functional dependencies or GADTs. We have deliberately attempted common cases easy, and the reasonably difficult cases possible, and leave the obscure cases alone. By focusing on simplicity we bring real benefits to the programmer.
 
 \subsection{Contribution}
 
 Of course, this isn't the first technique for removing the boilerplate, the area has been researched extensively. There are a number of novel features in our approach:
 
 \begin{itemize}
-\item We make use of \textit{list-comprehensions} for succinct queries.
+\item We make use of \textit{list-comprehensions} \cite{wadler:list_comprehensions} for succinct queries.
 \item We require no extensions for single-type traversals, and only multi-parameter type classes for multi-type traversals.
 \item Our choice of operations is new: we shun some traditionally provided operations, and provide some which have not been seen before.
-\item We are able to implement our class on top of |Typeable| and |Data|, making using of the built in compiler, support if available.
+\item We are able to implement our class on top of |Typeable| and |Data| \cite{lammel:syb}, making use of the built in compiler, support if available.
 \item We compare the relative performance of some traversal mechanisms, something that has been neglected in previous papers.
 \item Our scheme requires less boilerplate than alternatives in almost all cases.
 \end{itemize}
 
-We have implemented all our code, and encourage you to download it and try it out. It can be obtained from the website at \url{http://www.cs.york.ac.uk/~ndm/play/}. A copy of the library has also been released, and is on Hackage\footnote{\url{http://hackage.haskell.org/}}.
+We have implemented all our code, and encourage you to download it and try it out. It can be obtained from the website at \url{http://www.cs.york.ac.uk/~ndm/play/}. A copy of the library has also been released, and is available on Hackage\footnote{\url{http://hackage.haskell.org/}}.
 
-The ideas behind the Play class have been used extensively, in both the Yhc compiler and the Catch tool. In Catch there are 109 traversals using the Play class (as at Nov 2006), showing that the Play class gets extensive use.
+The ideas behind the Play class have been used extensively, in both the Yhc compiler \cite{yhc} and the Catch tool \cite{me:catch_tfp}. In Catch there are 109 traversals using the Play class (as at Nov 2006), showing that the Play class gets extensive use.
 
 \subsection{Road map}
 
@@ -378,7 +378,7 @@ Here a monadic computation is required, the program needs to keep track of what 
 
 \subsection{Top-Down Descending}
 
-While we have decided that top-down traversals are unnecessary for our library, we still believe that some traversals operate more naturally in a top-down manner. An extension to the top-down traversal includes one where information is pushed downwards at the same time. We introduce the |descend| function, inspired by the Compos paper \cite{compos}.
+While we have decided that top-down traversals are unnecessary for our library, we still believe that some traversals operate more naturally in a top-down manner. An extension to the top-down traversal includes one where information is pushed downwards at the same time. We introduce the |descend| function, inspired by the Compos paper \cite{bringer:compos}.
 
 \begin{code}
 descend :: Play alpha => (alpha -> alpha) -> alpha -> alpha
