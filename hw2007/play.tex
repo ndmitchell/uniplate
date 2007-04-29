@@ -1276,12 +1276,12 @@ First all data structures used have 100 particular values randomly generated and
 \begin{tabular*}{\textwidth}{lrrrrrrrrrrrr}
  & simp & var & zero & const & ren & syms & bill & incr & incr1 & \textbf{Queries} & \textbf{Traversals} & \textbf{All} \\
 Raw            &  1.00 &  1.00 &  1.00 &  1.00 &  1.00 &  1.00 &  1.00 &  1.00 &  1.00 &  1.00 &  1.00 &  1.00 \\
-Compos         &  1.34 &  1.17 &  1.74 &  1.21 &  1.22 &  1.30 &  2.49 &  1.52 &  1.57 &  1.68 &  1.37 &  1.51 \\
-Play Hand      &  1.16 &  1.44 &  2.64 &  1.28 &  1.36 &  1.48 &  2.28 &  1.27 &  1.08 &  1.96 &  1.23 &  1.55 \\
-Play Manual    &  1.22 &  1.61 &  3.28 &  1.42 &  1.18 &  1.38 &  2.35 &  1.19 &  1.16 &  2.15 &  1.23 &  1.64 \\
-Play Typeable  &  1.43 &  2.09 &  4.81 &  1.84 &  1.37 &  2.63 &  5.86 &  1.53 &  1.53 &  3.85 &  1.54 &  2.57 \\
-Play Data      &  2.30 &  4.64 & 12.70 &  2.30 &  1.89 &  3.60 & 10.70 &  2.07 &  1.69 &  7.91 &  2.05 &  4.65 \\
-SYB            &  2.21 &  5.88 & 16.62 &  1.27 &  2.13 &  5.56 & 24.29 &  3.12 &  2.35 & 13.09 &  2.21 &  7.05 \\
+Compos         &  1.34 &  1.17 &  1.74 &  1.28 &  1.22 &  1.30 &  2.49 &  1.52 &  1.57 &  1.68 &  1.39 &  1.51 \\
+Play Hand      &  1.16 &  1.44 &  2.64 &  1.27 &  1.36 &  1.48 &  2.28 &  1.27 &  1.08 &  1.96 &  1.23 &  1.55 \\
+Play Manual    &  1.22 &  1.61 &  3.28 &  1.21 &  1.18 &  1.38 &  2.35 &  1.19 &  1.16 &  2.15 &  1.19 &  1.62 \\
+Play Typeable  &  1.43 &  2.09 &  4.81 &  1.42 &  1.37 &  2.63 &  5.86 &  1.53 &  1.53 &  3.85 &  1.46 &  2.52 \\
+Play Data      &  2.30 &  4.64 & 12.70 &  1.84 &  1.89 &  3.60 & 10.70 &  2.07 &  1.69 &  7.91 &  1.96 &  4.60 \\
+SYB            &  2.21 &  5.88 & 16.62 &  2.30 &  2.13 &  5.56 & 24.29 &  3.12 &  2.35 & 13.09 &  2.42 &  7.16 \\
 \hline
 \end{tabular*}
 \end{table*}
@@ -1342,17 +1342,13 @@ concatCont xs rest = foldr ($) rest xs
 \subsection{Optimising |PlayData|}
 \label{sec:optimise_playdata}
 
-The |Play| instance implemented in terms of |Data| is an area of the library we are particularly proud of. By using the existing SYB framework which is already built into the GHC compiler makes boilerplate code much easier to write. Managing to both layer |Play| over the |Data| instances, and perform better is not something we initially believed to be possible.
+The |Play| instance implemented in terms of |Data| is an area of the library we are particularly proud of. Using the existing SYB framework, specifically the |Data| derivation built into the GHC compiler, we can remove the overhead of writing instances. Managing to both layer |Play| over the |Data| instances, and perform better than SYB is not something we initially believed to be possible.
 
-The first optimisation was to move from generating the two elements on the |replaceChildren| tuple separately, to doing it as one task. This means that it is no longer possible to use |gmapM|, but instead we must use |gfoldl|. This reduction means that each data constructor gets examined fewer times, and our use of the state monad can be eliminated.
+The first optimisation is to generate the two members of the |replaceChildren| with only one pass over the data value. Using one pass, it is no longer possible to use |gmapM| or |gmapQ| -- we must instead use |gfoldl| directly. We also make use of continuation passing style in some places, particularly to eliminate appending to the end of a list and discovering which children have been used.
 
-The second optimisation is to translate to a basic continuation passing style in some places, as per |PlayManual|.
+With all these changes in place we perform much the same operations as SYB, but have the overhead of list creation at each step. We are able to push this approach to within about 15\% of the speed of SYB operations.
 
-Note the use of case instead of where to make tuples faster.
-
-With all these optimisations in place we perform much the same operations as SYB, but have the overhead of list creation at each step. We are able to push this approach to within about 15\% of the speed of SYB operations.
-
-The next optimisation relies on the extra information present in |Play| operations -- namely the target type. For SYB, the target type could be any node on the graph, while for Play it will have a known type. This means as a node is reached, if there can be no nodes of the target type beneath it, the search does not need to continue. Computing which types are containers for the target type can be done relatively easily with the SYB framework:
+The next optimisation relies on the extra information present in the |Play| operations -- namely the target type. A boilerplate operation can be viewed as walking over a data structure, looking for nodes of the target type. In SYB, the target type could be any node in the structure, for Play it is a known type. This extra knowledge means that if a node is reached which is not a container for the target type, no further exploration is required within this node. Computing which types are containers for the target type can be done relatively easily with the SYB framework:
 
 \begin{code}
 data DataBox = forall a . (Typeable a, Data a) => DataBox a
@@ -1365,13 +1361,19 @@ contains x = if isAlgType dtyp then concatMap f ctrs else []
         dtyp = dataTypeOf x
 \end{code}
 
-The |contains| function takes a value which is does not examine, and is always |undefined| in this context. It then returns all fields, and |typeOf| can be performed on each one.
+The |contains| function takes a value which it does not examine, and is always |undefined| in this context. It returns all fields, and |typeOf| can be performed on each one. This list of types and their containers can have its transitive closure taken, and all types can be divided into three sets:
 
-This list of types and their containers can have its transitive closure taken, and all types can be divided into 3 sets -- the singleton set containing the target, the set of types which may contain the target, and the set of types which do not. When examining a node, if its type is a member of the set which does not contain the target, we can prune the search at this point.
+\begin{enumerate}
+\item The singleton set containing the type of the target.
+\item The set of types which \textit{may} contain the target type.
+\item The set of types which \textit{do not} contain the target type.
+\end{enumerate}
+
+When examining a node, if its type is a member of the set which does not contain the target, we can prune the search at this point. We compute these sets for each type only once, by using a CAF inside the class to store it. The cost of computing these sets is small.
 
 This trick is surprisingly effective. Take for example an operation over |Bool| on the value |(True,"Haskell")|. The SYB approach will find 16 nodes, Play will only touch 3 nodes -- as soon as it notices the |String| it will stop. By increasing the length of the string, SYB performs increasingly more work -- Play does not.
 
-We compute the good set for each type only once by using a CAF inside the class to store it. The cost of computing the set is relatively small, and in some larger traversals will pay off during the initial traversal.
+With all these optimisations we can perform both queries and traversals faster than SYB, for most operations. In the benchmarks we range from 4\% worse to 127\% better, with an average of 56\% faster.
 
 
 \section{Related Work}
