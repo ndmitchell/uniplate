@@ -13,4 +13,4 @@ Exposed-modules:
         Data.Generics.PlayManual
         Data.Generics.PlayTypeable
         Data.Generics.PlayData
-
+        Data.Generics.PlayInternal
