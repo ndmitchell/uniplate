@@ -378,7 +378,7 @@ Here a monadic computation is required, the program needs to keep track of what 
 
 \subsection{Top-Down Descending}
 
-While we have decided that top-down traversals are unnecessary for our library, we still believe that some traversals operate more naturally in a top-down manner. An extension to the top-down traversal includes one where information is pushed downwards at the same time. We introduce the |descend| function, inspired by the Compos paper \cite{bringer:compos}.
+While we have decided that top-down traversals are unnecessary for our library, we still believe that some traversals operate more naturally in a top-down manner. An extension to the top-down traversal includes one where information is pushed downwards at the same time. We introduce the |descend| function, inspired by the Compos paper \cite{bringert:compos}.
 
 \begin{code}
 descend :: Play alpha => (alpha -> alpha) -> alpha -> alpha
@@ -435,7 +435,7 @@ This function is a perfectly common pattern, although by having a slightly more 
 
 \subsection{EverythingContext}
 
-The final operation in the library is a curious one -- we have not seen it referenced in any other library, even in those which attempt to include all variations \cite{replib}. However, if the user requires this particular function, they really do need it -- faking it from other operations requires a lot of monadic complexity. This function was actually contributed by a user, which we feel enhances our claim that average users can construct their own operations upon our framework.
+The final operation in the library is a curious one -- we have not seen it referenced in any other library, even in those which attempt to include all variations \cite{ren:generic_recursion_toolbox}. However, if the user requires this particular function, they really do need it -- faking it from other operations requires a lot of monadic complexity. This function was actually contributed by a user, which we feel enhances our claim that average users can construct their own operations upon our framework.
 
 Imagine that you wish to change the value of \textit{a single} literal by 1, either increasing or decreasing. This particular operation could be useful for mutation testing. To do this we provide the function:
 
@@ -915,6 +915,7 @@ Consider the |Expr| type. To infer |Play Expr| we require an instance for |PlayA
 
 
 \subsection{In terms of |Data|}
+\label{sec:implement_playdata}
 
 We are able to make use of the existing |Data| and |Typeable| instances provided by the SYB approach to define the necessary classes. To have access to all |Play| and |PlayEx| instances simply:
 
@@ -1024,6 +1025,7 @@ everythingEx == id
 There are two distinct ways to evaluate a boilerplate reduction scheme, firstly by the amount of boilerplate it removes, and secondly by the runtime performance. We consider the first metric to be the most important, but also the hardest to measure. We first give a set of nine example programs, written using Play, SYB and Compos operations. We then benchmark all these operations and present the results.
 
 \subsection{Boilerplate Reduction}
+\label{sec:results_boilerplate}
 
 To choose a representative set of benchmarks we have taken the first three examples from this paper, three from the Compos paper, and the three given in the SYB paper termed the ``Paradise Benchmark''. In all cases the Compos, SYB and Play functions are denoted by a preceding module name. In some instances, a single operate function can be written the same in both SYB and Play -- where this is possible we have done so. Where possible, type signatures have been left absent -- these are a form of boilerplate that Haskell already deals with.
 
@@ -1257,6 +1259,7 @@ When compared to SYB, Play seems much more similar. For queries, Play is able to
 
 
 \subsection{Runtime Overhead}
+\label{sec:results_speed}
 
 This section benchmarks the nine programs given in the previous section, along with hand-coded versions without any boilerplate. We use four |Play| instances, provided by:
 
@@ -1270,7 +1273,7 @@ This section benchmarks the nine programs given in the previous section, along w
 First all data structures used have 100 particular values randomly generated and saved. In order to ensure a fair comparison, we define one data structure which is the same as the original, and one which is a GADT encoding. All operations take these original data structures, transform them into the appropriate structure, apply the operation and then unwrap them. We measure all results relative to the time taken for a raw transformation as 1. We compiled all programs with GHC 6.6 and -O2 on Windows XP.
 
 \begin{table*}
-\caption{Table of results.}
+\caption{Table of results, relative to Raw.}
 \label{fig:results}
 \vspace{3mm}
 \begin{tabular*}{\textwidth}{lrrrrrrrrrrrr}
@@ -1305,7 +1308,7 @@ We suspect there are further places for improvement:
 \item List fusion may be able to eliminate some of the lists in |replaceChildren|.
 \end{itemize}
 
-\subsection{Optimising the |everything| function}
+\subsubsection{Optimising the |everything| function}
 \label{sec:optimise_everything}
 
 Our initial |everything| implementation was presented as:
@@ -1339,7 +1342,7 @@ everything x = build (f x)
 concatCont xs rest = foldr ($) rest xs
 \end{code}
 
-\subsection{Optimising |PlayData|}
+\subsubsection{Optimising |PlayData|}
 \label{sec:optimise_playdata}
 
 The |Play| instance implemented in terms of |Data| is an area of the library we are particularly proud of. Using the existing SYB framework, specifically the |Data| derivation built into the GHC compiler, we can remove the overhead of writing instances. Managing to both layer |Play| over the |Data| instances, and perform better than SYB is not something we initially believed to be possible.
@@ -1379,65 +1382,25 @@ With all these optimisations we can perform both queries and traversals faster t
 \section{Related Work}
 \label{sec:related}
 
-This library is intended to be a way to remove the boilerplate for Haskell programs, and it is certainly not the first library to attempt this. Below we compare against some of the more popular alternatives. We have deliberately focused on functional programming -- often generic approaches feel the need to compare to the object-orientated Visitor pattern -- we see it as a different approach for different people.
+This library is intended to be a way to remove the boilerplate for Haskell programs, and it is certainly not the first library to attempt this. Perhaps the most popular boilerplate removal system in Haskell is the SYB library \cite{lammel:syb}. One of the reasons for its success is tight integration with the GHC compiler, lowering the barrier to use. We have compared directly against traversals written in SYB in \S\ref{sec:results_boilerplate}, and have also covered how to implement Play in terms of SYB in \S\ref{sec:implement_playdata}. All our operations are shorter and simpler than the equivalents in SYB, and we are able to operate without the extension of rank-2 types. Most of these benefits stem directly from our definition of children as being the children of the same type, contrasting with the SYB approach of all direct children.
 
-\subsection{SYB}
+The SYB library is, however, more powerful than Play. If you wish to visit nodes of different type in a single traversal, Play is unsuitable. The |Data| and |Typeable| methods have also been pushed further in successive papers \cite{lammel:syb2,lammel:syb3} -- in directions which we suspect Play is unable to go.
 
-Perhaps the most popular boilerplate removal system in Haskell is the SYB approach. One of the reasons for this success is that integration with the GHC compiler, lowering the barrier to use. We have compared directly against traversals written in SYB in the previous section, and also covered how to implement Play in terms of SYB.
+The Compos library \cite{bringert:compos} is another approach to the removal of boilerplate, requiring the GADT's \cite{spj:gadt} along with rank-2 types. While the Compos library can operate over GADT's, it is somewhat restricted to them, requiring an existing data structure to be rewritten as a GADT. The conversion from standard Haskell data structures to GADT's presents several problems: they are GHC specific; deriving is not supported on GADT's; they require explicit type signatures. Some of these problems come about as a result of GADT's being a recent addition. The Compos approach is also harder to write instances for, having no simple instance generation framework, and no automatic derivation tool (although one could be written). The inner |composOp| operator is very powerful, and indeed we have chosen to replicate it in our library as |descend|. In contrast the Compos library is unable to replicate the query to a list, or the bottom-up traversal from our library.
 
-\todo{image here}
+The Stratego tool \cite{stratego} provides support for generic operations, focusing on both the operations and the strategies for applying them. This approach is performed in an \textit{untyped} language, although a typed representation can be modelled \cite{lammel:typed_generic_strategies}. The Strafunski library \cite{strafunski,lammel:polymorphic_symphony} also provides generic operations in terms of strategy combinators.
 
-Both traversals are based on the idea of finding the immediate children of a node. The difference is that Play considers a child to be one of the same type, which may not be immediately below the node. In contrast SYB considers all the immediate children. The above diagram shows the difference, where the orange nodes are all of the same type, and those with a black border are considered children.
+Another library which is sometimes used to avoid boilerplate is the Applicative library \cite{mcbride:applicative}. This library works by threading an Applicative operation through a data structure, in a similar way to threading a Monad through the structure.
 
-While the SYB approach is clearly more logical in an untyped language, in a typed language it requires a considerable amount of trickery to get the types correct. The primary SYB traversal function is:
-
-\begin{code}
-gfoldl  ::  (forall a b . Data a => c (a -> b) -> a -> c b)
-        ->  (forall g . g -> c g)
-        ->  a -> c a
-
-replaceChildren :: on -> ([on], [on] -> on)
-\end{code}
-
-In the original SYB paper the authors note ``Trying to understand the type of |gfoldl| directly can lead to brain damage.'' When compared to the type of |replaceChildren|, it is easy to see which is simpler at the type level.
-
-\begin{code}
-\end{code}
-
-The basic difference between SYB and Play is the choice of the notion of children. It is reasonably easy to see that SYB is more powerful - there are many nodes in the above example that Play cannot reach. However in a typed language this has come at the cost of substantial type based thought. Play on the other hand simplified things with its alternative definition of child.
-
-We do not include support for many of the other generic features in SYB, such as gread/gshow etc, so they are much more powerful.
-
-We are one of the few traversals who do not have the problem that SYB is compiler integrated, but we are not. We are also faster than SYB.
-
-\subsection{Compos}
-
-The Compos approach is newer than SYB, requiring the GADT's extension along with rank-2 types. While the Compos library can operate over GADT's, it is somewhat restricted to them, requiring an existing data structure to be rewritten as a GADT. The conversion from standard Haskell data structures to GADT's presents several problems: they are GHC specific; deriving is not supported on GADT's; they require explicit type signatures. Some of these problems come about as a result of GADT's being a recent addition.
-
-The Compos approach is also harder to write instances for, having no simple instance generation framework, and no automatic derivation tool (although one could be written). The inner |composOp| operator is very powerful, and indeed we have chosen to replicate it in our library as |descend|. In contrast the Compos library is unable to replicate the query to a list, or the bottom-up traversal.
-
-\subsection{Stratego}
-
-If you think that's "easy", why not use the real thing (Stratego)? You lose type-inference, but you don't need those ugly mk constructors.
-
-http://www.acm.org/crossroads/xrds12-3/stratego.html
-
-\subsection{Attribute Grammars}
-
-Yes, those things are really cool. Have you every looked into Attribute Grammars? It's not quite the same, but still related. See: UUAGC and also Wouter Swierstra's excellent article in the Monad Reader: Why Attribute Grammars Matter.
-
-http://www.cs.uu.nl/wiki/HUT/AttributeGrammarSystem
-
-http://www.haskell.org/tmrwiki/WhyAttributeGrammarsMatter
-
-\subsection{Applicative}
-
-\subsection{From Ralf}
-
-Just a few notes. (i) Hugs *does* support rank-2 polymorpism but it does not implement the type class Data I guess, but perhaps it should. Also there is a small chance that hugs' approach to rank-2 is not exactly identical and would trigger issues with SYB. (ii) If you generally prefer exercising a GP setup such that no rank-2 types surface the program, you could use Strafunski. (iii) In particular, have a look at the "polymorphic symphony" paper that uses first-class polymorphism (as opposed to rank-2) and opaque generic function types to set up a library of generic function combinators. Because it uses data types for generic function types, you get full type inference. (iv) You find an older JLAP paper on my web site developing a simple type system for a Stratego-like formal setup.
 
 \section{Conclusions and Future Work}
 \label{sec:conclusion}
+
+We have presented the Play library, comprising of the classes |Play| and |PlayEx|, along with a small set of operations to perform queries and traversals. We have illustrated by example that the boilerplate required in our system is less than in others (\S\ref{sec:results_boilerplate}), and that we can achieve these results without sacrificing speed (\S\ref{sec:results_speed}). Our library is both practical and portable, finding use in a number of applications, and using fewer extensions to the Haskell language than alternatives.
+
+We view the library as finished. There may be some traversals we have overlooked, but we feel they are small in number. The performance could be improved, but we feel that this aspect is not limiting the use of this library in any way.
+
+The use of boilerplate reduction strategies in Haskell is not yet ubiquitous, as we feel it should be. We have focused on simplicity throughout our design, working within the natural typed design of Haskell, rather than trying to extend it. Hopefully the removal of complicated language features (particularly types) will allow a wider base of users to reap the benefits that boilerplate free programming can offer.
 
 \acks
 
