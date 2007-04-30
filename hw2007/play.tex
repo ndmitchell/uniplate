@@ -67,10 +67,10 @@
 \subtitle{Uniform Boilerplate and List Processing}
 
 \authorinfo{Neil Mitchell}
-           {York}
+           {University of York, UK}
            {\url{http://www.cs.york.ac.uk/~ndm/}}
 \authorinfo{Colin Runciman}
-           {York}
+           {University of York, UK}
            {\url{http://www.cs.york.ac.uk/~colin/}}
 
 \maketitle
@@ -1187,7 +1187,7 @@ data Salary    = S Integer
 \label{fig:paradise}
 \end{figure}
 
-The Paradise benchmark was introduced in SYB \ref{syb}. The data type is shown in Figure \ref{fig:paradise}. The idea is that this data type represents an XML file, and a Haskell program is being written to perform various operations over it. The Compos paper includes an encoding into a GADT, with tag types for each of the different types.
+The Paradise benchmark was introduced in SYB \cite{lammel:syb}. The data type is shown in Figure \ref{fig:paradise}. The idea is that this data type represents an XML file, and a Haskell program is being written to perform various operations over it. The Compos paper includes an encoding into a GADT, with tag types for each of the different types.
 
 We have made one alteration to the data type -- |Salary| is no longer of type |Float| but of type |Integer|. In various experiments we found that the floating point numbers could not be guaranteed to have the required accuracy -- making different operations return different results, despite being mathematically the same. This change is of no consequence to the boilerplate code -- although does remind us that storing your salary in a non-exact manner is probably not a great idea!
 
@@ -1388,7 +1388,7 @@ The SYB library is, however, more powerful than Play. If you wish to visit nodes
 
 The Compos library \cite{bringert:compos} is another approach to the removal of boilerplate, requiring the GADT's \cite{spj:gadt} along with rank-2 types. While the Compos library can operate over GADT's, it is somewhat restricted to them, requiring an existing data structure to be rewritten as a GADT. The conversion from standard Haskell data structures to GADT's presents several problems: they are GHC specific; deriving is not supported on GADT's; they require explicit type signatures. Some of these problems come about as a result of GADT's being a recent addition. The Compos approach is also harder to write instances for, having no simple instance generation framework, and no automatic derivation tool (although one could be written). The inner |composOp| operator is very powerful, and indeed we have chosen to replicate it in our library as |descend|. In contrast the Compos library is unable to replicate the query to a list, or the bottom-up traversal from our library.
 
-The Stratego tool \cite{stratego} provides support for generic operations, focusing on both the operations and the strategies for applying them. This approach is performed in an \textit{untyped} language, although a typed representation can be modelled \cite{lammel:typed_generic_strategies}. The Strafunski library \cite{strafunski,lammel:polymorphic_symphony} also provides generic operations in terms of strategy combinators.
+The Stratego tool \cite{stratego} provides support for generic operations, focusing on both the operations and the strategies for applying them. This approach is performed in an \textit{untyped} language, although a typed representation can be modelled \cite{lammel:typed_generic_strategies}. The Strafunski library \cite{lammel:polymorphic_symphony} also provides generic operations in terms of strategy combinators.
 
 Another library which is sometimes used to avoid boilerplate is the Applicative library \cite{mcbride:applicative}. This library works by threading an Applicative operation through a data structure, in a similar way to threading a Monad through the structure.
 
