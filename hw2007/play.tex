@@ -63,8 +63,8 @@
 \titlebanner{\today{} - \currenttime{}}        % These are ignored unless
 \preprintfooter{}   % 'preprint' option specified.
 
-\title{Scrap Your Scary Types}
-\subtitle{Uniform Boilerplate and List Processing}
+\title{Uniform Boilerplate and List Processing}
+\subtitle{\textit{Or}: Scrap Your Scary Types}
 
 \authorinfo{Neil Mitchell}
            {University of York, UK}
@@ -76,24 +76,24 @@
 \maketitle
 
 \begin{abstract}
-Generic traversals and queries are often referred to as boilerplate code -- they remain relatively similar as the action performed by the code changes, and can often outnumber the actual intent of the code in terms of lines. While other generic traversal schemes have required extensions to the type system, this paper focuses on a conceptually simpler generic concept. The |Play| class is introduced, which abstracts over common traversals and queries in a simple manner.
+Generic traversals over recursive data structures are often referred to as \textit{boilerplate} code. The definitions of functions involving such traversals may repeat very similar patterns, but with variations for different data types and different functionality. While other generic traversal schemes have required extensions to the type system, this paper focuses on a conceptually simpler generic concept. The |Uniplate| class is introduced, which abstracts over common traversals and queries in a simple manner.
 \end{abstract}
 
 \section{Introduction}
 
-Generic programming is not a new problem, lots of solutions have been proposed. Let us take a simple example:
+Take a simple example of a recursive data type:
 
 \begin{code}
-data Expr  =  Val  Int         -- a literal value
-           |  Var  String      -- a variable
-           |  Neg  Expr        -- negation
-           |  Add  Expr  Expr  -- addition
-           |  Sub  Expr  Expr  -- subtraction
-           |  Mul  Expr  Expr  -- multiplication
-           |  Div  Expr  Expr  -- division
+data Expr  =  Val  Int
+           |  Var  String
+           |  Neg  Expr
+           |  Add  Expr  Expr
+           |  Sub  Expr  Expr
+           |  Mul  Expr  Expr
+           |  Div  Expr  Expr
 \end{code}
 
-This type represents a small expression language for integer expressions, which permits free variables. To evaluate an expression, an initial environment must be supplied, mapping the required variables to values. A precondition on this environment is that every variable present in the expression must have a corresponding entry in the environment. To check this precondition requires a function which returns a list of all the variables:
+The |Expr| type represents a small expression language for integer expressions, which permits free variables. Suppose we need to extract a list of all the variables in an expression:
 
 \begin{code}
 variables :: Expr -> [String]
@@ -106,13 +106,13 @@ variables (Mul  x y  ) = variables x ++ variables y
 variables (Div  x y  ) = variables x ++ variables y
 \end{code}
 
-This code has lots of bad properties:
+This definition has the following undesirable characteristics:
 
 \begin{itemize}
-\item Adding a new constructor would require the program to change.
-\item The action part is the first line, but is obscured by the rest of the code.
-\item The code is repetitive and uninteresting -- leading to subtle bugs which are hard to spot.
-\item The code is unnecessarily long.
+\item adding a new constructor would require an additional equation;
+\item the |++| operation is specified many times;
+\item the code is repetitive and uninteresting;
+\item the code is unnecessarily long.
 \end{itemize}
 
 This problem is referred to as the \textit{boilerplate} problem. Using the library developed in this paper, the above example can be rewritten as:
@@ -122,24 +122,23 @@ variables :: Expr -> [String]
 variables x = [y | Var y <- everything x]
 \end{code}
 
-In the above example the type signature is optional, and would be inferred automatically if left absent. This example requires only Haskell 98, and for more advanced examples we require multi-parameter type classes -- but no rank-2 types, functional dependencies or GADTs. We have deliberately attempted common cases easy, and the reasonably difficult cases possible, and leave the obscure cases alone. By focusing on simplicity we bring real benefits to the programmer.
+The type signature is optional, and would be inferred automatically if left absent. This example requires only Haskell 98. For more advanced examples we require multi-parameter type classes -- but no rank-2 types, functional dependencies or GADTs. The central idea is to make all operations work over a single \textit{uniform} type. By focusing on the simple case, we bring real benefits to the programmer.
 
 \subsection{Contribution}
 
-Of course, this isn't the first technique for removing the boilerplate, the area has been researched extensively. There are a number of novel features in our approach:
+Ours is far from the first technique for `scrapping the boilerplate', the area has been researched extensively. But there are a number of novel features in our approach:
 
 \begin{itemize}
-\item We make use of \textit{list-comprehensions} \cite{wadler:list_comprehensions} for succinct queries.
-\item We require no extensions for single-type traversals, and only multi-parameter type classes for multi-type traversals.
-\item Our choice of operations is new: we shun some traditionally provided operations, and provide some which have not been seen before.
-\item We are able to implement our class on top of |Typeable| and |Data| \cite{lammel:syb}, making use of the built in compiler, support if available.
-\item We compare the relative performance of some traversal mechanisms, something that has been neglected in previous papers.
-\item Our scheme requires less boilerplate than alternatives in almost all cases.
+\item We make use of \textit{list-comprehensions} \citep{wadler:list_comprehensions} for succinct queries.
+\item We require \textit{no language extensions} for single-type traversals, and only multi-parameter type classes \cite{jones:mptc} for multi-type traversals.
+\item Our \textit{choice of operations} is new: we shun some traditionally provided operations, and provide some uncommon operations.
+\item We are able to implement our class on top of |Typeable| and |Data| \citep{lammel:syb}, making use of the built in compiler support if available.
+\item We compare the \textit{relative performance} of traversal mechanisms, something that has been neglected in previous papers.
 \end{itemize}
 
-We have implemented all our code, and encourage you to download it and try it out. It can be obtained from the website at \url{http://www.cs.york.ac.uk/~ndm/play/}. A copy of the library has also been released, and is available on Hackage\footnote{\url{http://hackage.haskell.org/}}.
+We have implemented all the techniques reported here. Our scheme requires less boilerplate than alternatives in almost all cases. We encourage readers to download the Uniplate library and try it out. It can be obtained from the website at \url{http://www.cs.york.ac.uk/~ndm/uniplate/}. A copy of the library has also been released, and is available on Hackage\footnote{\url{http://hackage.haskell.org/}}.
 
-The ideas behind the Play class have been used extensively, in both the Yhc compiler \cite{yhc} and the Catch tool \cite{me:catch_tfp}. In Catch there are 109 traversals using the Play class (as at Nov 2006), showing that the Play class gets extensive use.
+The ideas behind the Uniplate library have been used extensively, in both the Yhc compiler \cite{yhc} and the Catch tool \cite{me:catch_tfp}. In Catch there are over 100 Uniplate traversals.
 
 \subsection{Road map}
 
@@ -149,20 +148,22 @@ The ideas behind the Play class have been used extensively, in both the Yhc comp
 \section{Queries and Traversals}
 \label{sec:use_play}
 
-We define various queries and traversals, using the |Expr| type defined in the introduction as an example throughout. All the traversals rely on the class |Play|, an instance of which is defined for |Expr|. This instance and definition are covered in \S\ref{sec:implement_play}.
+We define various queries and traversals, using the |Expr| type defined in the introduction as an example throughout. All the traversals rely on the class |Uniplate|, an instance of which is assumed for |Expr|. This instance and definition are covered in \S\ref{sec:implement_play}.
+
+We use the term \textit{children} to refer to all maximal proper substructures of the same type. For example, |Add (Neg (Lit 1)) (Var "x")| has the children |Neg (Lit 1)| and |Var "x"|.
 
 \subsection{Queries}
 
-This library provides a single method for implementing queries, the |everything| method.
+The Uniplate library provides a single method for implementing queries, the |universe| method.
 
 \begin{code}
-everything :: Play alpha => alpha -> [alpha]
+universe :: Play alpha => alpha -> [alpha]
 \end{code}
 
-This function takes a data structure, and returns a list of all data structures of the appropriate type found within it. Imagining a data structure as a tree, |everything| returns the root of the tree, and all it's subtrees at all levels. For example:
+This function takes a data structure, and returns a list of all data structures of the same type found within it. Imagining a data structure as a tree, |universe| returns the root of the tree, and all it's subtrees of the same type at all levels. For example:
 
 \begin{code}
-everything (Add (Neg (Var "x")) (Val 12)) =
+universe (Add (Neg (Var "x")) (Val 12)) =
     [Add (Neg (Var "x")) (Val 12)
     ,Neg (Var "x")
     ,Var "x"
@@ -179,30 +180,35 @@ everything (Add (Neg (Var "x")) (Val 12)) =
 A visual representation of this example is given in Figure \ref{fig:everything}.
 \end{comment}
 
-One use of this mechanism for querying was given in the introduction. We have found that the pattern of using a list-comprehension to examine the results is particularly handy. For another example, consider the task of seeing how many divisions by the literal 0 there are -- as this will cause a runtime error.
+One use of this mechanism for querying was given in the introduction. We have found that the pattern of using a list-comprehension to examine the results is common.
+
+\begin{example}
+Consider the task of seeing how many divisions by the literal 0 there are -- as this will cause a runtime error.
 
 \begin{code}
 countDivZero :: Expr -> Int
 countDivZero x = length [() | Div _ (Val 0) <- everything x]
 \end{code}
+\end{example}
 
-Note that we make essential use of the feature of list comprehensions that if a pattern does not match, then the item is skipped. In other places of the Haskell language, failing to match a pattern results in a pattern-match error. Using the \C{everything} function, all queries can be expressed very quickly and directly -- thanks to the power of Haskell's list processing.
+Note that we make essential use of the feature of list comprehensions that if a pattern does not match, then the item is skipped. In other syntactic constructs, failing to match a pattern results in a pattern-match error. Using the |universe| function, queries can be expressed very quickly and directly -- thanks to the power of Haskell's list processing.
 
 \subsection{Bottom-up Traversals}
 
-Another common operation covered by many boilerplate removal systems is the traversal -- a function that traverses the entire data structure making modifications. We define as our standard traversal a bottom up traversal.
+Another common operation covered by many boilerplate removal systems \cite{lammel:syb} is a function that makes modifications to every node in the data structure. We define as our standard traversal a bottom up traversal.
 
 \begin{code}
 traverse :: Play alpha => (alpha -> alpha) -> alpha -> alpha
 \end{code}
 
-Take the example of removing the |Sub| constructor, a little bit of thought leads to the equation:
+\begin{example}
+Suppose we wish to remove the |Sub| constructor assuming the equivalence:
 
 \begin{code}
 x - y == x + (- y)
 \end{code}
 
-The desire is then to apply this rewrite at all possible places in the input expression. This can be done with:
+To apply this rewrite at all possible places in the input expression we define:
 
 \begin{code}
 simplify x = traverse f x
@@ -210,10 +216,10 @@ simplify x = traverse f x
            f x          = x
 \end{code}
 
-This code can be read as applying the subtraction rule where you can, and where you can not, doing nothing. Adding additional rules is trivial, let us take the example of:
+This code can be read: apply the subtraction rule where you can, and where you cannot, do nothing. Adding additional rules is easy. Take for example:
 
 \begin{code}
-x + y | x == y = 2 * x
+x + y = 2 * x       where x == y
 \end{code}
 
 Now we can add this new rule into our existing traversal:
@@ -225,13 +231,14 @@ simplify x = traverse f x
            f x                   = x
 \end{code}
 
-The thing to note about this example is that each rule corresponds to the natural Haskell translation of the rule. The |traverse| function manages all the required boilerplate.
+Each equation corresponds to the natural Haskell translation of the rule. The |traverse| function manages all the required boilerplate.
+\end{example}
 
 So how does a bottom-up traversal work? The traversal starts by applying the function |f| to all the leaf nodes in the tree, then progressively working up to the root node. The condition on ordering is that before applying |f| to an expression, all the sub-expressions must have had |f| applied.
 
 \subsection{Rewrite Traversals}
 
-Following bottom-up traversals, many boilerplate schemes would define a top-down traversal. Once two traversals have been defined, how should the user pick between them? Instead we focus on modelling traversals as rewrites -- showing why providing a top-down traversal is both unnecessary, and potentially dangerous! There is no barrier to defining a bottom-up traversal in our library -- it is trivial, and we refer to such a hypothetical traversal as |traversal'|.
+Besides bottom-up traversals, many boilerplate schemes would a top-down traversal (\cite{lammel:syb} has |everywhere'|). But if two traversals are defined, how should the user pick between them? Instead we focus on modelling traversals as rewrites -- showing why providing a top-down traversal is both unnecessary, and potentially dangerous! There is no barrier to defining a bottom-up traversal in our library, and we refer to such a hypothetical traversal as |traversal'|.
 
 We define our rewrite traversal to be:
 
@@ -240,13 +247,13 @@ rewrite :: Play alpha => (alpha -> Maybe alpha) -> alpha -> alpha
 rewrite rule x = ...
 \end{code}
 
-A |rule| takes an expression of type |alpha|, and returns either |Nothing| to indicate that the rule is not applicable at this root expression, or a |Just| indicating that a modification has been performed, and that the new expression should be checked for rewrites. The postcondition for |rewrite| is that there must be no expressions where |rule| could be applied. Another way of stating this is:
+A rewriting |rule| takes an expression of type |alpha|, and returns either |Nothing| to indicate that the rule is not applicable, or a |Just| indicating that a modification has been performed, and that the new expression should be checked for rewrites. The postcondition for |rewrite| is that there must be no places where |rule| could be applied. Another way of stating this is:
 
 \begin{code}
-forall r, x `o` all (isNothing . r) (everywhere (rewrite r x))
+forall r, x `o` all (isNothing . r) (universe (rewrite r x))
 \end{code}
 
-It is possible to define this function in terms of |traverse|:
+It is possible to define the |rewrite| function in terms of |traverse|:
 
 \begin{code}
 rewrite :: Play alpha => (alpha -> Maybe alpha) -> alpha -> alpha
@@ -254,35 +261,44 @@ rewrite f = traverse g
     where g x = maybe x (rewrite f) (f x)
 \end{code}
 
-This function can be seen as trying to apply the rule everywhere in a bottom-up manner, and if at any point if makes a change, then the new tree has the rewrite applied to it. Assuming the set of rules is confluent and terminating, there will be no difference between a top-down and bottom-up application of the rules.
+This definition tries to apply the rule everywhere in a bottom-up manner. If at any point it makes a change, then the new tree has the rewrite applied to it. Assuming the set of rules is confluent and terminating, there will be no difference between a top-down and bottom-up application of the rules.
 
-Obviously the disadvantage of |rewrite| is that if the rule modifies a tree only slightly, then large amounts of wasted work could be performed checking expressions repeatedly. Because of this, most programmers would rather use an explicit traversal -- namely top-down or bottom-up, and manage this rewriting themselves. But which one of top-down and bottom-up is most appropriate, and how would it be augmented to ensure |rewrite| behaviour?
+A disadvantage of |rewrite| is that if a rule modifies a tree only slightly, then large amounts of wasted work could be performed checking expressions repeatedly. Because of this, most programmers would rather use an explicit traversal -- namely top-down or bottom-up, and manage this rewriting themselves. But which one of top-down and bottom-up is most appropriate, and how would it be modified to ensure |rewrite| behaviour?
 
 \subsubsection{Rewrite as Bottom-Up}
 \label{sec:rewrite_bottom}
 
-Given a rewrite |f :: alpha -> Maybe alpha|, we can construct |f'|:
+Given a rewrite |f :: alpha -> Maybe alpha|, we define the related function |f'| as follows:
 
 \begin{code}
 f' :: alpha -> alpha
 f' x = maybe x id (f x)
 \end{code}
 
-What are the preconditions on |f| such that |forall x `o` rewrite f x == traverse f' x|? We start by creating a slightly more abstract model of the operation, as a set of tree rewrites. We can imagine |f| as a set of tree rewrite rules, where the tree on the left corresponds to the pattern matching, and the tree on the right corresponds to the generated value.
+What are the preconditions on |f| such that |forall x `o` rewrite f x == traverse f' x|? We can start by defining a more abstract representation of a rewrite rule:
 
 \begin{code}
 type Rewrite  = [(Tree,Tree)]
 data Tree     = Branch String [Tree] | Leaf
 
+f (Sub x y) = Add x (Neg y)
+-- is represented by
+[(Branch "Sub" [Leaf,Leaf],Branch "Add" [Leaf, Branch "Neg" [Leaf]])]
+\end{code}
+
+We can imagine |f| as a set of tree rewrite rules, where the tree on the left corresponds to the pattern matching, and the tree on the right corresponds to the generated value. We can now define the |equalBottomUp| function which returns True if a rewrite rule satisfies the property that |rewrite| and |traverse| give the same result:
+
+\begin{code}
 treeEq (Branch s1 t1) (Branch s2 t2) =
     s1 == s2 && zipWith treeEq t1 t2
 treeEq _ _ = True
 
-equal rs =  not $ or  [treeEq a b | a <- map fst rs
-                      ,b <- concatMap (everything . snd) rs]
+equalBottomUp :: Rewrite -> Bool
+equalBottomUp rs =  not $ or  [treeEq a b | a <- map fst rs
+                              ,b <- concatMap (everything . snd) rs]
 \end{code}
 
-The answer is that if |equal| on the rule-set returns True, the traversal and rewrite are equivalent. This can be read as if any of the generated values at any level overlaps with the root of any pattern match, then the traversal is not a rewrite. Taking the |simplify| traversal from from the previous section:
+If any of the generated values at any level overlaps with the root of any pattern match, then the traversal is not a rewrite. Taking the |simplify| traversal from from the previous section:
 
 \begin{code}
 f (Sub x y)           = Just $ Add x (Neg y)
@@ -299,7 +315,7 @@ rewrite   f   x = Mul (Val 2) (Var "q")
 traverse  f'  x = Add (Var "q") (Neg (Var "q"))
 \end{code}
 
-So is it possible to easily remedy this situation? The answer is yes, whenever the right-hand side introduces a new constructor, an additional onward call can be made:
+So is it possible to remedy this situation? Yes. Whenever the right-hand side introduces a new constructor, an additional onward call can be made:
 
 \begin{code}
 f' (Sub x y)           = f' $ Add x (f' $ Neg y)
@@ -307,25 +323,25 @@ f' (Add x y) | x == y  = f' $ Mul (f' $ Val 2) x
 f' x                   = x
 \end{code}
 
-This approach guarantees that the traversal is a rewrite, but in fact only one of those |f'| calls is necessary, the one attached to the construction of an |Add| value.
+This approach guarantees that the traversal is a rewrite. In fact, only one |f'| application is necessary, the one attached to the construction of an |Add| value.
 
 
 \subsubsection{Rewrite as Top-Down}
 
-Now we pose the same question: under what circumstances is a top-down traversal a rewrite, and what modifications can be made to ensure it becomes so?
+Now we pose the question: under what circumstances is a \textit{top-down} traversal a rewrite, and what modifications can be made to ensure it becomes so?
 
-Before we can answer this question, we must first reflect on what a top-down traversal means. The usual answer is that a modification is on the original tree, at the root. After being modified, the action is re-run upon each of the children.
+Before we can answer this question, we must first reflect on what a top-down traversal means. The usual answer \citep{lammel:syb} is that an operation is first applied at the root. The traversal is then applied recursively to each child of the (possibly transformed) root.
 
-With this, we can define the operation which tests these two alternatives for equality:
+We can define the |equalTopDown| operation to test these the rewrite and top-down traversal for equivalence:
 
 \begin{code}
-equal rs =  not $ or  [treeEq a b | a <- map snd rs
-                      ,b <- concatMap (everything . fst) rs]
+equalTopDown rs =  not $ or  [treeEq a b | a <- map snd rs
+                             ,b <- concatMap (everything . fst) rs]
 \end{code}
 
-The only change from the previous requirement is that the |fst| and |snd| applications have been switched. It is necessary for the root values constructed on the right to not match anywhere on the left. Note that this restriction is neither more or less restrictive than the one imposed on bottom-up traversals, and in the |simplify| examples both produce the same result.
+The only change from |equalBottomUp| is that the |fst| and |snd| applications have been switched. Root values constructed on the right must not match anywhere on the left. Note that this restriction is neither more nor less severe than the one imposed on bottom-up traversals. For the |simplify| example, both produce the same result.
 
-In a similar manner to bottom-up traversals, we wonder if it is possible to modify |f| minimally to permit a rewrite traversal. The answer is yes, but is effectively an encoding of bottom-up. To see the scheme requires multi-level matches on the left-hand side:
+Is it possible to modify |f| minimally to permit a rewrite traversal? Yes. But the result is an encoding of bottom-up traversal. To see the full effect of the translation, we need a more complex example:
 
 \begin{code}
 f (Add (Lit x) (Lit y)  ) = Lit (x+y)
@@ -350,17 +366,16 @@ f (Add  x y) | Lit x'  <- f x, Lit y' <- f y = Lit (x'+y')
 f (Mul  x y) | Lit 1   <- f x = f y
 \end{code}
 
-Note that we have both explicitly continued the execution \textit{before} performing a pattern match, and in the last branch where a leaf is returned, we have to explicitly continue \textit{afterwards}.
+We have both explicitly continued the execution \textit{before} performing a pattern match, and in the last branch where a leaf is returned, we explicitly continue \textit{afterwards}.
 
-As a result we consider top-down traversals to be more complex and less functional than bottom-up traversals, and we do not include them in our library. An initial version of this library included top-down traversals -- we found they were rarely the correct choice. After investigating further, we discovered that most uses of top-down traversals were to model rewrites where information was pushed down, and most of these functions were wrong in corner cases. This experience lead us to the decision that top-down traversals do not deserve library support.
-
-We include |rewrite| but suspect that most users would be better suited with |traverse|, modified as described above.
+We consider top-down traversals to be more complex and less useful than bottom-up traversals, and we do not include them in our library. A previous version of our library did include top-down traversals, but we found they were rarely the correct choice. We discovered that most uses of top-down traversals were to model rewrites where information was pushed down, and it was easy to get the definition wrong in corner cases. This experience lead us to the decision that top-down traversals do not deserve library support. We include |rewrite| but suspect that most users would be better off using |traverse|, modified as described above.
 
 \subsection{Action Traversals}
 
-We have introduced rewrite traversals, where the intention was to apply a set of rules until a fixed point was found. The alternative is an action traversal, where each node is visited and transformed once. The |descend| and |traverse| actions can be used to perform this, but a standard technique is to thread a monad through the actions. We do this by introducing |traverseM| and |rewriteM|.
+Rewrite traversals apply a set of rules \textit{repeatedly} until a fixed point is found. The alternative is an action traversal, where each node is visited and transformed \textit{once}. The |traverse| function can be used to perform this, but a standard technique is to thread a monad through the actions. We do this by introducing |traverseM|.
 
-Let us assume that each variable wants to be renamed so it is unique:
+\begin{example}
+Suppose we wish to rename each variable to be unique:
 
 \begin{code}
 uniqueVars :: Expr -> Expr
@@ -374,52 +389,58 @@ uniqueVars x = evalState (traverseM f x) vars
         f x        = return x
 \end{code}
 
-Here a monadic computation is required, the program needs to keep track of what the next item in the list to use is, and replace the current item. By using the state monad, this can be done easily.
+Here a monadic computation is used. The program keeps track of the next item in the list to use, and replace the current item. Using the state monad, this can be done easily.
+\end{example}
 
 \subsection{Top-Down Descending}
 
-While we have decided that top-down traversals are unnecessary for our library, we still believe that some traversals operate more naturally in a top-down manner. An extension to the top-down traversal includes one where information is pushed downwards at the same time. We introduce the |descend| function, inspired by the Compos paper \cite{bringert:compos}.
+Although top-down traversals are unnecessary for our library, we still believe that some traversals operate more naturally in a top-down manner. One extension to the top-down traversal pushes information downwards at the same time. We introduce the |descend| function, inspired by the Compos paper \cite{bringert:compos}.
 
 \begin{code}
 descend :: Play alpha => (alpha -> alpha) -> alpha -> alpha
 \end{code}
 
-The |descend| function applies a function to all children of a node, then reconstructs a new result using those results. It is a useful function to have, and often is a better choice than top-down traversals, as it preserves the order you would require, but makes more things explicit.
-Consider the addition of the constructor |Let String Expr Expr| -- binding the variable introduced. Now let us replace free variables with given expressions. In order to determine which variables are used in an unbound manner, we need to ``remember'' which variables have been introduced as we descend. Now we can write out function as:
+The |descend| function applies a function to all children of a node, then reconstructs a new result using those results.
+
+\begin{example}
+Consider the addition of a constructor |Let String Expr Expr| -- binding the variable introduced. Now let us define a function |subst| to replace free variables with given expressions. In order to determine which variables are free, we need to ``remember'' variables that are bound as we descend. We can define |subst| as:
 
 \begin{code}
-replaceVars :: [(String,Expr)] -> Expr -> Expr
-replaceVars rep x =
+subst :: [(String,Expr)] -> Expr -> Expr
+subst rep x =
     case  x of
           Let name bind x -> Let name
-              (replaceVars rep bind)
-              (replaceVars (filter ((/= name) . fst) rep) x
+              (subst rep bind)
+              (subst (filter ((/= name) . fst) rep) x
           Var x -> fromMaybe (Var x) (lookup x rep)
-          _ -> descend (replaceVars rep) x
+          _ -> descend (subst rep) x
 \end{code}
+\end{example}
 
 
 \subsection{Folds}
 
-Traditionally in Haskell a fold replaces each constructor with an alternative. To define a complete fold on a data type, each constructor must be represented, and there is no obvious library function to abstract over this process. more useful fold for a library such as this would be to allow a default operation. To do this we have:
+Traditionally in Haskell a fold replaces each constructor with an alternative \todo{ref}. To define a complete fold on a data type, each constructor must be represented -- giving boilerplate problems once more. We define a fold which provides a default operation:
 
 \begin{code}
 fold :: Play alpha => ([r] -> t) -> (alpha -> t -> r) -> alpha -> r
 fold combine operate = ...
 \end{code}
 
-This fold takes two functional arguments: |combine| takes a value representing each child of an expression, and combines them into a token |t|; |operate| takes a token representing the children and the element into a result |r|.
+This fold takes two functional arguments: |combine| takes a value representing each child of an expression, and combines them into a token |t|; |operate| takes a token representing the children of a node, along with the node itself, into a result |r|.
 
-Now lets imagine that programmers are paid by the depth of expression they produce, so lets write a function that computes the maximum depth of an expression.
+\begin{example}
+Imagine that |Expr| programmers are paid by the \textit{depth of expression} they produce:
 
 \begin{code}
 depth :: Expr -> Int
 depth = fold (foldr max 0) $ const (+1)
 \end{code}
 
-Our |fold| function takes two functions, one which combines a list of values representing each child, and one which generates a new value given the value for the children and this particular node. In the above example we have used |foldr max 0| to combine all the children -- |maximum| is inappropriate, as |maximum [] = {-"\bot"-}|. The second function |const (+1)| simply adds one to the previous depth.
+Here we have used |foldr max 0| to combine all the children -- |maximum| is inappropriate, as |maximum [] = {-"\bot"-}|. The second function |const (+1)| simply adds one to the previous depth.
+\end{example}
 
-Our choice of fold operator seems a little unusual at first, one might have expected that only one functional argument was required. We can define such a fold, and implement |depth| in terms of it:
+Our choice of fold operator seems a little unusual at first. One might have expected only one functional argument. We can define such a fold, and implement |depth| in terms of it:
 
 \begin{code}
 foldId :: Play alpha => (alpha -> [r] -> r) -> alpha -> r
@@ -431,6 +452,10 @@ depth = foldId (foldr max 0 . map (+1))
 \end{code}
 
 This function is a perfectly common pattern, although by having a slightly more general version we allow more boilerplate to be removed in some examples -- particularly when some constructors require different operations.
+
+\begin{example}
+Give a slightly better example which shows why you need the more general version.
+\end{example}
 
 
 \subsection{EverythingContext}
