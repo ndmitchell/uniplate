@@ -23,7 +23,7 @@
 % examples
 \newcounter{exmp}
 \setcounter{exmp}{1}
-\newcommand{\yesexample}{\subsubsection*{Example \arabic{exmp}}\addtocounter{exmp}{1}}
+\newcommand{\yesexample}{\subsubsection*{Example \arabic{exmp}}\refstepcounter{exmp}}
 \newcommand{\noexample}{\hfill$\Box$}
 
 \newcommand{\todo}[1]{\textbf{\textsc{Todo:} #1}}
@@ -35,6 +35,8 @@
     {\end{code}\end{minipage}}
 
 \newenvironment{example}{\yesexample}{\noexample}
+\newenvironment{revisit}[1]{\subsubsection*{Example #1 (revisited)}}{\noexample}
+\newenvironment{examplename}[1]{\subsubsection*{Example (#1)}}{\noexample}
 
 \newcommand{\K}{\ensuremath{^\ast}} % kleene star
 \newcommand{\D}{\ensuremath{\cdot}} % central dot
@@ -93,7 +95,12 @@ data Expr  =  Val  Int
            |  Div  Expr  Expr
 \end{code}
 
-The |Expr| type represents a small expression language for integer expressions, which permits free variables. Suppose we need to extract a list of all the variables in an expression:
+The |Expr| type represents a small expression language for integer expressions, which permits free variables.
+
+\begin{example}
+\label{ex:variables}
+
+Suppose we need to extract a list of all the variables in an expression:
 
 \begin{code}
 variables :: Expr -> [String]
@@ -121,6 +128,7 @@ This problem is referred to as the \textit{boilerplate} problem. Using the libra
 variables :: Expr -> [String]
 variables x = [y | Var y <- everything x]
 \end{code}
+\end{example}
 
 The type signature is optional, and would be inferred automatically if left absent. This example requires only Haskell 98. For more advanced examples we require multi-parameter type classes -- but no rank-2 types, functional dependencies or GADTs. The central idea is to make all operations work over a single \textit{uniform} type. By focusing on the simple case, we bring real benefits to the programmer.
 
@@ -183,6 +191,7 @@ A visual representation of this example is given in Figure \ref{fig:everything}.
 One use of this mechanism for querying was given in the introduction. We have found that the pattern of using a list-comprehension to examine the results is common.
 
 \begin{example}
+\label{ex:zerocount}
 Consider the task of seeing how many divisions by the literal 0 there are -- as this will cause a runtime error.
 
 \begin{code}
@@ -202,6 +211,7 @@ traverse :: Play alpha => (alpha -> alpha) -> alpha -> alpha
 \end{code}
 
 \begin{example}
+\label{ex:simplify}
 Suppose we wish to remove the |Sub| constructor assuming the equivalence:
 
 \begin{code}
@@ -440,6 +450,8 @@ depth = fold (foldr max 0) $ const (+1)
 Here we have used |foldr max 0| to combine all the children -- |maximum| is inappropriate, as |maximum [] = {-"\bot"-}|. The second function |const (+1)| simply adds one to the previous depth.
 \end{example}
 
+\todo{Unsure these claim are true. Is the foldId equivalence true? Is there any good example for requiring a more complex fold?}
+
 Our choice of fold operator seems a little unusual at first. One might have expected only one functional argument. We can define such a fold, and implement |depth| in terms of it:
 
 \begin{code}
@@ -460,13 +472,15 @@ Give a slightly better example which shows why you need the more general version
 
 \subsection{EverythingContext}
 
-The final operation in the library is a curious one -- we have not seen it referenced in any other library, even in those which attempt to include all variations \cite{ren:generic_recursion_toolbox}. However, if the user requires this particular function, they really do need it -- faking it from other operations requires a lot of monadic complexity. This function was actually contributed by a user, which we feel enhances our claim that average users can construct their own operations upon our framework.
+\todo{Is this related to zipper? Context-hole idea.}
 
-Imagine that you wish to change the value of \textit{a single} literal by 1, either increasing or decreasing. This particular operation could be useful for mutation testing. To do this we provide the function:
+The final operation in the library seems to be a novelty -- we have not seen it in any other library, even in those which attempt to include all variations \citep{ren:generic_recursion_toolbox}. Yet users sometimes need this function and defining it using other operations requires a lot of monadic complexity. This function was actually contributed by a user, which we feel enhances our claim that average users can construct their own operations upon our framework.
 
 \begin{code}
 everythingContext :: Play alpha => alpha -> [(alpha, alpha -> alpha)]
 \end{code}
+
+\todo{See Mohnen and others 'active' or 'computational' pattern matching.}
 
 This function returns two lists, one of which is the list as would be returned by everything. The other is the function which would replace the hole which the given expression was removed from. It has the properties:
 
@@ -474,6 +488,9 @@ This function returns two lists, one of which is the list as would be returned b
 forall x `o` everything x == map fst (everythingContext x)
 forall x `o` all (== x) [b a | (a,b) <- everythingContext x]
 \end{code}
+
+\begin{example}
+Imagine that you wish to increment or decrement \textit{any single} literal by 1, either increasing or decreasing. The function is:
 
 Now we are able to easily write our function:
 
@@ -483,6 +500,7 @@ mutants x =  [gen (Val j)
              | (Val i, gen) <- everythingContext x
              , j <- [i-1, i+1]]
 \end{code}
+\end{example}
 
 
 \subsection{Summary}
@@ -507,36 +525,38 @@ class Play alpha where
 \label{fig:play}
 \end{figure}
 
-We present all our methods in Figure \ref{fig:play}, including several monadic variants. We consider these methods encapsulate most of the common operations. In our experience, the most common operations are |everything| and |traverse|, followed by |traverseM| and |descend|.
+We present signatures for all our methods in Figure \ref{fig:play}, including several monadic variants. In our experience, the most commonly used operations are |everything| and |traverse|, followed by |traverseM| and |descend|.
 
 
-\section{Implementing the |Play| class}
+\section{Implementing the |Uniplate| class}
 \label{sec:implement_play}
 
-Requiring each class to implement nine separate methods would be overly arduous. Instead we implement all of these operations on top of just a single method:
+Requiring each instance of the |Uniplate| class to implement nine separate methods would be an undue imposition. Instead we can implement all of these operations on top of just a single method:
 
 \begin{code}
 replaceChildren :: Play alpha => alpha -> ([alpha], [alpha] -> alpha)
 replaceChildren x = (children,generate)
 \end{code}
 
-Given |x|, the function |replaceChildren| will return a tuple comprising of: |children| - all the children of the same type; |generate| - a function to generate a new value with a different set of children. The caller of |generate| must ensure that the length of the list given to it is the same as the length of |children|. The implementor of |replaceChildren| must ensure two conditions:
+Given |x|, the function |replaceChildren| returns a pair: |children| - all the maximal proper substructures of the same type; |generate| - a function to generate a new value with a different set of children.
+
+The caller of |generate| must ensure that the length of the list given to it is the same as the length of |children|. The implementor of |replaceChildren| must ensure two conditions:
 
 \begin{code}
 forall x `o` x == generate children
     where (children,generate) = replaceChildren x
 
+-- \todo{Avoid fst, why?}
 forall x ys `o`  length ys == length children =>
                  fst (replaceChildren (generate ys)) == ys
-    where (children,generate) = replaceChildren
+    where (children,generate) = replaceChildren x
 \end{code}
-
-Firstly, generating a new value using the existing children must give the same value back. Secondly, after inserting a new set of children, getting those children must return them back.
 
 
 \subsection{Operations in terms of |replaceChildren|}
+\label{sec:using_replacechildren}
 
-Defining operations in terms of |replaceChildren| is easy, we implement the four most common as an example. None is more than a handful of lines long, and none has great deep complexity:
+Defining the nine operations of \S\ref{sec:use_play} in terms of |replaceChildren| is easy. We define the four most common as examples. All the definitions are short.
 
 \begin{code}
 everything :: Play alpha => alpha -> [alpha]
@@ -556,14 +576,14 @@ descend f x = generate $ map f current
     where (current, generate) = replaceChildren x
 \end{code}
 
-The common pattern is to call replace children, then perform some action on the current children, before combining them back. Writing additional traversals with different properties can be done in a similar manner. The |everything| function may be optimised further -- something we return to in \S\ref{sec:optimise_everything}.
+The common pattern is to call |replaceChildren|, then perform some action on the current children, before combining them back. Writing additional traversals with different properties can be done in a similar manner. The definition of |everything| can be improved -- something we return to in \S\ref{sec:optimise_everything}.
 
-\subsection{Writing |Play| instances}
+\subsection{Writing |Uniplate| instances}
 \label{sec:play_instances}
 
 \begin{figure}
 \begin{code}
-instance Play Expr where
+instance Uniplate Expr where
     replaceChildren (Neg  a    )  = ([a]    , \[a']     -> Neg  a'     )
     replaceChildren (Add  a b  )  = ([a,b]  , \[a',b']  -> Add  a' b'  )
     replaceChildren (Sub  a b  )  = ([a,b]  , \[a',b']  -> Sub  a' b'  )
@@ -571,18 +591,18 @@ instance Play Expr where
     replaceChildren (Div  a b  )  = ([a,b]  , \[a',b']  -> Div  a' b'  )
     replaceChildren _             = ([]     , \[]       -> x           )
 \end{code}
-\caption{Instance of |Play| for |Expr|.}
+\caption{Instance of |Uniplate| for |Expr|.}
 \label{fig:play_expr}
 \end{figure}
 
-We construct a |Play| instance for the |Expr| type in Figure \ref{fig:play_expr}. The pattern of the instance can be seen easily. The default clause has no children of type |Expr|, meaning the leaves have been reached.
+We define a |Uniplate| instance for the |Expr| type in Figure \ref{fig:play_expr}.
 
-The distinguishing feature of our library is that the children are defined in terms of their type. While this feature keeps the queries and traversals simple, it does mean that the instance definition is dependent on the types of the constructors. We now describe the derivation rules, followed by information on the \derive{} tool that performs this task automatically. By optionally making use of Multi-Parameter Type Classes we are able to eliminate some of this complexity, see \S\ref{sec:implement_playex}.
+The distinguishing feature of our library is that the children are defined in terms of their type. While this feature keeps the queries and traversals simple, it does mean that the instance definition depends on the types of the constructors. We now describe the derivation rules, followed by information on the \derive{} tool that performs this task automatically. By optionally making use of Multi-Parameter Type Classes we are able to eliminate some of this complexity, see \S\ref{sec:implement_playex}.
 
 
 \subsection{Derivation Rules}
 
-In order to model the derivation of an instance, it is necessary to have a model of the types that are being manipulated:
+To model the derivation of an instance, it is necessary to have a model of data types:
 
 \begin{code}
 type Name  = String
@@ -593,7 +613,7 @@ data Ctor  = Ctor Name [Type]
 data Type  = TyPrim | TyVar Var | TyApp Data [Type]
 \end{code}
 
-When writing a |Play| instance for a particular data type, |isTarget| will return True for that data type. We can define how to produce a function for each |Data| type that is used, using the |_D| function:
+When writing a |Play| instance for a particular data type, |isTarget| returns True for that data type. We define how to produce a function for each |Data| type that is used, using the |_D| function:
 
 \begin{code}
 _D (Data name vars ctors) = unwords $
@@ -617,7 +637,7 @@ _T (TyApp  d ts  )
 separate sep xs = concat $ intersperse [sep] xs
 \end{code}
 
-Using this derivation, the |Expr| type comes out as:
+Applying |_D| to the |Expr| type, the result is:
 
 \begin{code}
 dExpr x = case x of
@@ -634,17 +654,11 @@ dList a x = case x of
     (:)  v1 v2  -> unit (:) <> a v1 <> dList a v2
 \end{code}
 
-This derivation now provides sufficient information for use to define |replaceChildren| in several ways. If we are willing to limit ourselves to target types which have no type arguments. The simplest way is to define:
-
-\begin{code}
-instance Play Expr where
-    replaceChildren x = (getChildren x, setChildren x)
-\end{code}
-
+To generate a particular operation we can then instantiate the |unit|, |target| and |<>| functions.
 
 \subsubsection{|getChildren|}
 
-Now we can define |getChildren| as:
+The |dExpr| and |dList| functions can be used to define the operation of getting the children:
 
 \begin{code}
 getChildren x = dExpr x
@@ -656,9 +670,10 @@ target  = (:[])
 
 From these definitions we can do some reasoning. For example, |dList| is equivalent to |concatMap|. From this property, we can see that |concatMap (const [])| is equivalent to |const []|. This information can be used to simplify some instances.
 
+
 \subsubsection{|setChildren|}
 
-We can define |setChildren| as:
+We define |setChildren| as:
 
 \begin{code}
 setChildren x = value (dExpr x)
@@ -680,7 +695,7 @@ value c ns = fst $ c ns
                 in   (a' b',ns3)
 \end{code}
 
-While this derivation does provide the correct instances, we can improve the simplification opportunities and runtime speed by moving to continuations:
+We improve the simplification opportunities and runtime speed if we move to continuations:
 
 \begin{code}
 type Cont t = [alpha] -> (t -> [alpha] -> r) -> r
@@ -694,44 +709,51 @@ value   c  ns         = c ns const
                  c (a' b') ns
 \end{code}
 
+This transformation uses a continuation function to encode the pair.
+
+\subsection{|replaceChildren|}
+
+We define |replaceChildren| in terms of |getChildren| and |setChildren|:
+
+\begin{code}
+instance Uniplate Expr where
+    replaceChildren x = (getChildren x, setChildren x)
+\end{code}
+
+It is possible to define one single instantiation which performs both operations at once -- avoiding the need to examine each value twice. This can be done building on from the continuation model of |setChildren|.
+
 \subsection{Using Derive}
 
-Applying the presented derivation rules is quite time consuming, and is itself a form of boilerplate -- albeit one specific for each type. The DrIFT tool \cite{drift} is well known for defining instances which can be constructed purely from the information contained in type definition. However, there are limitations to the DrIFT tool -- it is unable to operate with the presence of certain Haskell extensions, and requires a separate pre-processing stage on all compilers.
+Applying these derivation rules is quite time consuming. Indeed, it is a form of boilerplate coding! The DrIFT tool \citep{drift} generates instances which can be constructed purely from the information contained in type definition. However DrIFT is unable to operate with certain Haskell extensions \todo{What? Can it cope with literate Haskell?}, and requires a separate pre-processing stage.
 
-As a separate project, we have developed the \derive{} tool \cite{derive}, in collaboration with Stefan O'Rear. We have extended \derive{} to allow seamless derivation of the |Play| instance. The tool is based on Template Haskell \cite{template_haskell}, but allows Haskell code to be generated which can be appended to the current file.
+As a separate project, we have developed the \derive{} tool \citep{derive}, in collaboration with Stefan O'Rear. \derive{} has predefined rules for derivation of |Uniplate| instances. The tool is based on Template Haskell \citep{template_haskell}.
 
-Taking an example:
-
+\begin{example}
 \begin{code}
 data Term  =  Name String
            |  Apply Term [Term]
-              deriving ( {-! \textsf{Play} !-} )
+              deriving ( {-! \textsf{Uniplate} !-} )
 \end{code}
 
-When running the \derive{} tool over this file, the generated code is:
+Running the \derive{} tool over this file, the generated code is:
 
 \begin{code}
-instance Play Term where
+instance Uniplate Term where
     replaceChildren (Name x1) =
         ([], \_ -> Name x1)
 
     replaceChildren (Apply x1 x2) =
         (x1:x2, \(n:ns) -> Apply n ns)
 \end{code}
+\end{example}
 
-This code follows from the definition, but \derive{} has special mechanisms to optimise out redundant patterns to produce cleaner code. If the user of \derive{} wishes, they can take advantage of the Template Haskell support in GHC by writing:
-
-\begin{code}
-$( derive makePlay {-"\;{}^{\prime\prime}"-}Term)
-\end{code}
-
-The use of \derive{} removes the need for a user to understand the rules to create an instance of the |Play| class.
+\derive{} has special rules to optimise out redundant patterns to produce cleaner code. The use of \derive{} removes the need for a user to understand the rules to create an instance of the |Uniplate| class.
 
 
 \section{Multi-type Queries and Traversals}
 \label{sec:use_playex}
 
-We have introduced |Play| which operates on values of type |Expr|. Now let us imagine that |Expr| is merely the expression type in a language with statements:
+We have introduced |Uniplate| which operates on values of type |Expr|. Now let us imagine that |Expr| is merely the expression type in a language with statements:
 
 \begin{code}
 data Stmt  =  Assign    String  Expr
@@ -740,34 +762,34 @@ data Stmt  =  Assign    String  Expr
            |  While     Expr    Stmt
 \end{code}
 
-We can define a |Play| instance for |Stmt|, and perform queries and traversals upon it. However, we may run into limitations. Consider the task of extracting all literals from within a |Stmt| -- this task is not possible with |Play|.
+We can define a |Uniplate| instance for |Stmt|, and perform queries and traversals upon it. However, we may run into limitations. Consider the task of extracting all literals from within a |Stmt| -- this requires boilerplate to find the values of type |Expr|.
 
-The |Play| class takes a value of type |alpha|, and operates on its children of type |alpha|. What we now require is something that takes a value of type |beta|, but operates on the children of type |alpha| within it -- we call this class |PlayEx|. Typically the type |beta| will be a container of |alpha|. We can extend our operations by specifying how to find the |alpha|'s within the |beta|'s, and then perform the standard Play operations upon the |alpha|. In the above example, our |alpha| would be |Expr|, and our |beta| would be |Stmt|.
+The |Play| class takes a value of type |alpha|, and operates on its children of type |alpha|. What we now require is something that takes a value of type |beta|, but operates on the children of type |alpha| within it -- we call this class |Biplate|. Typically the type |beta| will be a container of |alpha|. We can extend our operations by specifying how to find the |alpha|'s within the |beta|'s, and then perform the standard |Uniplate| operations upon the |alpha| type. In the above example, |alpha = Expr|, and |beta = Stmt|.
 
-We first introduce |PlayOn|, which requires an explicit function to move between the |alpha| and |beta|. Next we make use of MPTC's to generalise this function into a type class, named |PlayEx|.
+We first introduce |UniplateOn|, which requires an explicit function to move between the |alpha| and |beta|. We then make use of Multi-parameter type classes (MPTC's) to generalise this function into a type class, named |Biplate|.
 
-\subsection{The |PlayOn| Operations}
+\subsection{The |UniplateOn| Operations}
 
-We define a set of operations, including |everythingOn| and |traverseOn|, which take an additional argument from the standard |Play| operators. We call this additional argument |replaceType|, which describes how to move from the containing type (|beta|) to the contained type (|alpha|).
+We define a set of operations, including |universeOn| and |traverseOn|, which take an additional argument relative to the standard |Uniplate| operators. We call this additional argument |replaceType|, which describes how to move from the containing type (|beta|) to the contained type (|alpha|).
 
 \begin{code}
 type ReplaceType beta alpha = beta -> ([alpha], [alpha] -> beta)
 replaceType :: ReplaceType beta alpha
 \end{code}
 
-The semantics of |replaceType| are that starting from |beta|, the function should return the highest children in the tree of type |alpha|. This particular requirement means that if |alpha == beta| the root node should be returned:
+The intuition for |replaceType| is that starting from |beta|, the function should return the highest children in the tree of type |alpha|. If |alpha == beta| the root node should be returned:
 
 \begin{code}
 replaceType :: ReplaceType alpha alpha
 replaceType x = ([x], [x'] -> x')
 \end{code}
 
-We can now define |everythingOn| and |traverseOn| which take an explicit |replaceType| function:
+We can now define |universeOn| and |traverseOn|. Each takes a |replaceType| function as an argument:
 
 \begin{code}
-everythingOn :: Play to => ReplaceType beta alpha -> beta -> [alpha]
-everythingOn replaceType x =
-    concatMap everything $ fst $ replaceType x
+universeOn :: Play to => ReplaceType beta alpha -> beta -> [alpha]
+universeOn replaceType x =
+    concatMap universe $ fst $ replaceType x
 
 traverseOn ::  Play to => ReplaceType beta alpha ->
                (alpha -> alpha) -> beta -> beta
@@ -776,11 +798,14 @@ traverseOn replaceType f x =
     where (current, generate) = replaceType x
 \end{code}
 
-These operations are similar to the original |everything| and |traverse|. The functions unwrap the |beta| to find the |alpha|, operate using the standard |Play| operations upon the |alpha|, then rewrap if necessary.
+These operations are similar to the original |universe| and |traverse|. The functions unwrap |beta| values to find the |alpha| values within them, operate using the standard |Uniplate| operations upon the |alpha|, then rewrap if necessary.
 
-Passing the |replaceType| argument is a little tedious -- a much better approach would be to encapsulate this in a type class, and have it passed as a dictionary argument. Alas this requires MPTC's, which we wish to avoid just slightly longer.
+Passing the |replaceType| argument is a little tedious. In \ref{sec:use_playex} we shall use MPTC's to encapsulte it in a type class, and have it passed as a dictionary argument.
 
-By making a simplifying assumption, we are able to achieve slightly more elegant code, abstracting away the |replaceType| argument. Take for example the Yhc.Core library, part of the York Haskell Compiler (Yhc), which makes use of |Play|. In this library, the central types, along with which types they include, are:
+By assuming that |alpha| is constant, there is another way to abstract away the |replaceType| argument.
+
+\begin{example}
+The Yhc.Core library \cite{me:yhc_core}, part of the York Haskell Compiler (Yhc), makes extensive use of |Uniplate|. In this library, the central types, along with which types they include, are:
 
 \begin{code}
 data Core      =  Core String [String] [CoreData] [CoreFunc]
@@ -794,74 +819,87 @@ data CoreExpr  =  CoreVar   String
                |  ...
 \end{code}
 
-Most queries and traversals are performed on the |CoreExpr| type, however it is often convenient to start from one of the other types. Take for example the |coreSimplify| operation -- it simplifies expressions, but may be called upon one individual expression, a function, or a program. If we are willing to freeze the type of |alpha| as |CoreExpr| we can write a class:
+Most queries and traversals are performed on the |CoreExpr| type, however it is often convenient to start from one of the other types. Take for example the |coreSimplify| operation -- it simplifies expressions (:: |CoreExpr -> CoreExpr|), but may be called upon one individual expression, a function, or a program. If we are willing to freeze the type of the second argument to |replaceType| as |CoreExpr| we can write a class:
 
 \begin{code}
-class  PlayExpr beta where
+class  UniplateExpr beta where
        replaceTypeExpr :: ReplaceType beta CoreExpr
 
-everythingExpr  = everythingOn replaceTypeExpr
-traverseExpr    = everythingOn replaceTypeExpr
+universeExpr  = universeOn  replaceTypeExpr
+traverseExpr  = traverseOn  replaceTypeExpr
 
-instance PlayExpr Core where ...
-instance PlayExpr CoreFunc where ...
-instance PlayExpr CoreExpr where ...
-instance PlayExpr beta => PlayExpr [beta] where ...
+instance UniplateExpr Core where ...
+instance UniplateExpr CoreFunc where ...
+instance UniplateExpr CoreExpr where ...
+instance UniplateExpr beta => UniplateExpr [beta] where ...
 \end{code}
+\end{example}
 
 This technique has been used in the Yhc compiler. The Yhc compiler is written in Haskell 98 to allow for bootstrapping, which requires the restriction to single-parameter type classes.
 
-\subsection{The |PlayEx| class}
+\subsection{The |Biplate| class}
 
-If we are willing to make use of the MPTC extension, we can define a class |PlayEx| which includes the |replaceType| function.
+If we are willing to make use of Multi-parameter type classes \cite{jones:mptc} we can define a class |Biplate| which includes the |replaceType| function.
 
 \begin{code}
-class  PlayEx beta alpha where
+class  Biplate beta alpha where
        replaceType :: ReplaceType beta alpha
 \end{code}
 
 This takes us outside the realm of Haskell 98, however we feel that the MPTC is conceptually simple to understand. We have not required functional dependencies, and our code is all able to execute on both Hugs and GHC.
 
-We can now implement |everythingEx| and |traverseEx| in terms of their |On| counterparts:
+We can now implement |universeEx| and |traverseEx| in terms of their |On| counterparts:
 
 \begin{code}
-everythingEx  :: PlayEx beta alpha => beta -> [alpha]
-everythingEx  = everythingOn replaceType
+universeEx  :: Biplate beta alpha => beta -> [alpha]
+universeEx  = universeOn  replaceType
 
-traverseEx    :: PlayEx beta to => (alpha -> alpha) -> beta -> beta
-traverseEx    = traverseOn replaceType
+traverseEx  :: Biplate beta to => (alpha -> alpha) -> beta -> beta
+traverseEx  = traverseOn  replaceType
 \end{code}
 
-We now present two examples from \S\ref{sec:use_play}, but implemented using |PlayEx|. These operations will now work on |Expr|, |Stmt| or many other types -- being strictly more general than the previous versions.
+We now present two examples from \S\ref{sec:use_play}, but implemented using |Biplate|. These operations will now work on |Expr|, |Stmt| or many other types -- being strictly more general than the previous versions.
 
+\begin{revisit}{\ref{ex:variables}}
 \begin{code}
 variables :: PlayEx beta Expr => beta -> [String]
 variables x = [y | Var y <- everythingEx x]
 \end{code}
 
 The |variables| example from before requires only one change: the addition of the |Ex| suffix to |everything|. The type signature has changed so that instead of |Expr -> [String]| we have replaced |Expr| with |PlayEx beta Expr => beta|. Another way of looking at this is instead of requiring the input to be an |Expr|, we merely require that from the input we know how to reach an |Expr|.
+\end{revisit}
 
+\begin{revisit}{\ref{ex:simplify}}
 \begin{code}
 simplify x = traverseEx f x
     where  f (Sub x y)  = Add x (Neg y)
            f x          = x
 \end{code}
 
-With |simplify| we have again made one single change: the addition of |Ex| at the end of |traverse|. In general the move to |PlayEx| requires few code changes, merely the use of the new set of |Ex| functions.
+With |simplify| we have again made one single change: the addition of |Ex| at the end of |traverse|. In general the move to |Biplate| requires few code changes, merely the use of the new set of |Ex| functions.
+\end{revisit}
 
-\section{Implementing PlayEx}
+\section{Implementing |Biplate|}
 \label{sec:implement_playex}
 
-The complicating feature of |replaceType| is that when defining |PlayEx| where |alpha == beta| the program does not descend to the children, but simply returns this particular node. This ``same type'' restriction can be captured either using the type system, or using |Typeable|. We present three methods for defining a |PlayEx| instance -- offering a trade-off between performance, compatibility and volume of code. The first method, Manual, requires $O(n^2)$ instances but is the highest performance and fewest extensions. The second method makes use of the |Typeable| class providing reasonable speed with $O(n)$ instances and no further Haskell extensions. The final method makes use of the |Data| class, providing fully automatic instances with GHC, but requiring the use of rank-2 types, and performing the slowest. All methods can be fully automated using \derive{}, and provide a simplified method for writing |Play| instances.
+The complicating feature of |replaceType| is that when defining |Biplate| where |alpha == beta| the function does not descend to the children, but simply returns its argument. This ``same type'' restriction can be captured either using the type system, or using |Typeable|. We present three methods for defining a |Biplate| instance -- offering a trade-off between performance, compatibility and volume of code.
 
-The |PlayEx| class is a nice abstraction, which is independent of the method used to implement the instances. This abstraction allows the user to start with the simplest instance scheme available to them, allow a move to alternative schemes afterwards, to gain increased performance and compatibility.
+\begin{enumerate}
+\item Manual requires $O(n^2)$ instances, but offers the highest performance with the fewest extensions.
+\item The |Typeable| class can be used, requiring $O(n)$ instances and no further Haskell extensions, but worse performance.
+\item The |Data| class can be used, providing fully automatic instances with GHC, but requiring the use of rank-2 types, and performing the slowest.
+\end{enumerate}
+
+All methods can be fully automated using \derive{}, and all provide a simplified method for writing |Uniplate| instances. The |Biplate| class is independent of the method used to implement the instances. This abstraction allows the user to start with the simplest instance scheme available to them, allow a move to alternative schemes afterwards, to gain increased performance and compatibility.
 
 \subsection{Manual instances}
+
+\todo{Manual is definitely the wrong name!}
 
 Writing manual instances requires the |Data.Generics.PlayManual| module to be imported. This style requires a maximum of $n^2$ instance definitions, where $n$ is the number of types which contain each other, but gives the highest performance and most type-safety. These instances still depend on the type of each field, but are easier to define than the |Play| instance discussed in \S\ref{sec:play_instances}. An example for |Expr| would be:
 
 \begin{code}
-instance PlayOne Expr where
+instance PlateOne Expr where
     playOne x =
         case x of
             Neg  a    -> play Neg  |* a
@@ -872,12 +910,12 @@ instance PlayOne Expr where
             _         -> play x
 \end{code}
 
-This module provides four combinators -- | ||*|, | ||+|, | ||-| and | ||||*| to indicate the structure of the field to the right. The | ||*| combinator says that the value on the right is of the target type, | ||+| says that the target type is contained within the value, | ||-| says that the target type is not in the value, and | ||||*| says that the value to the right is a list of the target type. We use the law that |play f ||- x| is equivalent to |play (f x)| to obtain the definition presented above.
+Four combinators (| ||*|, | ||+|, | ||-| and | ||||*|) indicate the structure of the field to the right. The | ||*| combinator says that the value on the right is of the target type, | ||+| says that the target type is contained within the value, | ||-| says that the target type is not in the value, and | ||||*| says that the value to the right is a list of the target type. We use the law that |play f ||- x| is equivalent to |play (f x)| to obtain the definition presented above.
 
 This style of definition naturally expands to the multi-type traversal, for example:
 
 \begin{code}
-instance PlayAll Stmt Expr where
+instance PlateAll Stmt Expr where
     playAll x =
         case x of
             Assign    a b    -> play Assign    |-  a |*  b
@@ -886,19 +924,19 @@ instance PlayAll Stmt Expr where
             While     a b    -> play While     |*  a |+  b
 \end{code}
 
-Note that in these two examples we have defined |PlayOne| and |PlayAll|. From these definitions the library can infer |Play| and |PlayEx| with the appropriate semantics. The information we have provided with | ||-| and | ||+| can be used to direct the search more precisely -- cutting out redundant exploration down branches that do not have the target type. The use of | ||||*| is an optimisation which allows the list to be directly manipulated with |replaceChildren| -- instead of producing and consuming the list twice.
+From the defintions of |PlateOne| and |PlateAll| the library can define |Uniplate| and |Biplate| instances. The information provided with | ||-| and | ||+| directs the search more precisely -- cutting out redundant exploration down branches that do not have the target type. The use of | ||||*| is an optimisation which allows a list of the target type to be directly manipulated with |replaceChildren| -- instead of producing and consuming this list twice.
 
-This approach requires increasingly large number of definitions, one for container/contained pair. While this has the potential of reaching $n^2$, in reality this is rarely the case. Often very specific traversal pairs will dominate, and only those actually invoked by the code need to specified. The restricted number of type classes also gives increased type safety -- instance such as |PlayEx Expr Stm| do not exist, so this error can be eliminated.
+In the worst case, this approach requires an instance for each container/contained pair. In reality few traversal pairs are actually needed. The restricted number of type classes also gives increased type safety; instance such as |PlayEx Expr Stmt| do not exist, so this error can be eliminated.
 
-We have named this approach ``Manual'' even though it makes full use of library provided primitives to structure the instances. The reason for referring to this as manual is that the person (or tool) writing the instances must be aware of the types -- not simply applying syntactic rules. In our experience these combinators offer similar performance to hand-tuned instances, see \S0 for measurements.
+Even though it makes full use of library provided primitives to structure the instances, We have named this approach ``Manual''. The reason is that the person (or tool) writing the instances must be aware of the types -- not simply applying syntactic rules. In our experience these combinators offer similar performance to hand-tuned instances, see \S\ref{sec:results_speed} for measurements.
 
 
-\subsection{In terms of |Typeable|}
+\subsection{|Typeable| based instances}
 
-Instead of writing $O(n^2)$ classes to capture the notion of which target is being looked for, we can use the |Typeable| class to test at runtime whether we have reached the target type. We again present derivations much as before, based on the combinators | ||+| and | ||-|:
+Instead of writing $O(n^2)$ class instances to capture the notion of which target is being looked for, we can use the |Typeable| class to test at runtime whether we have reached the target type. We present derivations much as before, based on the combinators | ||+| and | ||-|:
 
 \begin{code}
-instance (Typeable a, Play a) => PlayAll Expr a where
+instance (Typeable a, Play a) => PlateAll Expr a where
     playAll x =
         case x of
             Neg a    ->  play Neg  |+ a
@@ -908,7 +946,7 @@ instance (Typeable a, Play a) => PlayAll Expr a where
             Div a b  ->  play Div  |+ a |+ b
             _        ->  play x
 
-instance (Typeable a, Play a) => PlayAll Stm a where
+instance (Typeable a, Play a) => PlateAll Stm a where
     playAll x =
         case x of
             Assign    a b    -> play Assign    |-  a |+ b
@@ -917,32 +955,32 @@ instance (Typeable a, Play a) => PlayAll Stm a where
             While     a b    -> play While     |+  a |+ b
 \end{code}
 
-This module provides no | ||*| combinator -- these instances have no notion of which type we are searching for, so could not possibly answer as to whether it had been found. The | ||+| combinator is the most common, continuing the traversal. However, if we were to use | ||+| when the right-hand value was an |Int|, or other primitive type we did not wish to examine, we would require a |PlayAll| definition for |Int|. To omit these unnecessary instances, we can use | ||-| to indicate that the type is not of interest.
+This instance scheme provides no | ||*| combinator -- these instances have no notion of which type we are searching for, so could not possibly answer as to whether it had been found. The | ||+| combinator is the most common, continuing the traversal. However, if we were to use | ||+| when the right-hand value was an |Int|, or other primitive type we did not wish to examine, we would require a |PlayAll| definition for |Int|. To omit these unnecessary instances, we can use | ||-| to indicate that the type is not of interest.
 
-The |Data.Generics.PlayTypeable| module is able to automatically infer |PlayEx| instances given a |PlayAll|. Alas this is not the case for |Play|. Instead we must manually write:
+The |Data.Generics.PlayTypeable| module is able to automatically infer |Biplate| instances given a |PlateAll|. Alas this is not the case for |Uniplate|. Instead we must manually write:
 
 \begin{code}
-instance Play Expr where
+instance Uniplate Expr where
     replaceChildren = replaceChildrenAll
 
-instance Play Stmt where
+instance Uniplate Stmt where
     replaceChildren = replaceChildrenAll
 \end{code}
 
-At this point the reader may wonder why we cannot automatically infer this?
+The reader may wonder why we cannot define:
 
 \begin{code}
 instance PlayAll alpha alpha => Play alpha where
     replaceChildren = replaceChildrenAll
 \end{code}
 
-Consider the |Expr| type. To infer |Play Expr| we require an instance for |PlayAll Expr Expr|. To infer this instance we require |Typeable Expr| (trivial) and |Play Expr| -- which we are already in the process of inferring! This requires co-inductive or recursive dictionaries -- something that GHC has, but which Hugs does not. To allow continuing compatibility with Hugs, and the use of fewer extensions, we require the user to write these explicitly for each type.
+Consider the |Expr| type. To infer |Play Expr| we require an instance for |PlayAll Expr Expr|. But to infer this instance we require |Play Expr| -- which we are in the process of inferring! \footnote{GHC has co-inductive or recursive dictionaries, which Hugs does not. To allow continuing compatibility with Hugs, and the use of fewer extensions, we require the user to write these explicitly for each type.}
 
 
-\subsection{In terms of |Data|}
+\subsection{Using the |Data| class}
 \label{sec:implement_playdata}
 
-We are able to make use of the existing |Data| and |Typeable| instances provided by the SYB approach to define the necessary classes. To have access to all |Play| and |PlayEx| instances simply:
+The existing |Data| and |Typeable| instances provided by the SYB approach can also be used to define |Uniplate| instances:
 
 \begin{code}
 import Data.Generics
@@ -952,7 +990,7 @@ data Expr  = ... \? \? deriving (Typeable, Data)
 data Stmt  = ... \? \? deriving (Typeable, Data)
 \end{code}
 
-The disadvantages of this are the lack of type safety - you can now do entirely meaningless operations, which the earlier definitions would have spotted as being an error. This code will also only work where Data.Generics is supported, namely GHC at the present time\footnote{Hugs supports the required rank-2 types for |Data.Generics|, but the work to port the library has not been done yet.} The clear advantage is that there is almost no work to creating Play instances.
+The disadvantages of this approach are (1) \textit{lack of type safety} - you can now do entirely meaningless operations, which the earlier definitions would have spotted as being an error; (2) \textit{compiler dependence} -- it will only work where |Data.Generics| is supported, namely GHC at the present time.\footnote{Hugs supports the required rank-2 types for |Data.Generics|, but the work to port the library has not been done yet.} The clear advantage is that there is almost no work to creating instances.
 
 \begin{figure}
 \begin{code}
@@ -968,15 +1006,15 @@ repChildren item = (collect, generate)
                   put bs
                   return $ gen as
 \end{code}
-\caption{Code for |Play| in terms of |Data|.}
+\caption{Code for |Uniplate| in terms of |Data|.}
 \label{fig:playdata}
 \end{figure}
 
-How do we implement these classes? The fundamental operation is given in Figure \ref{fig:playdata}. The |repChildren| function descends to each of the child nodes, and is guarded by a |Typeable| cast to ensure that |alpha /= beta|. The operation to get the children can be done using |gmapQ|. The operation to replace the children is more complex, requiring a state monad to keep track of the items to insert.
+How do we implement the Uniplate class instances? The fundamental operation is given in Figure \ref{fig:playdata}. The |repChildren| function descends to each of the child nodes, and is guarded by a |Typeable| cast to ensure that |alpha /= beta|. The operation to get the children can be done using |gmapQ|. The operation to replace the children is more complex, requiring a state monad to keep track of the items to insert.
 
-This instance is not optimised for speed, in particular the |splitAt|/|length| portion will take traverse the list more than is necessary. We discuss how to come up with an optimised version in \S\ref{sec:optimise_playdata}.
+The instance in Figure \ref{fig:playdata} is not optimised for speed, in particular the use of |splitAt| and |length| require the list of children to be traversed multiple times. We discuss improvements in \S\ref{sec:optimise_playdata}.
 
-
+\begin{comment}
 \section{Properties}
 \label{sec:properties}
 
@@ -1042,24 +1080,110 @@ traverseEx  f == map f
 descendEx   f == map f
 everythingEx == id
 \end{code}
+\end{comment}
+
+
+\section{Performance Improvements}
+\label{sec:performance}
+
+This section describes some of the performance improvements we have been able to make. First we focus on our optimisation of |universe|, using continuation passing and some |foldr|/|build| fusion properties. Next we turn to our |Data| class based instances, including the reasons we are able to outperform SYB.
+
+We suspect there are further places for improvement:
+
+\begin{itemize}
+\item Continuation passing style may eliminate tuple construction and consumption.
+\item List fusion may be able to eliminate some of the lists in |replaceChildren|.
+\end{itemize}
+
+\subsubsection{Optimising the |universe| function}
+\label{sec:optimise_everything}
+
+Our initial |universe| implementation was presented in \S\ref{sec:using_replacechildren} as:
+
+\begin{code}
+universe :: Play on => on -> [on]
+universe x = x : concatMap universe $ fst $ replaceChildren x
+\end{code}
+
+The disadvantage of this code is that |concatMap| produces and consumes the list at every level, requiring one reconstruction per level of depth in the data structure. We can fix this by using continuations:
+
+\begin{code}
+everything x = f x []
+    where  f :: Play on => on -> [on] -> [on]
+           f x rest = x : concatCont (map f $ getChildren x) rest
+
+getChildren = snd . replaceChildren
+
+concatCont []     rest  =  rest
+concatCont (x:xs) rest  =  x (concatCont xs rest)
+\end{code}
+
+Now we only perform one reconstruction. We can do better using GHC's list fusion. The user of everything is likely to a list comprehension, which is a good consumer. We can make |concatCont| a good consumer, and |f| a good producer:
+
+\begin{code}
+universe :: Play on => on -> [on]
+universe x = build (f x)
+    where
+    f :: Play on => on -> (on -> res -> res) -> res -> res
+    f x cons nil = x `cons`
+        concatCont (map (flip f cons) $ getChildren x) nil
+
+concatCont xs rest = foldr ($) rest xs
+\end{code}
+
+\subsubsection{Optimising |PlayData|}
+\label{sec:optimise_playdata}
+
+The |Play| instance implemented in terms of |Data| is an area of the library we are particularly proud of. Using the existing SYB framework, specifically the |Data| derivation built into the GHC compiler, we can remove the overhead of writing instances. Managing to layer |Play| over the |Data| instances, \textit{and} perform better than SYB is not something we initially believed to be possible.
+
+The first optimisation is to generate the two members of the |replaceChildren| with only one pass over the data value. We cannot use |gmapM| or |gmapQ| -- we must instead use |gfoldl| directly. We also make use of continuation passing style in some places, particularly to eliminate appending to the end of a list and discovering which children have been used.
+
+With all these changes in place we perform much the same operations as SYB, but have the overhead of list creation at each step. We are able to push this approach to within about 15\% of the speed of SYB operations.
+
+The next optimisation relies on the extra information present in the |Uniplate| operations -- namely the target type. A boilerplate operation can be viewed as walking over a data structure, looking for target nodes to examine. In SYB, any node of any type can be examined in one operation, for Uniplate the target it is a single uniform type. This extra knowledge means that if a node is reached which is not a container for the target type, no further exploration is required within this node. Computing which types are containers for the target type can be done relatively easily with the SYB framework \citep{lammel:syb2}:
+
+\begin{code}
+data DataBox = forall a . (Typeable a, Data a) => DataBox a
+
+contains :: (Data a, Typeable a) => a -> [DataBox]
+contains x = if isAlgType dtyp then concatMap f ctrs else []
+    where
+        f ctr = gmapQ DataBox (asTypeOf (fromConstr ctr) x)
+        ctrs = dataTypeConstrs dtyp
+        dtyp = dataTypeOf x
+\end{code}
+
+The |contains| function takes a phantom argument which is never evaluated. If returns all the fields of all possible constructors, along with a type representation from |typeOf|. This list of types and their containers can have its transitive closure taken, and all types can be divided into three sets:
+
+\begin{enumerate}
+\item The singleton set containing the type of the target.
+\item The set of types which \textit{may} contain the target type.
+\item The set of types which \textit{do not} contain the target type.
+\end{enumerate}
+
+When examining a value, if its type is a member of the set which does not contain the target, we can prune the search at this point. We compute these sets for each type only once, by using a CAF inside the class to store it. The cost of computing these sets is small.
+
+This trick is surprisingly effective. Take for example an operation over |Bool| on the value |(True,"Haskell")|. The SYB approach finds 16 subcomponents, Uniplate touches 3 subcomponents -- as soon as it notices the |String| it will stop. By increasing the length of the string, SYB performs increasingly more work -- Play does not.
+
+With all these optimisations we can perform both queries and traversals faster than SYB, for most operations. In the benchmarks we range from 4\% worse to 127\% better, with an average of 56\% faster. Full details are presented in \S\ref{sec:results_speed}.
 
 
 \section{Results and Evaluation}
 \label{sec:results}
 
-There are two distinct ways to evaluate a boilerplate reduction scheme, firstly by the amount of boilerplate it removes, and secondly by the runtime performance. We consider the first metric to be the most important, but also the hardest to measure. We first give a set of nine example programs, written using Play, SYB and Compos operations. We then benchmark all these operations and present the results.
+We evaluate our boilerplate reduction scheme in two ways: firstly by the amount of boilerplate it removes, and secondly by its runtime performance. The first is more important, but harder to measure \todo{Why?}. We first give a set of nine example programs, written using Play, SYB and Compos operations. We then compare the runtime of these operations.
 
 \subsection{Boilerplate Reduction}
 \label{sec:results_boilerplate}
 
-To choose a representative set of benchmarks we have taken the first three examples from this paper, three from the Compos paper, and the three given in the SYB paper termed the ``Paradise Benchmark''. In all cases the Compos, SYB and Play functions are denoted by a preceding module name. In some instances, a single operate function can be written the same in both SYB and Play -- where this is possible we have done so. Where possible, type signatures have been left absent -- these are a form of boilerplate that Haskell already deals with.
+As test applications we have taken the first three examples from this paper, three from the Compos paper \citep{bringert:compos}, and the three given in the SYB paper \citep{lammel:syb} termed the ``Paradise Benchmark''. In all cases the Compos, SYB and Uniplate functions are given an appropriately qualified name. In some instances, a function can be defined in the same way in both SYB and Uniplate -- where this is possible we have done so. Type signatures have omitted where the compiler is capable of the inferring them.
 
-\subsubsection{The Play Paper}
+\subsubsection{Examples from this Paper}
 
-\compare{variables}{Play}
+\begin{revisit}{\ref{ex:variables}}
 
 \begin{code}
-Play.variables x = [y | Var y <- everything x]
+Uni.variables x = [y | Var y <- universe x]
 
 SYB.variables = everything (++) ([] `mkQ` f)
     where  f (Var y)  = [y]
@@ -1071,12 +1195,13 @@ Comp.variables x = case x of
     _ -> composOpFold [] (++) variables x
 \end{code}
 
-In this example only Compos has been given a type signature, in the other examples one can be automatically inferred -- but not for Compos due to the use of GADT's. We note that list comprehensions allow for succinct queries.
+Only Compos needs a type signature, due to the use of GADT's. List comprehensions allow for succinct queries in Uniplate.
+\end{revisit}
 
-\compare{zeroCount}{Play}
+\begin{revisit}{\ref{ex:zerocount}}
 
 \begin{code}
-Play.zeroCount x = length [() | Div _ (Val 0) <- everything x]
+Uni.zeroCount x = length [() | Div _ (Val 0) <- universe x]
 
 SYB.zeroCount = SYB.everything (+) (0 `mkQ` f)
     where  f (Div _ (Val 0))  = 1
@@ -1088,16 +1213,17 @@ Comp.zeroCount x = case x of
     _ -> composOpFold 0 (+) zeroCount x
 \end{code}
 
-Here the Play solution does not feel as neat as it could, the list of |()| is inelegant. However, Play is the only scheme that is able to use the standard |length| function, the other two have expressed the operation as a fold. The Compos solution requires additional boilerplate, to explicitly continue the operation on |Div y| -- which may be easy to overlook.
+In the Uniplate solution the list of |()| is perhaps inelegant. However, Uniplate is the only scheme that is able to use the standard |length| function: the other two express the operation as a fold. Compos requires additional boilerplate, to continue the operation on |Div y| -- which may be easy to overlook.
+\end{revisit}
 
-\compare{simplify}{Play}
+\begin{revisit}{\ref{ex:simplify}}
 
 \begin{code}
 simp (Sub x y)           = simp $ Add x (Neg y)
 simp (Add x y) | x == y  = Mul (Val 2) x
 simp x                   = x
 
-Play.simplify = traverse simp
+Uni.simplify = traverse simp
 
 SYB.simplify = everywhere (mkT simp)
 
@@ -1110,9 +1236,10 @@ Comp.simplify x = case x of
     _ -> composOp simplify x
 \end{code}
 
-We have used a modified version of |simplify| discussed in \S\ref{sec:rewrite_bottom}, which ensures that the two rules are applied everywhere possible. This situation requires a bottom-up traversal, which Compos does not provide, and so addition boilerplate is required.
+This is a modified version of |simplify| discussed in \S\ref{sec:rewrite_bottom}. The two rules are applied everywhere possible. Compos does not provide a bottom-up traversal, so needs extra boilerplate.
+\end{revisit}
 
-\subsubsection{Multi-type traversals from Compos}
+\subsubsection{Multi-type examples from the Compos paper}
 
 \begin{figure}
 \begin{code}
@@ -1134,16 +1261,16 @@ data Typ  =  T_int | T_float
 \label{fig:compos}
 \end{figure}
 
-The statement type manipulated by the Compos paper are given in Figure \ref{fig:compos}. The Compos paper translates this type into a GADT, while Play and SYB both accept the definition as supplied.
+The statement type manipulated by the Compos paper is given in Figure \ref{fig:compos}. The Compos paper translates this type into a GADT, while Play and SYB both accept the definition as supplied.
 
-We have not discussed the |warnAssign| function from the Compos paper, as it could be implemented much more neatly as a query, rather than a monadic fold. We cover the remaining three functions.
+The |warnAssign| function from the Compos paper could be implemented much more neatly as a query, rather than a monadic fold -- hence we choose to ignore it. We cover the remaining three functions.
 
-\compare{rename}{Compos}
+\begin{examplename}{rename}
 
 \begin{code}
 ren (V x) = V ("_" ++ x)
 
-Play.rename = traverseEx ren
+Uni.rename = traverseEx ren
 
 SYB.rename = everywhere (mkT ren)
 
@@ -1153,13 +1280,13 @@ Comp.rename t = case t of
     _   -> composOp rename t
 \end{code}
 
-The first thing to note is the Play function is shorter, there is only one constructor in type |Var|. In contrast Compos has merged all constructors into one GADT, and can not benefit from this knowledge.
+The Uniplate definition is the shortest, as there is only one constructor in type |Var|. In contrast Compos has merged all constructors into one GADT, so cannot benefit from this knowledge.
+\end{examplename}
 
-
-\compare{symbols}{Compos}
+\begin{examplename}{symbols}
 
 \begin{code}
-Play.symbols x = [(v,t) | SDecl t v <- everythingEx x]
+Uni.symbols x = [(v,t) | SDecl t v <- universeEx x]
 
 SYB.symbols = everything (++) ([] `mkQ` f)
     where  f (SDecl t v)  = [(v,t)]
@@ -1171,9 +1298,10 @@ Comp.symbols x = case x of
     _ -> composOpMonoid symbols t
 \end{code}
 
-Here the Compos function does a traversal of the tree, however again the Play class simply extracts the right bits. The use of lists again benefits Play over SYB.
+Whereas the Compos solution explicitly traverses the tree, the Uniplate solution simply extracts the right bits. The use of lists again benefits Uniplate over SYB.
+\end{examplename}
 
-\compare{constFold}{Compos}
+\begin{examplename}{constFold}
 
 \begin{code}
 optimise (EAdd (EInt n) (EInt m)) = EInt (n+m)
@@ -1191,7 +1319,8 @@ Comp.constFold e = case e of
     _ -> composOp constFold e
 \end{code}
 
-The constant folding operation is a bottom-up traversal, requiring sub expressions to have been replaced before they are examined. Unfortunately Compos only supports top-down traversals, requiring the user to manually do a small traversal in the middle. Play and SYB both support bottom-up traversals, so this works fine.
+The constant-folding operation is a bottom-up traversal, requiring subexpressions to have been replaced before patterning matching upon them. Compos only supports top-down traversals, requiring a small traversal in the middle. Play and SYB both support bottom-up traversals.
+\end{examplename}
 
 \subsubsection{The Paradise Benchmark from SYB}
 
@@ -1212,16 +1341,15 @@ data Salary    = S Integer
 \label{fig:paradise}
 \end{figure}
 
-The Paradise benchmark was introduced in SYB \cite{lammel:syb}. The data type is shown in Figure \ref{fig:paradise}. The idea is that this data type represents an XML file, and a Haskell program is being written to perform various operations over it. The Compos paper includes an encoding into a GADT, with tag types for each of the different types.
+The Paradise benchmark was introduced in SYB \citep{lammel:syb}. The data type is shown in Figure \ref{fig:paradise}. The idea is that this data type represents an XML file, and a Haskell program is being written to perform various operations over it. The Compos paper includes an encoding into a GADT, with tag types for each of the different types.
 
-We have made one alteration to the data type -- |Salary| is no longer of type |Float| but of type |Integer|. In various experiments we found that the floating point numbers could not be guaranteed to have the required accuracy -- making different operations return different results, despite being mathematically the same. This change is of no consequence to the boilerplate code -- although does remind us that storing your salary in a non-exact manner is probably not a great idea!
+We have made one alteration to the data type -- |Salary| is no longer of type |Float| but of type |Integer|. In various experiments we found that the rounding errors for floating point numbers made different definitions return different results. This change is of no consequence to the boilerplate code.\footnote{This should remind us that storing your salary in a non-exact manner is probably not a great idea!}
 
-\compare{increase}{SYB}
+\begin{examplename}{increase}
 
 The first function discussed in the SYB paper is |increase|. This function increases every item of type |Salary| by a given percentage. In order to fit with our modified |Salary| data type, we have chosen to increase all salaries by |k|.
 
 \begin{code}
-incS :: Integer -> Salary -> Salary
 incS k (S s) = S (s + k)
 
 Play.increase k = traverseEx (incS k)
@@ -1234,11 +1362,12 @@ Comp.increase k c = case c of
     _ -> composOp (increase k) c
 \end{code}
 
-The effect of Compos to transform all constructors into the same set means that instead of just matching on |S|, all constructors must be examined.
+In the Compos solution all constructors belong to the same GADT, so instead of just matching on |S|, all constructors must be examined.
+\end{examplename}
 
-\compare{incrOne}{SYB}
+\begin{examplename}{incrOne}
 
-The |incrOne| function performs the same operation as |increase|, but only within a named department. We are able to reuse the |increase| function from the previous section in all cases.
+The |incrOne| function performs the same operation as |increase|, but only within a named department. The one subtlety is that if the named department contains a department with the same name within it, then the salaries of that contained department should only be increased once. We are able to reuse the |increase| function from the previous section in all cases.
 
 \begin{code}
 Play.incrOne d k = descendEx f
@@ -1256,9 +1385,10 @@ Comp.incrOne d k x = case x of
     _ -> composOp (incrOne d k) x
 \end{code}
 
-Here SYB has grown substantially more complex, to accommodate the invariant, requiring two different utility functions. Compos still retains the same structure as before, requiring a case to distinguish between the types of constructor. A simple |traverse| would not suffice here as if a department is contained within a department of the same name, then the employees would have their salaries increased twice -- hence we use |descend|.
+The SYB solution has grown substantially more complex, requiring two different utility functions. Compos still retains the same structure as before, requiring a case to distinguish between the types of constructor. For Uniplate we use |descend| rather than |traverse|, to ensure no salaries are incremented twice.
+\end{examplename}
 
-\compare{salaryBill}{SYB}
+\begin{examplename}{salaryBill}
 
 The final function is one which sums all the salaries.
 
@@ -1274,11 +1404,14 @@ Comp.salaryBill x = case x of
     _ -> composOpFold 0 (+) Comp.salaryBill x
 \end{code}
 
-Here the Play instance wins by being able to use a list comprehension to select the salary value out of a Salary object. The Play class is the only one that is able to use the standard Haskell |sum| function, not requiring an explicit fold to be performed. This solution is nice in that it is a very specification orientated view of the problem. Take all the salaries, get their value, and sum them.
+Here the Uniplate solution wins by being able to use a list comprehension to select the salary value out of a Salary object. The Uniplate class is the only one that is able to use the standard Haskell |sum| function, not requiring an explicit fold to be performed.
+\end{examplename}
 
 \subsubsection{Play compared to SYB and Compos}
 
-The Compos paper requires much more boilerplate than Play -- particularly for queries, bottom-up traversals and type signatures. The Compos approach also requires changing the data structure to map into one based on GADT's.
+In order to measure the size of the solutions, we have taken the code for all operations and counted the number of lexemes -- using the |lex| function provided by Haskell. For functions shared between SYB and Uniplate we have counted their code in both measurements. Uniplate requires 194 lexemes, SYB has 273 and Compos has 348.
+
+The Compos approach requires much more residual boilerplate than Play, particularly for queries, bottom-up traversals and type signatures. The Compos approach also requires a GADT representation.
 
 When compared to SYB, Play seems much more similar. For queries, Play is able to make use of list comprehensions, which produces shorter code and does not require encoding a manual fold over the items of interest. For traversals, typically both are able to use the same underlying operation, and the difference often boils down to the |mkT| to wrap the operation.
 
@@ -1286,24 +1419,23 @@ When compared to SYB, Play seems much more similar. For queries, Play is able to
 \subsection{Runtime Overhead}
 \label{sec:results_speed}
 
-This section benchmarks the nine programs given in the previous section, along with hand-coded versions without any boilerplate. We use four |Play| instances, provided by:
+This section compares the speed of solutions for the nine examples given in the previous section, along with hand-coded versions without any boilerplate. We use four |Uniplate| instances, provided by:
 
 \begin{description}
-\item[Hand Coded:] These are |Play| and |PlayEx| instances written by hand. We have chosen not to use continuation-passing to implement these instances, as it quickly becomes deeply complex.
-\item[Manual:] These instances use the manual combinators, defined a required.
+\item[Hand Coded:] These are |Uniplate| and |Biplate| instances written by hand. We have chosen not to use continuation-passing to implement these instances, as it quickly becomes deeply complex.
+\item[Manual:] These instances use the manual combinators, defined as required.
 \item[Typeable:] These instances use the standard typeable combinators.
 \item[Data:] These instances use the SYB |Data| instances directly.
 \end{description}
 
-First all data structures used have 100 particular values randomly generated and saved. In order to ensure a fair comparison, we define one data structure which is the same as the original, and one which is a GADT encoding. All operations take these original data structures, transform them into the appropriate structure, apply the operation and then unwrap them. We measure all results relative to the time taken for a raw transformation as 1. We compiled all programs with GHC 6.6 and -O2 on Windows XP.
+All data structures used have 100 values randomly generated using QuickCheck \citep{quickcheck} and saved. In order to ensure a fair comparison, we define one data structure which is the same as the original, and one which is a GADT encoding. All operations take these original data structures, transform them into the appropriate structure, apply the operation and then unwrap them. We measure all results as multiples of the time taken for a \textit{raw} transformation. We compiled all programs with GHC 6.6 and -O2 on Windows XP.
 
 \begin{table*}
-\caption{Table of results, relative to Raw.}
+\caption{Table of timing results, expressed as multiples of minimum time for a hand-tuned solution.}
 \label{fig:results}
 \vspace{3mm}
 \begin{tabular*}{\textwidth}{lrrrrrrrrrrrr}
  & simp & var & zero & const & ren & syms & bill & incr & incr1 & \textbf{Queries} & \textbf{Traversals} & \textbf{All} \\
-Raw            &  1.00 &  1.00 &  1.00 &  1.00 &  1.00 &  1.00 &  1.00 &  1.00 &  1.00 &  1.00 &  1.00 &  1.00 \\
 Compos         &  1.34 &  1.17 &  1.74 &  1.28 &  1.22 &  1.30 &  2.49 &  1.52 &  1.57 &  1.68 &  1.39 &  1.51 \\
 Play Hand      &  1.16 &  1.44 &  2.64 &  1.27 &  1.36 &  1.48 &  2.28 &  1.27 &  1.08 &  1.96 &  1.23 &  1.55 \\
 Play Manual    &  1.22 &  1.61 &  3.28 &  1.21 &  1.18 &  1.38 &  2.35 &  1.19 &  1.16 &  2.15 &  1.19 &  1.62 \\
@@ -1317,115 +1449,40 @@ SYB            &  2.21 &  5.88 & 16.62 &  2.30 &  2.13 &  5.56 & 24.29 &  3.12 &
 \begin{figure}
 % http://csdl.ics.hawaii.edu/FAQ/chart-ps.html
 \rotatebox{270}{\includegraphics[scale=0.3]{graph.ps}}
-\caption{Performance results, relative to Raw.}
+\caption{Timing results, relative to Raw. \todo{rotate, drop raw}}
 \label{fig:graph}
 \end{figure}
 
 
-The results are presented in Table \ref{fig:results}, and a graph of the overall totals in Figure \ref{fig:graph}. This information shows that using well tuned instances (hand coded or Manual), Play is roughly the same speed as Compos -- and about 50\% slower than hand-tuned operations. Even when using the Data instances provided by SYB, we are able to outperform SYB for on the same operations!
-
-We now discuss some of the reasons for our performance results. First we focus on our optimisation of |everything|, using continuation passing and some |foldr|/|build| fusion properties. Next we turn to our |PlayData| module, including the reasons we are able to outperform SYB.
-
-We suspect there are further places for improvement:
-
-\begin{itemize}
-\item Continuation passing style may eliminate tuple construction and consumption.
-\item List fusion may be able to eliminate some of the lists in |replaceChildren|.
-\end{itemize}
-
-\subsubsection{Optimising the |everything| function}
-\label{sec:optimise_everything}
-
-Our initial |everything| implementation was presented as:
-
-\begin{code}
-everything :: Play on => on -> [on]
-everything x = x : concatMap everything $ getChildren x
-\end{code}
-
-The disadvantage of this code is that |concatMap| produces and consumes the list at every level, requiring one reconstruction per level of depth in the data structure. We can fix this by using continuations:
-
-\begin{code}
-everything x = f x []
-    where  f :: Play on => on -> [on] -> [on]
-           f x rest = x : concatCont (map f $ getChildren x) rest
-
-concatCont []     rest  =  rest
-concatCont (x:xs) rest  =  x (concatCont xs rest)
-\end{code}
-
-Now we only perform one reconstruction. We can do better using GHC's list fusion. The user of everything is likely to a list comprehension, which is a good consumer. We can make |concatCont| a good consumer, and |f| a good producer:
-
-\begin{code}
-everything :: Play on => on -> [on]
-everything x = build (f x)
-    where
-    f :: Play on => on -> (on -> res -> res) -> res -> res
-    f x cons nil = x `cons`
-        concatCont (map (flip f cons) $ getChildren x) nil
-
-concatCont xs rest = foldr ($) rest xs
-\end{code}
-
-\subsubsection{Optimising |PlayData|}
-\label{sec:optimise_playdata}
-
-The |Play| instance implemented in terms of |Data| is an area of the library we are particularly proud of. Using the existing SYB framework, specifically the |Data| derivation built into the GHC compiler, we can remove the overhead of writing instances. Managing to both layer |Play| over the |Data| instances, and perform better than SYB is not something we initially believed to be possible.
-
-The first optimisation is to generate the two members of the |replaceChildren| with only one pass over the data value. Using one pass, it is no longer possible to use |gmapM| or |gmapQ| -- we must instead use |gfoldl| directly. We also make use of continuation passing style in some places, particularly to eliminate appending to the end of a list and discovering which children have been used.
-
-With all these changes in place we perform much the same operations as SYB, but have the overhead of list creation at each step. We are able to push this approach to within about 15\% of the speed of SYB operations.
-
-The next optimisation relies on the extra information present in the |Play| operations -- namely the target type. A boilerplate operation can be viewed as walking over a data structure, looking for nodes of the target type. In SYB, the target type could be any node in the structure, for Play it is a known type. This extra knowledge means that if a node is reached which is not a container for the target type, no further exploration is required within this node. Computing which types are containers for the target type can be done relatively easily with the SYB framework:
-
-\begin{code}
-data DataBox = forall a . (Typeable a, Data a) => DataBox a
-
-contains :: (Data a, Typeable a) => a -> [DataBox]
-contains x = if isAlgType dtyp then concatMap f ctrs else []
-    where
-        f ctr = gmapQ DataBox (asTypeOf (fromConstr ctr) x)
-        ctrs = dataTypeConstrs dtyp
-        dtyp = dataTypeOf x
-\end{code}
-
-The |contains| function takes a value which it does not examine, and is always |undefined| in this context. It returns all fields, and |typeOf| can be performed on each one. This list of types and their containers can have its transitive closure taken, and all types can be divided into three sets:
-
-\begin{enumerate}
-\item The singleton set containing the type of the target.
-\item The set of types which \textit{may} contain the target type.
-\item The set of types which \textit{do not} contain the target type.
-\end{enumerate}
-
-When examining a node, if its type is a member of the set which does not contain the target, we can prune the search at this point. We compute these sets for each type only once, by using a CAF inside the class to store it. The cost of computing these sets is small.
-
-This trick is surprisingly effective. Take for example an operation over |Bool| on the value |(True,"Haskell")|. The SYB approach will find 16 nodes, Play will only touch 3 nodes -- as soon as it notices the |String| it will stop. By increasing the length of the string, SYB performs increasingly more work -- Play does not.
-
-With all these optimisations we can perform both queries and traversals faster than SYB, for most operations. In the benchmarks we range from 4\% worse to 127\% better, with an average of 56\% faster.
+The results are presented in Table \ref{fig:results}, and a graph of the overall totals in Figure \ref{fig:graph}. Using well tuned instances (hand coded or Manual), Uniplate is roughly the same speed as Compos -- but about 50\% slower than hand-tuned operations. Using the Data instances provided by SYB, we are able to outperform SYB itself! See \ref{sec:performance} for details of some of the optimisations used.
 
 
 \section{Related Work}
 \label{sec:related}
 
-This library is intended to be a way to remove the boilerplate for Haskell programs, and it is certainly not the first library to attempt this. Perhaps the most popular boilerplate removal system in Haskell is the SYB library \cite{lammel:syb}. One of the reasons for its success is tight integration with the GHC compiler, lowering the barrier to use. We have compared directly against traversals written in SYB in \S\ref{sec:results_boilerplate}, and have also covered how to implement Play in terms of SYB in \S\ref{sec:implement_playdata}. All our operations are shorter and simpler than the equivalents in SYB, and we are able to operate without the extension of rank-2 types. Most of these benefits stem directly from our definition of children as being the children of the same type, contrasting with the SYB approach of all direct children.
+The Uniplate library is intended to be a way to remove the boilerplate of recursive traversals from Haskell programs. It is far from the first library to attempt this.
 
-The SYB library is, however, more powerful than Play. If you wish to visit nodes of different type in a single traversal, Play is unsuitable. The |Data| and |Typeable| methods have also been pushed further in successive papers \cite{lammel:syb2,lammel:syb3} -- in directions which we suspect Play is unable to go.
+\paragraph{The SYB library} \citep{lammel:syb} is perhaps the most popular boilerplate removal system in Haskell. One of the reasons for its success is tight integration with the GHC compiler, lowering the barrier to use. We have compared directly against traversals written in SYB in \S\ref{sec:results_boilerplate}, and have also covered how to implement Uniplate in terms of SYB in \S\ref{sec:implement_playdata}. All our operations are shorter and simpler than the equivalents in SYB, and we are able to operate without the extension of rank-2 types. Most of these benefits stem directly from our definition of children as being the children of the same uniform type, contrasting with the SYB approach of all direct children.
 
-The Compos library \cite{bringert:compos} is another approach to the removal of boilerplate, requiring the GADT's \cite{spj:gadt} along with rank-2 types. While the Compos library can operate over GADT's, it is somewhat restricted to them, requiring an existing data structure to be rewritten as a GADT. The conversion from standard Haskell data structures to GADT's presents several problems: they are GHC specific; deriving is not supported on GADT's; they require explicit type signatures. Some of these problems come about as a result of GADT's being a recent addition. The Compos approach is also harder to write instances for, having no simple instance generation framework, and no automatic derivation tool (although one could be written). The inner |composOp| operator is very powerful, and indeed we have chosen to replicate it in our library as |descend|. In contrast the Compos library is unable to replicate the query to a list, or the bottom-up traversal from our library.
+The SYB library is, however, more powerful than Play. If you wish to visit nodes of different type in a single traversal, Play is unsuitable. The |Data| and |Typeable| methods have also been pushed further in successive papers \citep{lammel:syb2,lammel:syb3} -- in directions which we suspect Play is unable to go.
 
-The Stratego tool \cite{stratego} provides support for generic operations, focusing on both the operations and the strategies for applying them. This approach is performed in an \textit{untyped} language, although a typed representation can be modelled \cite{lammel:typed_generic_strategies}. The Strafunski library \cite{lammel:polymorphic_symphony} also provides generic operations in terms of strategy combinators.
+\paragraph{The Compos library} \citep{bringert:compos} is another approach to the removal of boilerplate, requiring GADTs \citep{spj:gadt} along with rank-2 types. The Compos library requires an existing data type to be rewritten as a GADT. The conversion from standard Haskell data structures to GADT's presents several problems: they are GHC specific, deriving is not supported on GADTs, and GADTs require explicit type signatures. Some of these problems come about as a result of GADTs being a recent addition. The Compos approach is also harder to write instances for, having no simple instance generation framework, and no automatic derivation tool (although one could be written). The inner |composOp| operator is very powerful, and indeed we have chosen to replicate it in our library as |descend|. But the Compos library is unable to replicate the query to a list, or the bottom-up traversal from our library.
 
-Another library which is sometimes used to avoid boilerplate is the Applicative library \cite{mcbride:applicative}. This library works by threading an Applicative operation through a data structure, in a similar way to threading a Monad through the structure.
+\paragraph{The Stratego tool} \citep{stratego} provides support for generic operations, focusing on both the operations and the strategies for applying them. This approach is performed in an \textit{untyped} language, although a typed representation can be modelled \cite{lammel:typed_generic_strategies}.
+ 
+\paragraph{The Strafunski library} \citep{lammel:polymorphic_symphony} also provides generic operations in terms of strategy combinators.
+
+\paragraph{The Applicative library} \citep{mcbride:applicative} works by threading an Applicative operation through a data structure, in a similar way to threading a Monad through the structure.
 
 
 \section{Conclusions and Future Work}
 \label{sec:conclusion}
 
-We have presented the Play library, comprising of the classes |Play| and |PlayEx|, along with a small set of operations to perform queries and traversals. We have illustrated by example that the boilerplate required in our system is less than in others (\S\ref{sec:results_boilerplate}), and that we can achieve these results without sacrificing speed (\S\ref{sec:results_speed}). Our library is both practical and portable, finding use in a number of applications, and using fewer extensions to the Haskell language than alternatives.
+We have presented the Uniplate library. It defines the classes |Uniplate| and |Biplate|, along with a small set of operations to perform queries and traversals. We have illustrated by example that the boilerplate required in our system is less than in others (\S\ref{sec:results_boilerplate}), and that we can achieve these results without sacrificing speed (\S\ref{sec:results_speed}). Our library is both practical and portable, finding use in a number of applications, and using fewer extensions to the Haskell language than alternatives.
 
 We view the library as finished. There may be some traversals we have overlooked, but we feel they are small in number. The performance could be improved, but we feel that this aspect is not limiting the use of this library in any way.
 
-The use of boilerplate reduction strategies in Haskell is not yet ubiquitous, as we feel it should be. We have focused on simplicity throughout our design, working within the natural typed design of Haskell, rather than trying to extend it. Hopefully the removal of complicated language features (particularly types) will allow a wider base of users to reap the benefits that boilerplate free programming can offer.
+The use of boilerplate reduction strategies in Haskell is not yet ubiquitous, as we feel it should be. We have focused on simplicity throughout our design, working within the natural typed design of Haskell, rather than trying to extend it. Hopefully the removal of complicated language features (particularly `scary' types) will allow a wider base of users to reap the benefits that boilerplate free programming can offer. The restriction to a uniformly typed value set in a traversal allows the benefits of list processing to be utilised.
 
 \acks
 
