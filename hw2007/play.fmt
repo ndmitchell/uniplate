@@ -68,6 +68,8 @@
 %format p2  = "\Varid{p_2}"
 %format v1  = "\Varid{v_1}"
 %format v2  = "\Varid{v_2}"
+%format s1  = "\Varid{s_1}"
+%format s2  = "\Varid{s_2}"
 %format r2  = "\Varid{r_2}"
 %format xs2 = "\Varid{xs_2}"
 

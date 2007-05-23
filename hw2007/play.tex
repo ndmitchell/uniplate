@@ -165,7 +165,7 @@ We use the term \textit{children} to refer to all maximal proper substructures o
 The Uniplate library provides a single method for implementing queries, the |universe| method.
 
 \begin{code}
-universe :: Play alpha => alpha -> [alpha]
+universe :: Uniplate alpha => alpha -> [alpha]
 \end{code}
 
 This function takes a data structure, and returns a list of all data structures of the same type found within it. Imagining a data structure as a tree, |universe| returns the root of the tree, and all it's subtrees of the same type at all levels. For example:
@@ -207,7 +207,7 @@ Note that we make essential use of the feature of list comprehensions that if a 
 Another common operation covered by many boilerplate removal systems \cite{lammel:syb} is a function that makes modifications to every node in the data structure. We define as our standard traversal a bottom up traversal.
 
 \begin{code}
-traverse :: Play alpha => (alpha -> alpha) -> alpha -> alpha
+traverse :: Uniplate alpha => (alpha -> alpha) -> alpha -> alpha
 \end{code}
 
 \begin{example}
@@ -253,7 +253,7 @@ Besides bottom-up traversals, many boilerplate schemes would a top-down traversa
 We define our rewrite traversal to be:
 
 \begin{code}
-rewrite :: Play alpha => (alpha -> Maybe alpha) -> alpha -> alpha
+rewrite :: Uniplate alpha => (alpha -> Maybe alpha) -> alpha -> alpha
 rewrite rule x = ...
 \end{code}
 
@@ -266,7 +266,7 @@ forall r, x `o` all (isNothing . r) (universe (rewrite r x))
 It is possible to define the |rewrite| function in terms of |traverse|:
 
 \begin{code}
-rewrite :: Play alpha => (alpha -> Maybe alpha) -> alpha -> alpha
+rewrite :: Uniplate alpha => (alpha -> Maybe alpha) -> alpha -> alpha
 rewrite f = traverse g
     where g x = maybe x (rewrite f) (f x)
 \end{code}
@@ -293,7 +293,8 @@ data Tree     = Branch String [Tree] | Leaf
 
 f (Sub x y) = Add x (Neg y)
 -- is represented by
-[(Branch "Sub" [Leaf,Leaf],Branch "Add" [Leaf, Branch "Neg" [Leaf]])]
+[(Branch "Sub" [Leaf,Leaf]
+ ,Branch "Add" [Leaf, Branch "Neg" [Leaf]])]
 \end{code}
 
 We can imagine |f| as a set of tree rewrite rules, where the tree on the left corresponds to the pattern matching, and the tree on the right corresponds to the generated value. We can now define the |equalBottomUp| function which returns True if a rewrite rule satisfies the property that |rewrite| and |traverse| give the same result:
@@ -304,8 +305,8 @@ treeEq (Branch s1 t1) (Branch s2 t2) =
 treeEq _ _ = True
 
 equalBottomUp :: Rewrite -> Bool
-equalBottomUp rs =  not $ or  [treeEq a b | a <- map fst rs
-                              ,b <- concatMap (everything . snd) rs]
+equalBottomUp rs =  not $ or [treeEq a b | a <- map fst rs,
+    b <- concatMap (universe . snd) rs]
 \end{code}
 
 If any of the generated values at any level overlaps with the root of any pattern match, then the traversal is not a rewrite. Taking the |simplify| traversal from from the previous section:
@@ -345,8 +346,8 @@ Before we can answer this question, we must first reflect on what a top-down tra
 We can define the |equalTopDown| operation to test these the rewrite and top-down traversal for equivalence:
 
 \begin{code}
-equalTopDown rs =  not $ or  [treeEq a b | a <- map snd rs
-                             ,b <- concatMap (everything . fst) rs]
+equalTopDown rs =  not $ or  [treeEq a b | a <- map snd rs,
+    b <- concatMap (universe . fst) rs]
 \end{code}
 
 The only change from |equalBottomUp| is that the |fst| and |snd| applications have been switched. Root values constructed on the right must not match anywhere on the left. Note that this restriction is neither more nor less severe than the one imposed on bottom-up traversals. For the |simplify| example, both produce the same result.
@@ -407,7 +408,7 @@ Here a monadic computation is used. The program keeps track of the next item in 
 Although top-down traversals are unnecessary for our library, we still believe that some traversals operate more naturally in a top-down manner. One extension to the top-down traversal pushes information downwards at the same time. We introduce the |descend| function, inspired by the Compos paper \cite{bringert:compos}.
 
 \begin{code}
-descend :: Play alpha => (alpha -> alpha) -> alpha -> alpha
+descend :: Uniplate alpha => (alpha -> alpha) -> alpha -> alpha
 \end{code}
 
 The |descend| function applies a function to all children of a node, then reconstructs a new result using those results.
@@ -433,42 +434,22 @@ subst rep x =
 Traditionally in Haskell a fold replaces each constructor with an alternative \todo{ref}. To define a complete fold on a data type, each constructor must be represented -- giving boilerplate problems once more. We define a fold which provides a default operation:
 
 \begin{code}
-fold :: Play alpha => ([r] -> t) -> (alpha -> t -> r) -> alpha -> r
-fold combine operate = ...
+fold :: Uniplate alpha => (alpha -> [r] -> r) -> alpha -> r
+fold operate = ...
 \end{code}
 
-This fold takes two functional arguments: |combine| takes a value representing each child of an expression, and combines them into a token |t|; |operate| takes a token representing the children of a node, along with the node itself, into a result |r|.
+The |operate| argument takes a node, and the results for all the children, and combines them to create a new result.
 
 \begin{example}
 Imagine that |Expr| programmers are paid by the \textit{depth of expression} they produce:
 
 \begin{code}
 depth :: Expr -> Int
-depth = fold (foldr max 0) $ const (+1)
+depth = fold (\_ cs -> 1 + maximum (0:cs))
 \end{code}
 
-Here we have used |foldr max 0| to combine all the children -- |maximum| is inappropriate, as |maximum [] = {-"\bot"-}|. The second function |const (+1)| simply adds one to the previous depth.
+The result at each level is one more than the maximum of all the children (with 0 as a default).
 \end{example}
-
-\todo{Unsure these claim are true. Is the foldId equivalence true? Is there any good example for requiring a more complex fold?}
-
-Our choice of fold operator seems a little unusual at first. One might have expected only one functional argument. We can define such a fold, and implement |depth| in terms of it:
-
-\begin{code}
-foldId :: Play alpha => (alpha -> [r] -> r) -> alpha -> r
-foldId = fold id
-
-fold combine operate = foldId (\a b -> operate a (combine b))
-
-depth = foldId (foldr max 0 . map (+1))
-\end{code}
-
-This function is a perfectly common pattern, although by having a slightly more general version we allow more boilerplate to be removed in some examples -- particularly when some constructors require different operations.
-
-\begin{example}
-Give a slightly better example which shows why you need the more general version.
-\end{example}
-
 
 \subsection{EverythingContext}
 
@@ -477,7 +458,7 @@ Give a slightly better example which shows why you need the more general version
 The final operation in the library seems to be a novelty -- we have not seen it in any other library, even in those which attempt to include all variations \citep{ren:generic_recursion_toolbox}. Yet users sometimes need this function and defining it using other operations requires a lot of monadic complexity. This function was actually contributed by a user, which we feel enhances our claim that average users can construct their own operations upon our framework.
 
 \begin{code}
-everythingContext :: Play alpha => alpha -> [(alpha, alpha -> alpha)]
+everythingContext :: Uniplate alpha => alpha -> [(alpha, alpha -> alpha)]
 \end{code}
 
 \todo{See Mohnen and others 'active' or 'computational' pattern matching.}
@@ -507,9 +488,9 @@ mutants x =  [gen (Val j)
 
 \begin{figure}
 \begin{code}
-module Data.Generics.Play where
+module Data.Generics.Uniplate where
 
-class Play alpha where
+class Uniplate alpha where
     descend            :: (alpha -> alpha) -> alpha -> alpha
     descendM           :: Monad m => (alpha -> m alpha) -> alpha -> m alpha
     everything         :: alpha -> [alpha]
@@ -521,7 +502,7 @@ class Play alpha where
     traverse           :: (alpha -> alpha) -> alpha -> alpha
     traverseM          :: Monad m => (alpha -> m alpha) -> alpha -> m alpha
 \end{code}
-\caption{All |Play| methods.}
+\caption{All |Uniplate| methods.}
 \label{fig:play}
 \end{figure}
 
@@ -534,7 +515,7 @@ We present signatures for all our methods in Figure \ref{fig:play}, including se
 Requiring each instance of the |Uniplate| class to implement nine separate methods would be an undue imposition. Instead we can implement all of these operations on top of just a single method:
 
 \begin{code}
-replaceChildren :: Play alpha => alpha -> ([alpha], [alpha] -> alpha)
+replaceChildren :: Uniplate alpha => alpha -> ([alpha], [alpha] -> alpha)
 replaceChildren x = (children,generate)
 \end{code}
 
@@ -559,19 +540,19 @@ forall x ys `o`  length ys == length children =>
 Defining the nine operations of \S\ref{sec:use_play} in terms of |replaceChildren| is easy. We define the four most common as examples. All the definitions are short.
 
 \begin{code}
-everything :: Play alpha => alpha -> [alpha]
+everything :: Uniplate alpha => alpha -> [alpha]
 everything x = x :
     concatMap everything $ fst $ replaceChildren x
 
-traverse :: Play alpha => (alpha -> alpha) -> alpha -> alpha
+traverse :: Uniplate alpha => (alpha -> alpha) -> alpha -> alpha
 traverse f x = f $ generate $ map (traverse f) current
     where (current, generate) = replaceChildren x
 
-traverseM :: (Monad m, Play alpha) => (alpha -> m alpha) -> alpha -> m alpha
+traverseM :: (Monad m, Uniplate alpha) => (alpha -> m alpha) -> alpha -> m alpha
 traverseM f x = mapM (traverseM f) current >>= f . generate
     where (current, generate) = replaceChildren x
 
-descend :: Play alpha => (alpha -> alpha) -> alpha -> alpha
+descend :: Uniplate alpha => (alpha -> alpha) -> alpha -> alpha
 descend f x = generate $ map f current
     where (current, generate) = replaceChildren x
 \end{code}
@@ -613,7 +594,7 @@ data Ctor  = Ctor Name [Type]
 data Type  = TyPrim | TyVar Var | TyApp Data [Type]
 \end{code}
 
-When writing a |Play| instance for a particular data type, |isTarget| returns True for that data type. We define how to produce a function for each |Data| type that is used, using the |_D| function:
+When writing a |Uniplate| instance for a particular data type, |isTarget| returns True for that data type. We define how to produce a function for each |Data| type that is used, using the |_D| function:
 
 \begin{code}
 _D (Data name vars ctors) = unwords $
@@ -764,7 +745,7 @@ data Stmt  =  Assign    String  Expr
 
 We can define a |Uniplate| instance for |Stmt|, and perform queries and traversals upon it. However, we may run into limitations. Consider the task of extracting all literals from within a |Stmt| -- this requires boilerplate to find the values of type |Expr|.
 
-The |Play| class takes a value of type |alpha|, and operates on its children of type |alpha|. What we now require is something that takes a value of type |beta|, but operates on the children of type |alpha| within it -- we call this class |Biplate|. Typically the type |beta| will be a container of |alpha|. We can extend our operations by specifying how to find the |alpha|'s within the |beta|'s, and then perform the standard |Uniplate| operations upon the |alpha| type. In the above example, |alpha = Expr|, and |beta = Stmt|.
+The |Uniplate| class takes a value of type |alpha|, and operates on its children of type |alpha|. What we now require is something that takes a value of type |beta|, but operates on the children of type |alpha| within it -- we call this class |Biplate|. Typically the type |beta| will be a container of |alpha|. We can extend our operations by specifying how to find the |alpha|'s within the |beta|'s, and then perform the standard |Uniplate| operations upon the |alpha| type. In the above example, |alpha = Expr|, and |beta = Stmt|.
 
 We first introduce |UniplateOn|, which requires an explicit function to move between the |alpha| and |beta|. We then make use of Multi-parameter type classes (MPTC's) to generalise this function into a type class, named |Biplate|.
 
@@ -787,11 +768,11 @@ replaceType x = ([x], [x'] -> x')
 We can now define |universeOn| and |traverseOn|. Each takes a |replaceType| function as an argument:
 
 \begin{code}
-universeOn :: Play to => ReplaceType beta alpha -> beta -> [alpha]
+universeOn :: Uniplate to => ReplaceType beta alpha -> beta -> [alpha]
 universeOn replaceType x =
     concatMap universe $ fst $ replaceType x
 
-traverseOn ::  Play to => ReplaceType beta alpha ->
+traverseOn ::  Uniplate to => ReplaceType beta alpha ->
                (alpha -> alpha) -> beta -> beta
 traverseOn replaceType f x =
     generate $ map (traverse f) current
@@ -862,11 +843,11 @@ We now present two examples from \S\ref{sec:use_play}, but implemented using |Bi
 
 \begin{revisit}{\ref{ex:variables}}
 \begin{code}
-variables :: PlayEx beta Expr => beta -> [String]
+variables :: Biplate beta Expr => beta -> [String]
 variables x = [y | Var y <- everythingEx x]
 \end{code}
 
-The |variables| example from before requires only one change: the addition of the |Ex| suffix to |everything|. The type signature has changed so that instead of |Expr -> [String]| we have replaced |Expr| with |PlayEx beta Expr => beta|. Another way of looking at this is instead of requiring the input to be an |Expr|, we merely require that from the input we know how to reach an |Expr|.
+The |variables| example from before requires only one change: the addition of the |Ex| suffix to |everything|. The type signature has changed so that instead of |Expr -> [String]| we have replaced |Expr| with |Biplate beta Expr => beta|. Another way of looking at this is instead of requiring the input to be an |Expr|, we merely require that from the input we know how to reach an |Expr|.
 \end{revisit}
 
 \begin{revisit}{\ref{ex:simplify}}
@@ -1469,7 +1450,7 @@ The SYB library is, however, more powerful than Play. If you wish to visit nodes
 \paragraph{The Compos library} \citep{bringert:compos} is another approach to the removal of boilerplate, requiring GADTs \citep{spj:gadt} along with rank-2 types. The Compos library requires an existing data type to be rewritten as a GADT. The conversion from standard Haskell data structures to GADT's presents several problems: they are GHC specific, deriving is not supported on GADTs, and GADTs require explicit type signatures. Some of these problems come about as a result of GADTs being a recent addition. The Compos approach is also harder to write instances for, having no simple instance generation framework, and no automatic derivation tool (although one could be written). The inner |composOp| operator is very powerful, and indeed we have chosen to replicate it in our library as |descend|. But the Compos library is unable to replicate the query to a list, or the bottom-up traversal from our library.
 
 \paragraph{The Stratego tool} \citep{stratego} provides support for generic operations, focusing on both the operations and the strategies for applying them. This approach is performed in an \textit{untyped} language, although a typed representation can be modelled \cite{lammel:typed_generic_strategies}.
- 
+
 \paragraph{The Strafunski library} \citep{lammel:polymorphic_symphony} also provides generic operations in terms of strategy combinators.
 
 \paragraph{The Applicative library} \citep{mcbride:applicative} works by threading an Applicative operation through a data structure, in a similar way to threading a Monad through the structure.
