@@ -7,8 +7,8 @@ module Data.Generics.PlayInternal(
 
 #ifdef __GLASGOW_HASKELL__
 
-import GHC.Exts
-import Data.ByteString.Base
+import GHC.Exts(unsafeCoerce#, build)
+import Data.ByteString.Base(inlinePerformIO)
 
 {-# INLINE unsafeCast #-}
 unsafeCast :: a -> b
