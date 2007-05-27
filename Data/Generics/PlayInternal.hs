@@ -7,9 +7,9 @@ module Data.Generics.PlayInternal(
 
 
 ---------------------------------------------------------------------
--- GHC
+-- GHC 6.6
 {-
-#if 0
+#if __GLASGOW_HASKELL__ < 606
 {-
 #endif
 -}
@@ -26,7 +26,7 @@ builder :: forall a . (forall b . (a -> b -> b) -> b -> b) -> [a]
 builder = build
 
 {-
-#if 0
+#if __GLASGOW_HASKELL__ < 606
 -}
 #endif
 -}
@@ -34,9 +34,9 @@ builder = build
 
 
 ---------------------------------------------------------------------
--- !GHC
+-- !GHC 6.6
 {-
-#ifndef __GLASGOW_HASKELL__
+#if __GLASGOW_HASKELL__ < 606
 -}
 
 import Data.Typeable
