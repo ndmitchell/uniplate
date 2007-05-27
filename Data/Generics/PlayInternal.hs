@@ -5,7 +5,14 @@ module Data.Generics.PlayInternal(
     unsafeCast, inlinePerformIO, builder, concatCont
     ) where
 
-#ifdef __GLASGOW_HASKELL__
+
+---------------------------------------------------------------------
+-- GHC
+{-
+#if 0
+{-
+#endif
+-}
 
 import GHC.Exts(unsafeCoerce#, build)
 import Data.ByteString.Base(inlinePerformIO)
@@ -18,8 +25,19 @@ unsafeCast = unsafeCoerce#
 builder :: forall a . (forall b . (a -> b -> b) -> b -> b) -> [a]
 builder = build
 
+{-
+#if 0
+-}
+#endif
+-}
 
-#else
+
+
+---------------------------------------------------------------------
+-- !GHC
+{-
+#ifndef __GLASGOW_HASKELL__
+-}
 
 import Data.Typeable
 import Data.Maybe
@@ -34,7 +52,11 @@ inlinePerformIO = unsafePerformIO
 builder :: ((x -> [x] -> [x]) -> [x] -> [x]) -> [x]
 builder f = f (:) []
 
+{-
 #endif
+-}
+
+
 
 
 {-# INLINE concatCont #-}
