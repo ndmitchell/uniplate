@@ -1,0 +1,46 @@
+
+variables = everything (++) ([] `mkQ` f)
+    where  f (Var y)  = [y]
+           f _        = []
+
+
+zeroCount = everything (+) (0 `mkQ` f)
+    where  f (Div _ (Val 0))  = 1
+           f _                = 0
+
+
+simp (Sub x y)           = simp $ Add x (Neg y)
+simp (Add x y) | x == y  = Mul (Val 2) x
+simp x                   = x
+
+simplify = everywhere (mkT simp)
+
+ren (V x) = V ("_" ++ x)
+
+rename = everywhere (mkT ren)
+
+
+symbols = everything (++) ([] `mkQ` f)
+    where  f (SDecl t v)  = [(v,t)]
+           f _            = []
+
+optimise (EAdd (EInt n) (EInt m)) = EInt (n+m)
+optimise x = x
+
+constFold = everywhere (mkT optimise)
+
+
+incS k (S s) = S (s + k)
+
+increase k = everywhere (mkT (incS k))
+
+
+incrOne d k x  | isDept d x  = increase k x
+                   | otherwise   = gmapT (incrOne d k) x
+    where  isDept   d = False `mkQ` isDeptD d
+           isDeptD  d (D n _ _) = n == d
+
+
+salaryBill = everything (+) (0 `mkQ` billS)
+   where billS (S s) = s
+

@@ -1,0 +1,32 @@
+variables x = [y | Var y <- universe x]
+
+zeroCount x = length [() | Div _ (Val 0) <- universe x]
+
+
+simp (Sub x y)           = simp $ Add x (Neg y)
+simp (Add x y) | x == y  = Mul (Val 2) x
+simp x                   = x
+
+simplify = traverse simp
+
+ren (V x) = V ("_" ++ x)
+
+rename = traverseEx ren
+
+
+symbols x = [(v,t) | SDecl t v <- universeEx x]
+
+optimise (EAdd (EInt n) (EInt m)) = EInt (n+m)
+optimise x = x
+
+constFold = traverseEx optimise
+
+incS k (S s) = S (s + k)
+
+increase k = traverseEx (incS k)
+
+incrOne d k = descendEx f
+    where f x@(D n _ _)  | n == d     = increase k x
+                         | otherwise  = descend f x
+
+salaryBill x = sum [s | S s <- everythingEx x]
