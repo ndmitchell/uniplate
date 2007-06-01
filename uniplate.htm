@@ -1,0 +1,336 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+        "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html>
+    <head>
+        <meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
+        <title>Boilerplate Removal with Uniplate</title>
+        <style type="text/css">
+pre {
+    border: 2px solid gray;
+    padding: 1px;
+    padding-left: 5px;
+    margin-left: 10px;
+    background-color: #eee;
+}
+
+pre.define {
+    background-color: #ffb;
+    border-color: #cc0;
+}
+
+pre.compos, pre.syb, pre.play {
+    background-position: top right;
+    background-repeat: no-repeat;
+}
+
+pre.compos {background-image: url(img/compos.png);}
+pre.play {background-image: url(img/play.png);}
+pre.syb {background-image: url(img/syb.png);}
+
+
+body {
+    font-family: sans-serif;
+}
+
+h1, h2, h3 {
+    font-family: serif;
+}
+
+h1 {
+    color: rgb(23,54,93);
+    border-bottom: 1px solid rgb(79,129,189);
+    padding-bottom: 2px;
+    font-variant: small-caps;
+    text-align: center;
+}
+
+a {
+    color: rgb(54,95,145);
+}
+
+h2 {
+    color: rgb(54,95,145);
+}
+
+h3 {
+    color: rgb(79,129,189);
+}
+        </style>
+    </head>
+    <body>
+
+<h1>Boilerplate Removal with Uniplate</h1>
+
+<p style="text-align:right;margin-bottom:25px;">
+    by <a href="http://www.cs.york.ac.uk/~ndm/">Neil Mitchell</a>
+</p>
+
+<p style="margin-left:10%;margin-right:10%;margin-bottom:25px;text-align:justify;">
+    Generic transformations and queries are often referred to as boilerplate code - they remain relatively similar as the action performed by the code changes, and can often outnumber the actual intent of the code in terms of lines. While other generic traversal schemes have shown how powerful new features can be added to compilers, and how the type system can be manipulated into accepting these operations, this document focuses on a conceptually simpler generic concept. The <i>Uniplate</i> class is introduced, which abstracts over common traversals and queries in a simple manner.
+</p>
+<p>
+    There have been several attempts at generic traversal/query methods in Haskell. One initial paper was <a href="http://doi.acm.org/10.1145/604174.604179">"Scrap your boilerplate: a practical design pattern for generic programming"</a> (<a href="http://www.cs.vu.nl/boilerplate/tldi03.pdf">free copy</a>) - which I will refer to as SYB. Another mechanism is <a href="http://doi.acm.org/10.1145/1159803.1159834">"A Pattern for Almost Compositional Functions"</a> (<a href="http://www.cs.chalmers.se/~bringert/publ/composOp/composOp.pdf">free copy</a>) - which I refer to as Compos (after the name of their class). A detailed comparison is given in the Uniplate paper (to be submitted).
+</p>
+<p>
+    The principle advantage of the Play class over these two papers is that it requires no type system extensions, compared to rank-2 types for SYB and GADT's for Compos. The simplicity of the types required means that the user is free to concentrate on the operations within the class, without requiring thought as to the type trickery required. The Uniplate pattern has been implemented in <a href="http://haskell.org/haskellwiki/Yhc">Yhc</a> for the Core data type, and in <a href="http://www-users.cs.york.ac.uk/~ndm/catch/">Catch</a> on several data types within the program.
+</p>
+<p>
+    This document proceeds as follows:
+</p>
+<ol>
+    <li>The motivation and use cases for Uniplate</li>
+    <li>How to use the Uniplate class</li>
+    <li>Extensions to Biplate</li>
+</ol>
+<p>
+    All the examples used in this document can be found in the darcs repository, under the <tt>Examples</tt> directory.
+</p>
+<pre>
+darcs get --partial <a href="http://www.cs.york.ac.uk/fp/darcs/uniplate">http://www.cs.york.ac.uk/fp/darcs/uniplate</a>
+</pre>
+<p>
+    If you only wish to read a small fraction of this document, can I suggest you pay particular attention to <tt>transform</tt> and <tt>universe</tt> - these are by far the most common traversal patterns.
+</p>
+
+<h3>Acknowledgements</h3>
+
+<p>
+    Thanks to Bj&ouml;rn Bringert for feedback on an earlier version of this document, Eric Mertens for various ideas and code snippets, and to Matt Naylor and Tom Shackell for helpful discussions.
+</p>
+
+
+<h2>Motivation and Use Cases</h2>
+
+<p>
+    The idea behind the Uniplate class is that there exists a data structure, usually with a reasonable number of constructors, which is often transformed or analysed. The usual example of this would be a compiler, which has at its core an expression type. This can be seen as a form of generic programming.
+</p>
+<p>
+    The Uniplate class has the following goals:
+</p>
+<ul>
+    <li>Adding a new constructor should require very few changes</li>
+    <li>Traversals should have a minimal amount of boiler plate</li>
+    <li>The obvious code should "just work"</li>
+    <li>Haskell 98, where possible</li>
+    <li>Writing new types of traverals is easy</li>
+    <li>The default traversals cover most cases</li>
+</ul>
+<p>
+    The ideas behind the Uniplate class have been used extensively, in both the Yhc compiler and the Catch tool. In Catch there are over 100 traversals using the Uniplate class, showing that the Uniplate class gets extensive use.
+</p>
+
+
+<h2>Using Uniplate</h2>
+
+<p>
+    These examples revolve around a small arithmetic language, given here:
+
+</p>
+<pre>
+import Data.Generics.Uniplate
+
+data Expr = Val Int
+          | Add Expr Expr
+          | Sub Expr Expr
+          | Div Expr Expr
+          | Mul Expr Expr
+          | Neg Expr
+          deriving (Show, Eq)
+</pre>
+<p>
+    Assume that a Uniplate class has already been written; so now <tt>instance Uniplate Expr</tt> is available to us. Some examples are presented, in rough order of increasingly complexity. These examples are all available in the <tt>Examples/Expr.hs</tt> file.
+</p>
+
+<h3>Checking for division by zero</h3>
+
+<pre class="define">
+universe :: Uniplate on => on -> [on]
+</pre>
+<p>
+    If an expression is divided by zero, this causes a runtime error in our language. As part of the compiler, it's nice to give the user a warning message about this. This can be done with the following test:
+</p>
+<pre>
+hasDivZero :: Expr -> Bool
+hasDivZero x = not $ null [() | Div _ (Val 0) <- universe x]
+</pre>
+<p>
+    Here the only Play method being used is <tt>universe</tt>. Given a tree, <tt>universe</tt> returns all the root of the tree, and all it's subtrees at all levels. This can be used to quickly flatten a tree structure into a list, for quick analysis via list comprehensions, as is done above. For each division by zero found, any value is created in the list comprehension, and then this is checked to see if anything did match. Returning the count of divide by zero errors is trivial, simply use <tt>length</tt> instead of <tt>not $ null</tt>.  Extra context could perhaps be given by printing some of the value that is being divided by zero, to help narrow down the error.
+</p>
+<p>
+    <i>Exercise:</i> Write a function to find all literals that occur in an expression, together with their count.
+</p>
+
+<h3>Basic optimisation</h3>
+
+<pre class="define">
+transform :: Uniplate on => (on -> on) -> on -> on
+</pre>
+<p>
+    If we are negating a literal value, this computation can be performed in advance, so let's write a function to do this.
+</p>
+<pre>
+optimise :: Expr -> Expr
+optimise = transform $ \x -> case x of
+    Neg (Val i) -> Val (negate i)
+    x -> x
+</pre>
+<p>
+    Here the Uniplate method being used is <tt>transform</tt>. This applies the given function to all the children of an expression, before applying it to the parent. This can be thought of as bottom-up traversal of the data structure. The optimise code merely pattern matches on the negation of a literal, and replaces it with the literal.
+</p>
+<p>
+    Now lets add another optimisation into the same pass, just before the <tt>x -> x</tt> line insert:
+</p>
+<pre>
+    Add x y | x == y -> Mul x (Val 2)
+</pre>
+<p>
+    This takes an addition where two terms are equal and changes it into a multiplication, causing the nested expression to be executed only once. This shows that normal Haskell applies, the Uniplate lets you write code as before.
+</p>
+<p>
+    <i>Exercise:</i> Extend the optimisation to so that adding <tt>x</tt> to <tt>Mul x (Val 2)</tt> produces a multiplication by 3.
+</p>
+
+
+<h3>Depth of an expression</h3>
+
+<pre class="define">
+fold :: Uniplate on => (on -> [res] -> res) -> on -> res
+</pre>
+<p>
+    Now lets imagine that programmers in your language are paid by the depth of expression they produce, so lets write a function that computes the maximum depth of an expression.
+</p>
+<pre>
+depth :: Expr -> Int
+depth = fold (\_ cs -> 1 + maximum (0:cs))
+</pre>
+<p>
+    This function performs a fold over the data structure. The function simply says that for each iteration, add one to the previous depth.  An evaluator for this expression language can also be modelled as a <tt>fold</tt>, see inside the example directory to see an implementation.
+</p>
+<p>
+    <i>Exercise:</i> Write a function that counts the maximum depth of addition only.
+</p>
+
+<h3>Renumbering literals</h3>
+
+<pre class="define">
+transformM :: (Monad m, Uniplate on) => (on -> m on) -> on -> m on
+</pre>
+<p>
+    The literal values need to be replaced with a sequence of numbers, each unique. This is unlikely for an arithmetic expression, but consider bound variables in lambda calculus and it starts to become a bit more plausible:
+</p>
+<pre>
+uniqueLits :: Expr -> Expr
+uniqueLits x = evalState (transformM f x) [0..]
+    where
+        f (Val i) = do
+            y:ys <- get
+            put ys
+            return (Val y)
+        f x = return x
+</pre>
+<p>
+    Here a monadic computation is required, the program needs to keep track of what the next item in the list to use is, and replace the current item. By using the state monad, this can be done easily.
+</p>
+<p>
+    <i>Exercise:</i> Allow each literal to occur only once, when a second occurance is detected, replace that literal with zero.
+</p>
+
+<h3>Generating mutants</h3>
+
+<pre class="define">
+contexts :: Uniplate on => on -> [(on, on -> on)]
+</pre>
+<p>
+    The person who is inputting the expression thinks they made a mistake, they suspect they got one of the values wrong by plus or minus one. Generate all the expressions they might have written.
+</p>
+<pre>
+mutate :: Expr -> [Expr]
+mutate x = concat [[gen $ Val $ i-1, gen $ Val $ i+1]
+                  | (Val i, gen) <- mutants x]
+</pre>
+<p>
+   The <tt>transform</tt> function is useful for doing an operation to all nodes in a tree, but sometimes you only want to apply a transformation once. This is less common, but is sometimes required. The idea is that the context provides the information required to recreate the original expression, but with this node altered.
+</p>
+<p>
+    <i>Exercise:</i> Replace one multiplication with addition, if there are no multiplications return the original expression.
+</p>
+
+<h3>Reverse notation</h3>
+
+<pre class="define">
+replaceChildren :: Uniplate on => on -> ([on], [on] -> on)
+</pre>
+<p>
+    In general, <tt>universe</tt> and <tt>transform</tt> are used most of the time, and <tt>transformM</tt> is used occasionally. The Uniplate class is built upon the operation <tt>replaceChildren</tt>, which takes an expression, and returns a pair with the children of that expression, and a function to generate that expression with a new set of children in place. This operation can be directly exploited if required, although should be handled with caution.
+</p>
+<p>
+    Let us make a function that reverses the order of all the inputs, say if the user is working in Right-to-Left mode on their computer:
+</p>
+<pre>
+reverseExpr :: Expr -> Expr
+reverseExpr = transform f
+    where
+        f x = generate $ reverse collect
+            where (collect,generate) = replaceChildren x
+</pre>
+<p>
+    This expression does a standard <tt>transform</tt>, but at each iteration calls <tt>replaceChildren</tt>, then reverses the children set before regenerating the original expression. This shows the underlying mechanism on which the library is based, and isn't recommended for average users.
+</p>
+
+
+<h2>Defining a Play instance</h2>
+
+<p>
+    As shown in the reversal example (just above), the only method in the Play class is <tt>replaceChildren</tt>. The Play class is defined as:
+</p>
+<pre class="define">
+class Play on where
+    replaceChildren :: on -> ([on], [on] -> on)
+</pre>
+<p>
+    The idea is that given an item, you want to return all the children, and a function that will replace all the children. An invariant is that the list given to the second function will be the same length as that returned in the first element of the pair. Let's start by constructing the Play instance for the expression type.
+</p>
+<pre>
+instance Play Expr of
+    replaceChildren x =
+        case x of
+            Add a b -> ([a,b], \[a,b] -> Add a b)
+            ...
+            Neg a -> ([a], \[a] -> Neg a)
+            Val i -> ([], \[] -> Val i)
+</pre>
+<p>
+    A short study of the code should show how this works. The other constructors such as <tt>Mul</tt> follow the same pattern as <tt>Add</tt>. To define a <tt>Uniplate</tt> instance a user should make use of the <a href="http://www-users.cs.york.ac.uk/~ndm/derive/">Data.Derive</a> tool.
+</p>
+
+
+<h2>Using Biplate</h2>
+
+<p>
+    The Biplate class is not standard Haskell, requiring multi-parameter type classes. Where possible try and use the standard Uniplate class. The Biplate class is necessary when working with a data structure that has multiple types within it.
+</p>
+<pre class="define">
+class Uniplate with => Biplate on with where
+    replaceType :: on -> ([with], [with] -> on)
+</pre>
+<p>
+    The <tt>replaceType</tt> method operates much like the <tt>replaceChildren</tt>, except for the different types.  When the types of <tt>on</tt> and <tt>with</tt> are different, <tt>replaceChildrenEx</tt> returns the closest children of the requested type. When the types are the same, this function returns the root element, not it's children.
+</p>
+<p>
+    There are several mechanisms for writing <tt>PlayEx</tt> instances, discussed in the Uniplate paper.
+</p>
+
+<h3>Using the operations from Biplate</h3>
+
+<p>
+    To see various operations being used from the PlayEx class, take a look at <tt>Examples/ComposPaper.hs</tt>. Typically the operations are just the same as Play, with Ex on the end.
+</p>
+<pre class="define">
+traverseEx :: Biplate on with => (with -> with) -> on -> on
+traverseExM :: (Monad m, Biplate on with) => (with -> m with) -> on -> m on
+transformEx :: Biplate on with => on -> [with]
+</pre>
+
+
+    </body>
+</html>
