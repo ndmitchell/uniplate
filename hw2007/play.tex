@@ -889,6 +889,7 @@ The complicating feature of |replaceType| is that when defining |Biplate| where 
 All methods can be fully automated using \derive{}, and all provide a simplified method for writing |Uniplate| instances. The |Biplate| class is independent of the method used to implement the instances. This abstraction allows the user to start with the simplest instance scheme available to them, allow a move to alternative schemes afterwards, to gain increased performance and compatibility.
 
 \subsection{Direct instances}
+\label{sec:implement_playdirect}
 
 Writing direct instances requires the |Data.Generics.PlateDirect| module to be imported. This style requires a maximum of $n^2$ instance definitions, where $n$ is the number of types which contain each other, but gives the highest performance and most type-safety. These instances still depend on the type of each field, but are easier to define than the |Uniplate| instance discussed in \S\ref{sec:play_instances}. An example for |Expr| would be:
 
@@ -926,6 +927,7 @@ Even though it makes full use of library provided primitives to structure the in
 
 
 \subsection{|Typeable| based instances}
+\label{sec:implement_playtypeable}
 
 Instead of writing $O(n^2)$ class instances to capture the notion of which target is being looked for, we can use the |Typeable| class to test at runtime whether we have reached the target type. We present derivations much as before, based on the combinators | ||+| and | ||-|:
 
@@ -1089,7 +1091,7 @@ We suspect there are further places for improvement:
 \item List fusion may be able to eliminate some of the lists in |replaceChildren|.
 \end{itemize}
 
-\subsubsection{Optimising the |universe| function}
+\subsection{Optimising the |universe| function}
 \label{sec:optimise_everything}
 
 Our initial |universe| implementation was presented in \S\ref{sec:using_replacechildren} as:
@@ -1112,7 +1114,7 @@ concatCont []     rest  =  rest
 concatCont (x:xs) rest  =  x (concatCont xs rest)
 \end{code}
 
-Now we only perform one reconstruction. We can do better using GHC's list fusion. The user of |universe| is likely to a list comprehension, which is a good consumer. We can make |concatCont| a good consumer, and |f| a good producer:
+Now we only perform one reconstruction. We can do even better using GHC's list fusion \cite{spj:rules}. The user of |universe| is often a list comprehension, which is a good consumer. We can make |concatCont| a good consumer, and |f| a good producer:
 
 \begin{code}
 universe :: Uniplate on => on -> [on]
@@ -1125,7 +1127,7 @@ universe x = build (f x)
 concatCont xs rest = foldr ($) rest xs
 \end{code}
 
-\subsubsection{Optimising |PlateData|}
+\subsection{Optimising |PlateData|}
 \label{sec:optimise_playdata}
 
 The |Uniplate| instance implemented in terms of |Data| is an area of the library we are particularly proud of. Using the existing SYB framework, specifically the |Data| derivation built into the GHC compiler, we can remove the overhead of writing instances. Managing to layer |Uniplate| over the |Data| instances, \textit{and} perform better than SYB is not something we initially believed to be possible.
@@ -1165,28 +1167,28 @@ With all these optimisations we can perform both queries and transformations fas
 \section{Results and Evaluation}
 \label{sec:results}
 
-We evaluate our boilerplate reduction scheme in two ways: firstly by the amount of boilerplate it removes, and secondly by its runtime performance. The first is more important, but harder to measure \todo{Why?}. We first give a set of nine example programs, written using Uniplate, SYB and Compos operations. We then compare the runtime of these operations.
+We evaluate our boilerplate reduction scheme in two ways: firstly by the amount of boilerplate it removes, and secondly by its runtime performance. The first is more important, but can sometimes be down to personal preference. We first give a set of nine example programs, written using Uniplate, SYB and Compos operations. We then compare the runtime of these operations.
 
 \subsection{Boilerplate Reduction}
 \label{sec:results_boilerplate}
 
-As test applications we have taken the first three examples from this paper, three from the Compos paper \citep{bringert:compos}, and the three given in the SYB paper \citep{lammel:syb} termed the ``Paradise Benchmark''. In all cases the Compos, SYB and Uniplate functions are given an appropriately qualified name. In some instances, a function can be defined in the same way in both SYB and Uniplate -- where this is possible we have done so. Type signatures have omitted where the compiler is capable of the inferring them.
+As test applications we have taken the first three examples from this paper, three from the Compos paper \citep{bringert:compos}, and the three given in the SYB paper \citep{lammel:syb} termed the ``Paradise Benchmark''. In all cases the Compos, SYB and Uniplate functions are given an appropriately prefixed name. In some instances, a function can be defined in the same way in both SYB and Uniplate -- where this is possible we have done so. Type signatures have omitted where the compiler is capable of the inferring them.
 
 \subsubsection{Examples from this Paper}
 
 \begin{revisit}{\ref{ex:variables}}
 
 \begin{code}
-Uni.variables x = [y | Var y <- universe x]
+uni_variables x = [y | Var y <- universe x]
 
-SYB.variables = everything (++) ([] `mkQ` f)
+syb_variables = everything (++) ([] `mkQ` f)
     where  f (Var y)  = [y]
            f _        = []
 
-Comp.variables :: Expr a -> [String]
-Comp.variables x = case x of
+com_variables :: Expr a -> [String]
+com_variables x = case x of
     Var y -> [y]
-    _ -> composOpFold [] (++) variables x
+    _ -> composOpFold [] (++) com_variables x
 \end{code}
 
 Only Compos needs a type signature, due to the use of GADT's. List comprehensions allow for succinct queries in Uniplate.
@@ -1195,16 +1197,16 @@ Only Compos needs a type signature, due to the use of GADT's. List comprehension
 \begin{revisit}{\ref{ex:zerocount}}
 
 \begin{code}
-Uni.zeroCount x = length [() | Div _ (Val 0) <- universe x]
+uni_zeroCount x = length [() | Div _ (Val 0) <- universe x]
 
-SYB.zeroCount = everything (+) (0 `mkQ` f)
+syb_zeroCount = everything (+) (0 `mkQ` f)
     where  f (Div _ (Val 0))  = 1
            f _                = 0
 
-Comp.zeroCount :: Expr a -> Int
-Comp.zeroCount x = case x of
-    Div y (Val 0) -> 1 + zeroCount y
-    _ -> composOpFold 0 (+) zeroCount x
+com_zeroCount :: Expr a -> Int
+com_zeroCount x = case x of
+    Div y (Val 0) -> 1 + com_zeroCount y
+    _ -> composOpFold 0 (+) com_zeroCount x
 \end{code}
 
 In the Uniplate solution the list of |()| is perhaps inelegant. However, Uniplate is the only scheme that is able to use the standard |length| function: the other two express the operation as a fold. Compos requires additional boilerplate, to continue the operation on |Div y| -- which may be easy to overlook.
@@ -1217,17 +1219,17 @@ simp (Sub x y)           = simp $ Add x (Neg y)
 simp (Add x y) | x == y  = Mul (Val 2) x
 simp x                   = x
 
-Uni.simplify = transform simp
+uni_simplify = transform simp
 
-SYB.simplify = everywhere (mkT simp)
+syb_simplify = everywhere (mkT simp)
 
-Comp.simplify :: Expr a -> Expr a
-Comp.simplify x = case x of
-    Sub  a b -> simplify $ Add (simplify a) (Neg (simplify b))
-    Add  a b -> case  (simplify a, simplify b) of
+com_simplify :: Expr a -> Expr a
+com_simplify x = case x of
+    Sub  a b -> com_simplify $ Add (com_simplify a) (Neg (com_simplify b))
+    Add  a b -> case  (com_simplify a, com_simplify b) of
                       (a',b')  | a' == b'   -> Mul (Val 2) a'
                                | otherwise  -> Add a' b'
-    _ -> composOp simplify x
+    _ -> composOp com_simplify x
 \end{code}
 
 This is a modified version of |simplify| discussed in \S\ref{sec:rewrite_bottom}. The two rules are applied everywhere possible. Compos does not provide a bottom-up transformation, so needs extra boilerplate.
@@ -1264,14 +1266,14 @@ The |warnAssign| function from the Compos paper could be implemented much more n
 \begin{code}
 ren (V x) = V ("_" ++ x)
 
-Uni.rename = transformEx ren
+uni_rename = transformEx ren
 
-SYB.rename = everywhere (mkT ren)
+syb_rename = everywhere (mkT ren)
 
-Comp.rename :: Tree c -> Tree c
-Comp.rename t = case t of
+com_rename :: Tree c -> Tree c
+com_rename t = case t of
     V x -> V ("_" ++ x)
-    _   -> composOp rename t
+    _   -> composOp com_rename t
 \end{code}
 
 The Uniplate definition is the shortest, as there is only one constructor in type |Var|. In contrast Compos has merged all constructors into one GADT, so cannot benefit from this knowledge.
@@ -1280,16 +1282,16 @@ The Uniplate definition is the shortest, as there is only one constructor in typ
 \begin{examplename}{symbols}
 
 \begin{code}
-Uni.symbols x = [(v,t) | SDecl t v <- universeEx x]
+uni_symbols x = [(v,t) | SDecl t v <- universeEx x]
 
-SYB.symbols = everything (++) ([] `mkQ` f)
+syb_symbols = everything (++) ([] `mkQ` f)
     where  f (SDecl t v)  = [(v,t)]
            f _            = []
 
-Comp.symbols :: Tree c -> [(Tree Var, Tree Typ)]
-Comp.symbols x = case x of
+com_symbols :: Tree c -> [(Tree Var, Tree Typ)]
+com_symbols x = case x of
     SDecl t v -> [(v,t)]
-    _ -> composOpMonoid symbols t
+    _ -> composOpMonoid com_symbols t
 \end{code}
 
 Whereas the Compos solution explicitly traverses the tree, the Uniplate solution simply extracts the right bits. The use of lists again benefits Uniplate over SYB.
@@ -1301,16 +1303,16 @@ Whereas the Compos solution explicitly traverses the tree, the Uniplate solution
 optimise (EAdd (EInt n) (EInt m)) = EInt (n+m)
 optimise x = x
 
-Uni.constFold = transformEx optimise
+uni_constFold = transformEx optimise
 
-SYB.constFold = everywhere (mkT optimise)
+syb_constFold = everywhere (mkT optimise)
 
-Comp.constFold :: Tree c -> Tree c
-Comp.constFold e = case e of
+com_constFold :: Tree c -> Tree c
+com_constFold e = case e of
     EAdd x y -> case  (f x, f y) of
                       (EInt n, EInt m) -> EInt (n+m)
                       (x',y') -> EAdd x' y'
-    _ -> composOp constFold e
+    _ -> composOp com_constFold e
 \end{code}
 
 The constant-folding operation is a bottom-up transformation, requiring subexpressions to have been replaced before patterning matching upon them. Compos only supports top-down transformations, requiring a small traversal in the middle. Uniplate and SYB both support bottom-up transformations.
@@ -1346,14 +1348,14 @@ The first function discussed in the SYB paper is |increase|. This function incre
 \begin{code}
 incS k (S s) = S (s + k)
 
-Uni.increase k = transformEx (incS k)
+uni_increase k = transformEx (incS k)
 
-SYB.increase k = everywhere (mkT (incS k))
+syb_increase k = everywhere (mkT (incS k))
 
-Comp.increase :: Integer -> Tree c -> Tree c
-Comp.increase k c = case c of
+com_increase :: Integer -> Tree c -> Tree c
+com_increase k c = case c of
     S s -> S (s + k)
-    _ -> composOp (increase k) c
+    _ -> composOp (com_increase k) c
 \end{code}
 
 In the Compos solution all constructors belong to the same GADT, so instead of just matching on |S|, all constructors must be examined.
@@ -1364,18 +1366,18 @@ In the Compos solution all constructors belong to the same GADT, so instead of j
 The |incrOne| function performs the same operation as |increase|, but only within a named department. The one subtlety is that if the named department contains a department with the same name within it, then the salaries of that contained department should only be increased once. We are able to reuse the |increase| function from the previous section in all cases.
 
 \begin{code}
-Uni.incrOne d k = descendEx f
-    where f x@(D n _ _)  | n == d     = increase k x
+uni_incrOne d k = descendEx f
+    where f x@(D n _ _)  | n == d     = uni_increase k x
                          | otherwise  = descend f x
 
-SYB.incrOne d k x  | isDept d x  = increase k x
+syb_incrOne d k x  | isDept d x  = syb_increase k x
                    | otherwise   = gmapT (incrOne d k) x
     where  isDept   d = False `mkQ` isDeptD d
            isDeptD  d (D n _ _) = n == d
 
-Comp.incrOne :: Name -> Float -> Tree c -> Tree c
-Comp.incrOne d k x = case x of
-    D n _ _ | n == d -> increase k x
+com_incrOne :: Name -> Float -> Tree c -> Tree c
+com_incrOne d k x = case x of
+    D n _ _ | n == d -> com_increase k x
     _ -> composOp (incrOne d k) x
 \end{code}
 
@@ -1387,15 +1389,15 @@ The SYB solution has grown substantially more complex, requiring two different u
 The final function is one which sums all the salaries.
 
 \begin{code}
-Uni.salaryBill x = sum [s | S s <- universeEx x]
+uni_salaryBill x = sum [s | S s <- universeEx x]
 
-SYB.salaryBill = everything (+) (0 `mkQ` billS)
+syb_salaryBill = everything (+) (0 `mkQ` billS)
    where billS (S s) = s
 
-Comp.salaryBill :: Tree c -> Integer
-Comp.salaryBill x = case x of
+com_salaryBill :: Tree c -> Integer
+com_salaryBill x = case x of
     S s -> s
-    _ -> composOpFold 0 (+) Comp.salaryBill x
+    _ -> composOpFold 0 (+) com_salaryBill x
 \end{code}
 
 Here the Uniplate solution wins by being able to use a list comprehension to select the salary value out of a Salary object. The Uniplate class is the only one that is able to use the standard Haskell |sum| function, not requiring an explicit fold to be performed.
@@ -1417,9 +1419,9 @@ This section compares the speed of solutions for the nine examples given in the 
 
 \begin{description}
 \item[Manual:] These are |Uniplate| and |Biplate| instances written by hand. We have chosen not to use continuation-passing to implement these instances, as it quickly becomes deeply complex.
-\item[Direct:] These instances use the direct combinators, defined as required.
-\item[Typeable:] These instances use the standard |Typeable| combinators.
-\item[Data:] These instances use the SYB |Data| instances directly.
+\item[Direct:] These instances use the direct combinators from \S\ref{sec:implement_playdirect}.
+\item[Typeable:] These instances use the standard |Typeable| combinators from \S\ref{sec:implement_playtypeable}.
+\item[Data:] These instances use the SYB |Data| instances directly, as described in \S\ref{sec:implement_playdata}.
 \end{description}
 
 All data structures used have 100 values randomly generated using QuickCheck \citep{quickcheck} and saved. In order to ensure a fair comparison, we define one data structure which is the same as the original, and one which is a GADT encoding. All operations take these original data structures, transform them into the appropriate structure, apply the operation and then unwrap them. We measure all results as multiples of the time taken for a \textit{raw} transformation. We compiled all programs with GHC 6.6 and -O2 on Windows XP.
@@ -1466,7 +1468,7 @@ The SYB library is, however, more powerful than Uniplate. If you wish to visit n
 
 \paragraph{The Strafunski library} \citep{strafunski, lammel:polymorphic_symphony} has two aspects: generic transformations and traversals for trees of any type; and features to integrate components into a larger programming system. Focusing on the generic operations, these are performed using strategy combinators which can define special case behaviour for particular types, along with a default to perform in other situations. The Strafunski library is integrated with Haskell, primarily providing support for generic programming in application areas that involve term traversals over large abstract syntax trees. The Strafunski style of generic programming is to view traversals as a kind of generic function that can traverse into sub terms, while also mixing type-specific behaviour
 
-\paragraph{The Applicative library} \citep{mcbride:applicative} works by threading an Applicative operation through a data structure, in a similar way to threading a Monad through the structure.
+\paragraph{The Applicative library} \citep{mcbride:applicative} works by threading an Applicative operation through a data structure, in a similar way to threading a Monad through the structure. There is additionally a notion of |Traversable| functor, which can be used to provide generic programming. While the Applicative library can be used for generic programming, this task was not its original purpose, and the authors note they have ``barely begun to explore'' the power as a generic toolkit.
 
 
 \section{Conclusions and Future Work}
@@ -1474,9 +1476,9 @@ The SYB library is, however, more powerful than Uniplate. If you wish to visit n
 
 We have presented the Uniplate library. It defines the classes |Uniplate| and |Biplate|, along with a small set of operations to perform queries and transformations. We have illustrated by example that the boilerplate required in our system is less than in others (\S\ref{sec:results_boilerplate}), and that we can achieve these results without sacrificing speed (\S\ref{sec:results_speed}). Our library is both practical and portable, finding use in a number of applications, and using fewer extensions to the Haskell language than alternatives.
 
-We view the library as finished. There may be some traversals we have overlooked, but we feel they are small in number.
+The use of boilerplate reduction strategies in Haskell is not yet ubiquitous, as we feel it should be. We have focused on simplicity throughout our design, working within the natural typed design of Haskell, rather than trying to extend it. Hopefully the removal of complicated language features (particularly `scary' types) will allow a wider base of users to reap the benefits that boilerplate free programming can offer.
 
-The use of boilerplate reduction strategies in Haskell is not yet ubiquitous, as we feel it should be. We have focused on simplicity throughout our design, working within the natural typed design of Haskell, rather than trying to extend it. Hopefully the removal of complicated language features (particularly `scary' types) will allow a wider base of users to reap the benefits that boilerplate free programming can offer. The restriction to a uniformly typed value set in a traversal allows the benefits of list processing to be utilised.
+The restriction to a uniformly typed value set in a traversal allows the power of list processing to be utilised. We feel this decision plays to Haskell's strengths, without being limiting in practice.
 
 \acks
 
