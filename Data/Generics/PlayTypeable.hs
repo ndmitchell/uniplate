@@ -18,6 +18,7 @@ instance (Typeable a, Typeable b, Play b, PlayAll a b) => PlayEx a b where
     replaceType x = liftType $ playMore x
 
 
+replaceChildrenAll :: PlayAll a b => a -> ([b],[b] -> a)
 replaceChildrenAll a = liftType $ playAll a
 
 
