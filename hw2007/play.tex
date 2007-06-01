@@ -78,7 +78,7 @@
 \maketitle
 
 \begin{abstract}
-Generic traversals over recursive data structures are often referred to as \textit{boilerplate} code. The definitions of functions involving such traversals may repeat very similar patterns, but with variations for different data types and different functionality. While other generic traversal schemes have required extensions to the type system, this paper focuses on a conceptually simpler generic concept. The |Uniplate| class is introduced, which abstracts over common traversals and queries in a simple manner.
+Generic traversals over recursive data structures are often referred to as \textit{boilerplate} code. The definitions of functions involving such traversals may repeat very similar patterns, but with variations for different data types and different functionality. While other generic traversal schemes have required extensions to the type system, this paper focuses on a conceptually simpler generic concept. The |Uniplate| class is introduced, which abstracts over common queries and transformations in a simple manner.
 \end{abstract}
 
 \section{Introduction}
@@ -150,15 +150,30 @@ The ideas behind the Uniplate library have been used extensively, in both the Yh
 
 \subsection{Road map}
 
-\S\ref{sec:use_play} introduces the traversal combinators that we propose, along with short examples. \S\ref{sec:implement_play} discusses how these combinators are implemented in terms of a single primitive. \S\ref{sec:use_playex} extends this approach to multi-type traversals, and \S\ref{sec:implement_playex} covers the extended implementation. \S\ref{sec:properties} lists some properties of the functions in our library. \S\ref{sec:results} gives code comparisons to other examples, including the ``paradise'' benchmark, and performance measurements. \S\ref{sec:conclusion} makes concluding remarks and suggests directions for future work.
+\S\ref{sec:use_play} introduces the traversal combinators that we propose, along with short examples. \S\ref{sec:implement_play} discusses how these combinators are implemented in terms of a single primitive. \S\ref{sec:use_playex} extends this approach to multi-type traversals, and \S\ref{sec:implement_playex} covers the extended implementation. \S\ref{sec:performance} investigates some performance optimisations to the operations. \S\ref{sec:results} gives code comparisons to other examples, including the ``paradise'' benchmark, and performance measurements. \S\ref{sec:conclusion} makes concluding remarks and suggests directions for future work.
 
 
 \section{Queries and Traversals}
 \label{sec:use_play}
 
-We define various queries and traversals, using the |Expr| type defined in the introduction as an example throughout. All the traversals rely on the class |Uniplate|, an instance of which is assumed for |Expr|. This instance and definition are covered in \S\ref{sec:implement_play}.
+We define various queries and transformations, using the |Expr| type defined in the introduction as an example throughout. All the traversals rely on the class |Uniplate|, an instance of which is assumed for |Expr|. This instance and definition are covered in \S\ref{sec:implement_play}.
 
-We use the term \textit{children} to refer to all maximal proper substructures of the same type. For example, |Add (Neg (Lit 1)) (Var "x")| has the children |Neg (Lit 1)| and |Var "x"|.
+\subsection{Children}
+
+The first function in the Uniplate library serves as both a function, and a definition of terminology:
+
+\begin{code}
+children :: Uniplate alpha => alpha -> [alpha]
+\end{code}
+
+The function |children| takes a value and returns all maximal proper substructures of the same type. For example:
+
+\begin{code}
+children (Add (Neg (Lit 1)) (Var "x")) = [Neg (Lit 1), Var "x"]
+\end{code}
+
+The |children| function is occasionally useful, but is used more commonly as a definition for other functions.
+
 
 \subsection{Queries}
 
@@ -204,10 +219,10 @@ Note that we make essential use of the feature of list comprehensions that if a 
 
 \subsection{Bottom-up Traversals}
 
-Another common operation covered by many boilerplate removal systems \cite{lammel:syb} is a function that makes modifications to every node in the data structure. We define as our standard traversal a bottom up traversal.
+Another common operation covered by many boilerplate removal systems \cite{lammel:syb} is a function that makes modifications to every node in the data structure. We define as our standard transformation a bottom up traversal.
 
 \begin{code}
-traverse :: Uniplate alpha => (alpha -> alpha) -> alpha -> alpha
+transform :: Uniplate alpha => (alpha -> alpha) -> alpha -> alpha
 \end{code}
 
 \begin{example}
@@ -221,7 +236,7 @@ x - y == x + (- y)
 To apply this rewrite at all possible places in the input expression we define:
 
 \begin{code}
-simplify x = traverse f x
+simplify x = transform f x
     where  f (Sub x y)  = Add x (Neg y)
            f x          = x
 \end{code}
@@ -235,22 +250,22 @@ x + y = 2 * x       where x == y
 Now we can add this new rule into our existing traversal:
 
 \begin{code}
-simplify x = traverse f x
+simplify x = transform f x
     where  f (Sub x y)           = Add x (Neg y)
            f (Add x y) | x == y  = Mul (Val 2) x
            f x                   = x
 \end{code}
 
-Each equation corresponds to the natural Haskell translation of the rule. The |traverse| function manages all the required boilerplate.
+Each equation corresponds to the natural Haskell translation of the rule. The |transform| function manages all the required boilerplate.
 \end{example}
 
 So how does a bottom-up traversal work? The traversal starts by applying the function |f| to all the leaf nodes in the tree, then progressively working up to the root node. The condition on ordering is that before applying |f| to an expression, all the sub-expressions must have had |f| applied.
 
 \subsection{Rewrite Traversals}
 
-Besides bottom-up traversals, many boilerplate schemes would a top-down traversal (\cite{lammel:syb} has |everywhere'|). But if two traversals are defined, how should the user pick between them? Instead we focus on modelling traversals as rewrites -- showing why providing a top-down traversal is both unnecessary, and potentially dangerous! There is no barrier to defining a bottom-up traversal in our library, and we refer to such a hypothetical traversal as |traversal'|.
+Besides bottom-up transformations, many boilerplate schemes would a top-down transform (\cite{lammel:syb} has |everywhere'|). But if two transformers are defined, how should the user pick between them? Instead we focus on modelling transformations as rewrites -- showing why providing a top-down traversal is both unnecessary, and potentially dangerous! There is no barrier to defining a top-down transformation in our library, and we refer to such a hypothetical operation as |transform'|.
 
-We define our rewrite traversal to be:
+We define our rewrite transformation to be:
 
 \begin{code}
 rewrite :: Uniplate alpha => (alpha -> Maybe alpha) -> alpha -> alpha
@@ -263,11 +278,11 @@ A rewriting |rule| takes an expression of type |alpha|, and returns either |Noth
 forall r, x `o` all (isNothing . r) (universe (rewrite r x))
 \end{code}
 
-It is possible to define the |rewrite| function in terms of |traverse|:
+It is possible to define the |rewrite| function in terms of |transform|:
 
 \begin{code}
 rewrite :: Uniplate alpha => (alpha -> Maybe alpha) -> alpha -> alpha
-rewrite f = traverse g
+rewrite f = transform g
     where g x = maybe x (rewrite f) (f x)
 \end{code}
 
@@ -285,7 +300,7 @@ f' :: alpha -> alpha
 f' x = maybe x id (f x)
 \end{code}
 
-What are the preconditions on |f| such that |forall x `o` rewrite f x == traverse f' x|? We can start by defining a more abstract representation of a rewrite rule:
+What are the preconditions on |f| such that |forall x `o` rewrite f x == transform f' x|? We can start by defining a more abstract representation of a rewrite rule:
 
 \begin{code}
 type Rewrite  = [(Tree,Tree)]
@@ -309,7 +324,7 @@ equalBottomUp rs =  not $ or [treeEq a b | a <- map fst rs,
     b <- concatMap (universe . snd) rs]
 \end{code}
 
-If any of the generated values at any level overlaps with the root of any pattern match, then the traversal is not a rewrite. Taking the |simplify| traversal from from the previous section:
+If any of the generated values at any level overlaps with the root of any pattern match, then the transformation may not be a rewrite. Taking the |simplify| transformation from from the previous section:
 
 \begin{code}
 f (Sub x y)           = Just $ Add x (Neg y)
@@ -322,8 +337,8 @@ Here |Add| occurs on the right-hand side of the first line, and on the left-hand
 \begin{code}
 let x = Sub (Neg (Var "q")) (Var "q")
 
-rewrite   f   x = Mul (Val 2) (Var "q")
-traverse  f'  x = Add (Var "q") (Neg (Var "q"))
+rewrite    f   x = Mul (Val 2) (Var "q")
+transform  f'  x = Add (Var "q") (Neg (Var "q"))
 \end{code}
 
 So is it possible to remedy this situation? Yes. Whenever the right-hand side introduces a new constructor, an additional onward call can be made:
@@ -334,16 +349,16 @@ f' (Add x y) | x == y  = f' $ Mul (f' $ Val 2) x
 f' x                   = x
 \end{code}
 
-This approach guarantees that the traversal is a rewrite. In fact, only one |f'| application is necessary, the one attached to the construction of an |Add| value.
+This approach guarantees that the transformation is a rewrite. In fact, only one |f'| application is necessary, the one attached to the construction of an |Add| value.
 
 
 \subsubsection{Rewrite as Top-Down}
 
-Now we pose the question: under what circumstances is a \textit{top-down} traversal a rewrite, and what modifications can be made to ensure it becomes so?
+Now we pose the question: under what circumstances is a \textit{top-down} transformation a rewrite, and what modifications can be made to ensure it becomes so?
 
-Before we can answer this question, we must first reflect on what a top-down traversal means. The usual answer \citep{lammel:syb} is that an operation is first applied at the root. The traversal is then applied recursively to each child of the (possibly transformed) root.
+Before we can answer this question, we must first reflect on what a top-down transformation means. The usual answer \citep{lammel:syb} is that an operation is first applied at the root. The traversal is then applied recursively to each child of the (possibly transformed) root.
 
-We can define the |equalTopDown| operation to test these the rewrite and top-down traversal for equivalence:
+We can define the |equalTopDown| operation to test these the rewrite and top-down transformation for equivalence:
 
 \begin{code}
 equalTopDown rs =  not $ or  [treeEq a b | a <- map snd rs,
@@ -379,18 +394,18 @@ f (Mul  x y) | Lit 1   <- f x = f y
 
 We have both explicitly continued the execution \textit{before} performing a pattern match, and in the last branch where a leaf is returned, we explicitly continue \textit{afterwards}.
 
-We consider top-down traversals to be more complex and less useful than bottom-up traversals, and we do not include them in our library. A previous version of our library did include top-down traversals, but we found they were rarely the correct choice. We discovered that most uses of top-down traversals were to model rewrites where information was pushed down, and it was easy to get the definition wrong in corner cases. This experience lead us to the decision that top-down traversals do not deserve library support. We include |rewrite| but suspect that most users would be better off using |traverse|, modified as described above.
+We consider top-down transformations to be more complex and less useful than bottom-up traversals, and we do not include them in our library. A previous version of our library did include top-down traversals, but we found they were rarely the correct choice. We discovered that most uses of top-down traversals were to model rewrites where information was pushed down, and it was easy to get the definition wrong in corner cases. This experience lead us to the decision that top-down traversals do not deserve library support. We include |rewrite| but suspect that most users would be better off using |traverse|, modified as described above.
 
-\subsection{Action Traversals}
+\subsection{Action Transformations}
 
-Rewrite traversals apply a set of rules \textit{repeatedly} until a fixed point is found. The alternative is an action traversal, where each node is visited and transformed \textit{once}. The |traverse| function can be used to perform this, but a standard technique is to thread a monad through the actions. We do this by introducing |traverseM|.
+Rewrite traversals apply a set of rules \textit{repeatedly} until a fixed point is found. The alternative is an action traversal, where each node is visited and transformed \textit{once}. The |transform| function can be used to perform this, but a standard technique is to thread a monad through the actions. We do this by introducing |transformM|.
 
 \begin{example}
 Suppose we wish to rename each variable to be unique:
 
 \begin{code}
 uniqueVars :: Expr -> Expr
-uniqueVars x = evalState (traverseM f x) vars
+uniqueVars x = evalState (transformM f x) vars
     where
         vars = ['x':show i | i <- [1..]]
 
@@ -405,7 +420,7 @@ Here a monadic computation is used. The program keeps track of the next item in 
 
 \subsection{Top-Down Descending}
 
-Although top-down traversals are unnecessary for our library, we still believe that some traversals operate more naturally in a top-down manner. One extension to the top-down traversal pushes information downwards at the same time. We introduce the |descend| function, inspired by the Compos paper \cite{bringert:compos}.
+Although top-down traversals are unnecessary for our library, we still believe that some transformations operate more naturally in a top-down manner. One extension to the top-down traversal pushes information downwards at the same time. We introduce the |descend| function, inspired by the Compos paper \cite{bringert:compos}.
 
 \begin{code}
 descend :: Uniplate alpha => (alpha -> alpha) -> alpha -> alpha
@@ -451,7 +466,7 @@ depth = fold (\_ cs -> 1 + maximum (0:cs))
 The result at each level is one more than the maximum of all the children (with 0 as a default).
 \end{example}
 
-\subsection{Contents}
+\subsection{Contexts}
 
 The final operation in the library seems to be a novelty -- we have not seen it in any other library, even in those which attempt to include all variations \citep{ren:generic_recursion_toolbox}. Yet users sometimes need this function and defining it using other operations requires a lot of monadic complexity. This function was actually contributed by a user, which we feel enhances our claim that average users can construct their own operations upon our framework.
 
@@ -489,28 +504,29 @@ mutants x =  [gen (Val j)
 module Data.Generics.Uniplate where
 
 class Uniplate alpha where
+    children    :: alpha -> [alpha]
+    contexts    :: alpha -> [(alpha, alpha -> alpha)]
     descend     :: (alpha -> alpha) -> alpha -> alpha
     descendM    :: Monad m => (alpha -> m alpha) -> alpha -> m alpha
-    universe    :: alpha -> [alpha]
-    contexts    :: alpha -> [(alpha, alpha -> alpha)]
     fold        :: ([r] -> t) -> (alpha -> t -> r) -> alpha -> r
     rewrite     :: (alpha -> Maybe alpha) -> alpha -> alpha
     rewriteM    :: Monad m  => (alpha -> m (Maybe alpha))
                                    -> alpha -> m alpha
-    traverse    :: (alpha -> alpha) -> alpha -> alpha
-    traverseM   :: Monad m => (alpha -> m alpha) -> alpha -> m alpha
+    transform   :: (alpha -> alpha) -> alpha -> alpha
+    transformM  :: Monad m => (alpha -> m alpha) -> alpha -> m alpha
+    universe    :: alpha -> [alpha]
 \end{code}
 \caption{All |Uniplate| methods.}
 \label{fig:play}
 \end{figure}
 
-We present signatures for all our methods in Figure \ref{fig:play}, including several monadic variants. In our experience, the most commonly used operations are |universe| and |traverse|, followed by |traverseM| and |descend|.
+We present signatures for all our methods in Figure \ref{fig:play}, including several monadic variants. In our experience, the most commonly used operations are |universe| and |transform|, followed by |transformM| and |descend|.
 
 
 \section{Implementing the |Uniplate| class}
 \label{sec:implement_play}
 
-Requiring each instance of the |Uniplate| class to implement nine separate methods would be an undue imposition. Instead we can implement all of these operations on top of just a single method:
+Requiring each instance of the |Uniplate| class to implement ten separate methods would be an undue imposition. Instead we can implement all of these operations on top of just a single method:
 
 \begin{code}
 replaceChildren :: Uniplate alpha => alpha -> ([alpha], [alpha] -> alpha)
@@ -535,19 +551,19 @@ forall x ys `o`  length ys == length children =>
 \subsection{Operations in terms of |replaceChildren|}
 \label{sec:using_replacechildren}
 
-Defining the nine operations of \S\ref{sec:use_play} in terms of |replaceChildren| is easy. We define the four most common as examples. All the definitions are short.
+Defining the ten operations of \S\ref{sec:use_play} in terms of |replaceChildren| is easy. We define the four most common as examples. All the definitions are short.
 
 \begin{code}
 universe :: Uniplate alpha => alpha -> [alpha]
 universe x = x :
     concatMap universe $ fst $ replaceChildren x
 
-traverse :: Uniplate alpha => (alpha -> alpha) -> alpha -> alpha
-traverse f x = f $ generate $ map (traverse f) current
+transform :: Uniplate alpha => (alpha -> alpha) -> alpha -> alpha
+transform f x = f $ generate $ map (transform f) current
     where (current, generate) = replaceChildren x
 
-traverseM :: (Monad m, Uniplate alpha) => (alpha -> m alpha) -> alpha -> m alpha
-traverseM f x = mapM (traverseM f) current >>= f . generate
+transformM :: (Monad m, Uniplate alpha) => (alpha -> m alpha) -> alpha -> m alpha
+transformM f x = mapM (transformM f) current >>= f . generate
     where (current, generate) = replaceChildren x
 
 descend :: Uniplate alpha => (alpha -> alpha) -> alpha -> alpha
@@ -749,7 +765,7 @@ We first introduce |UniplateOn|, which requires an explicit function to move bet
 
 \subsection{The |UniplateOn| Operations}
 
-We define a set of operations, including |universeOn| and |traverseOn|, which take an additional argument relative to the standard |Uniplate| operators. We call this additional argument |replaceType|, which describes how to move from the containing type (|beta|) to the contained type (|alpha|).
+We define a set of operations, including |universeOn| and |transformOn|, which take an additional argument relative to the standard |Uniplate| operators. We call this additional argument |replaceType|, which describes how to move from the containing type (|beta|) to the contained type (|alpha|).
 
 \begin{code}
 type ReplaceType beta alpha = beta -> ([alpha], [alpha] -> beta)
@@ -763,21 +779,21 @@ replaceType :: ReplaceType alpha alpha
 replaceType x = ([x], [x'] -> x')
 \end{code}
 
-We can now define |universeOn| and |traverseOn|. Each takes a |replaceType| function as an argument:
+We can now define |universeOn| and |transformOn|. Each takes a |replaceType| function as an argument:
 
 \begin{code}
 universeOn :: Uniplate to => ReplaceType beta alpha -> beta -> [alpha]
 universeOn replaceType x =
     concatMap universe $ fst $ replaceType x
 
-traverseOn ::  Uniplate to => ReplaceType beta alpha ->
+transformOn ::  Uniplate to => ReplaceType beta alpha ->
                (alpha -> alpha) -> beta -> beta
-traverseOn replaceType f x =
-    generate $ map (traverse f) current
+transformOn replaceType f x =
+    generate $ map (transform f) current
     where (current, generate) = replaceType x
 \end{code}
 
-These operations are similar to the original |universe| and |traverse|. The functions unwrap |beta| values to find the |alpha| values within them, operate using the standard |Uniplate| operations upon the |alpha|, then rewrap if necessary.
+These operations are similar to the original |universe| and |transform|. The functions unwrap |beta| values to find the |alpha| values within them, operate using the standard |Uniplate| operations upon the |alpha|, then rewrap if necessary.
 
 Passing the |replaceType| argument is a little tedious. In \ref{sec:use_playex} we shall use MPTC's to encapsulte it in a type class, and have it passed as a dictionary argument.
 
@@ -798,14 +814,14 @@ data CoreExpr  =  CoreVar   String
                |  ...
 \end{code}
 
-Most queries and traversals are performed on the |CoreExpr| type, however it is often convenient to start from one of the other types. Take for example the |coreSimplify| operation -- it simplifies expressions (:: |CoreExpr -> CoreExpr|), but may be called upon one individual expression, a function, or a program. If we are willing to freeze the type of the second argument to |replaceType| as |CoreExpr| we can write a class:
+Most queries and transformations are performed on the |CoreExpr| type, however it is often convenient to start from one of the other types. Take for example the |coreSimplify| operation -- it simplifies expressions (:: |CoreExpr -> CoreExpr|), but may be called upon one individual expression, a function, or a program. If we are willing to freeze the type of the second argument to |replaceType| as |CoreExpr| we can write a class:
 
 \begin{code}
 class  UniplateExpr beta where
        replaceTypeExpr :: ReplaceType beta CoreExpr
 
-universeExpr  = universeOn  replaceTypeExpr
-traverseExpr  = traverseOn  replaceTypeExpr
+universeExpr   = universeOn   replaceTypeExpr
+transformExpr  = transformOn  replaceTypeExpr
 
 instance UniplateExpr Core where ...
 instance UniplateExpr CoreFunc where ...
@@ -830,11 +846,11 @@ This takes us outside the realm of Haskell 98, however we feel that the MPTC is 
 We can now implement |universeEx| and |traverseEx| in terms of their |On| counterparts:
 
 \begin{code}
-universeEx  :: Biplate beta alpha => beta -> [alpha]
-universeEx  = universeOn  replaceType
+universeEx   :: Biplate beta alpha => beta -> [alpha]
+universeEx   = universeOn   replaceType
 
-traverseEx  :: Biplate beta to => (alpha -> alpha) -> beta -> beta
-traverseEx  = traverseOn  replaceType
+transformEx  :: Biplate beta to => (alpha -> alpha) -> beta -> beta
+transformEx  = transformOn  replaceType
 \end{code}
 
 We now present two examples from \S\ref{sec:use_play}, but implemented using |Biplate|. These operations will now work on |Expr|, |Stmt| or many other types -- being strictly more general than the previous versions.
@@ -850,12 +866,13 @@ The |variables| example from before requires only one change: the addition of th
 
 \begin{revisit}{\ref{ex:simplify}}
 \begin{code}
-simplify x = traverseEx f x
+simplify :: Biplate beta Expr => beta -> beta
+simplify x = transformEx f x
     where  f (Sub x y)  = Add x (Neg y)
            f x          = x
 \end{code}
 
-With |simplify| we have again made one single change: the addition of |Ex| at the end of |traverse|. In general the move to |Biplate| requires few code changes, merely the use of the new set of |Ex| functions.
+With |simplify| we have again made one single change: the addition of |Ex| at the end of |transform|. In general the move to |Biplate| requires few code changes, merely the use of the new set of |Ex| functions.
 \end{revisit}
 
 \section{Implementing |Biplate|}
@@ -1142,7 +1159,7 @@ When examining a value, if its type is a member of the set which does not contai
 
 This trick is surprisingly effective. Take for example an operation over |Bool| on the value |(True,"Haskell")|. The SYB approach finds 16 subcomponents, Uniplate touches 3 subcomponents -- as soon as it notices the |String| it will stop. By increasing the length of the string, SYB performs increasingly more work -- Uniplate does not.
 
-With all these optimisations we can perform both queries and traversals faster than SYB, for most operations. In the benchmarks we range from 4\% worse to 127\% better, with an average of 56\% faster. Full details are presented in \S\ref{sec:results_speed}.
+With all these optimisations we can perform both queries and transformations faster than SYB, for most operations. In the benchmarks we range from 4\% worse to 127\% better, with an average of 56\% faster. Full details are presented in \S\ref{sec:results_speed}.
 
 
 \section{Results and Evaluation}
@@ -1200,7 +1217,7 @@ simp (Sub x y)           = simp $ Add x (Neg y)
 simp (Add x y) | x == y  = Mul (Val 2) x
 simp x                   = x
 
-Uni.simplify = traverse simp
+Uni.simplify = transform simp
 
 SYB.simplify = everywhere (mkT simp)
 
@@ -1213,7 +1230,7 @@ Comp.simplify x = case x of
     _ -> composOp simplify x
 \end{code}
 
-This is a modified version of |simplify| discussed in \S\ref{sec:rewrite_bottom}. The two rules are applied everywhere possible. Compos does not provide a bottom-up traversal, so needs extra boilerplate.
+This is a modified version of |simplify| discussed in \S\ref{sec:rewrite_bottom}. The two rules are applied everywhere possible. Compos does not provide a bottom-up transformation, so needs extra boilerplate.
 \end{revisit}
 
 \subsubsection{Multi-type examples from the Compos paper}
@@ -1247,7 +1264,7 @@ The |warnAssign| function from the Compos paper could be implemented much more n
 \begin{code}
 ren (V x) = V ("_" ++ x)
 
-Uni.rename = traverseEx ren
+Uni.rename = transformEx ren
 
 SYB.rename = everywhere (mkT ren)
 
@@ -1284,7 +1301,7 @@ Whereas the Compos solution explicitly traverses the tree, the Uniplate solution
 optimise (EAdd (EInt n) (EInt m)) = EInt (n+m)
 optimise x = x
 
-Uni.constFold = traverseEx optimise
+Uni.constFold = transformEx optimise
 
 SYB.constFold = everywhere (mkT optimise)
 
@@ -1296,7 +1313,7 @@ Comp.constFold e = case e of
     _ -> composOp constFold e
 \end{code}
 
-The constant-folding operation is a bottom-up traversal, requiring subexpressions to have been replaced before patterning matching upon them. Compos only supports top-down traversals, requiring a small traversal in the middle. Uniplate and SYB both support bottom-up traversals.
+The constant-folding operation is a bottom-up transformation, requiring subexpressions to have been replaced before patterning matching upon them. Compos only supports top-down transformations, requiring a small traversal in the middle. Uniplate and SYB both support bottom-up transformations.
 \end{examplename}
 
 \subsubsection{The Paradise Benchmark from SYB}
@@ -1329,7 +1346,7 @@ The first function discussed in the SYB paper is |increase|. This function incre
 \begin{code}
 incS k (S s) = S (s + k)
 
-Uni.increase k = traverseEx (incS k)
+Uni.increase k = transformEx (incS k)
 
 SYB.increase k = everywhere (mkT (incS k))
 
@@ -1362,7 +1379,7 @@ Comp.incrOne d k x = case x of
     _ -> composOp (incrOne d k) x
 \end{code}
 
-The SYB solution has grown substantially more complex, requiring two different utility functions. Compos still retains the same structure as before, requiring a case to distinguish between the types of constructor. For Uniplate we use |descend| rather than |traverse|, to ensure no salaries are incremented twice.
+The SYB solution has grown substantially more complex, requiring two different utility functions. Compos still retains the same structure as before, requiring a case to distinguish between the types of constructor. For Uniplate we use |descend| rather than |transform|, to ensure no salaries are incremented twice.
 \end{examplename}
 
 \begin{examplename}{salaryBill}
@@ -1388,9 +1405,9 @@ Here the Uniplate solution wins by being able to use a list comprehension to sel
 
 In order to measure the size of the solutions, we have taken the code for all operations and counted the number of lexemes -- using the |lex| function provided by Haskell. For functions shared between SYB and Uniplate we have counted their code in both measurements. Uniplate requires 194 lexemes, SYB has 273 and Compos has 348.
 
-The Compos approach requires much more residual boilerplate than Uniplate, particularly for queries, bottom-up traversals and type signatures. The Compos approach also requires a GADT representation.
+The Compos approach requires much more residual boilerplate than Uniplate, particularly for queries, bottom-up transformations and type signatures. The Compos approach also requires a GADT representation.
 
-When compared to SYB, Uniplate seems much more similar. For queries, Uniplate is able to make use of list comprehensions, which produces shorter code and does not require encoding a manual fold over the items of interest. For traversals, typically both are able to use the same underlying operation, and the difference often boils down to the |mkT| to wrap the operation.
+When compared to SYB, Uniplate seems much more similar. For queries, Uniplate is able to make use of list comprehensions, which produces shorter code and does not require encoding a manual fold over the items of interest. For transformations, typically both are able to use the same underlying operation, and the difference often boils down to the |mkT| to wrap the operation.
 
 
 \subsection{Runtime Overhead}
@@ -1455,9 +1472,9 @@ The SYB library is, however, more powerful than Uniplate. If you wish to visit n
 \section{Conclusions and Future Work}
 \label{sec:conclusion}
 
-We have presented the Uniplate library. It defines the classes |Uniplate| and |Biplate|, along with a small set of operations to perform queries and traversals. We have illustrated by example that the boilerplate required in our system is less than in others (\S\ref{sec:results_boilerplate}), and that we can achieve these results without sacrificing speed (\S\ref{sec:results_speed}). Our library is both practical and portable, finding use in a number of applications, and using fewer extensions to the Haskell language than alternatives.
+We have presented the Uniplate library. It defines the classes |Uniplate| and |Biplate|, along with a small set of operations to perform queries and transformations. We have illustrated by example that the boilerplate required in our system is less than in others (\S\ref{sec:results_boilerplate}), and that we can achieve these results without sacrificing speed (\S\ref{sec:results_speed}). Our library is both practical and portable, finding use in a number of applications, and using fewer extensions to the Haskell language than alternatives.
 
-We view the library as finished. There may be some traversals we have overlooked, but we feel they are small in number. The performance could be improved, but we feel that this aspect is not limiting the use of this library in any way.
+We view the library as finished. There may be some traversals we have overlooked, but we feel they are small in number.
 
 The use of boilerplate reduction strategies in Haskell is not yet ubiquitous, as we feel it should be. We have focused on simplicity throughout our design, working within the natural typed design of Haskell, rather than trying to extend it. Hopefully the removal of complicated language features (particularly `scary' types) will allow a wider base of users to reap the benefits that boilerplate free programming can offer. The restriction to a uniformly typed value set in a traversal allows the benefits of list processing to be utilised.
 
