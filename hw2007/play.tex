@@ -446,7 +446,7 @@ subst rep x =
 
 \subsection{Folds}
 
-Traditionally in Haskell a fold replaces each constructor with an alternative \todo{ref}. To define a complete fold on a data type, each constructor must be represented -- giving boilerplate problems once more. We define a fold which provides a default operation:
+Traditionally in Haskell a fold replaces each constructor with an alternative \cite{sheard:fold}. To define a complete fold on a data type, each constructor must be represented -- giving boilerplate problems once more. We define a fold which provides a default operation:
 
 \begin{code}
 fold :: Uniplate alpha => (alpha -> [r] -> r) -> alpha -> r
@@ -468,13 +468,11 @@ The result at each level is one more than the maximum of all the children (with 
 
 \subsection{Contexts}
 
-The final operation in the library seems to be a novelty -- we have not seen it in any other library, even in those which attempt to include all variations \citep{ren:generic_recursion_toolbox}. Yet users sometimes need this function and defining it using other operations requires a lot of monadic complexity. This function was actually contributed by a user, which we feel enhances our claim that average users can construct their own operations upon our framework.
+The final operation in the library seems to be a novelty -- we have not seen it in any other generics library, even in those which attempt to include all variations \citep{ren:generic_recursion_toolbox}. This operation can be viewed as similar to contextual pattern matching \citep{mohnen:context_patterns}. This function was actually contributed by a user, which we feel enhances our claim that average users can construct their own operations upon our framework.
 
 \begin{code}
 contexts :: Uniplate alpha => alpha -> [(alpha, alpha -> alpha)]
 \end{code}
-
-\todo{See Mohnen and others 'active' or 'computational' pattern matching.}
 
 This function returns lists with two elements. The first element of each pair is an element of the data structure which would have been returned by |universe|. The other is the function which would replace the hole which the given expression was removed from. It has the properties:
 
@@ -719,7 +717,7 @@ It is possible to define one single instantiation which performs both operations
 
 \subsection{Using Derive}
 
-Applying these derivation rules is quite time consuming. Indeed, it is a form of boilerplate coding! The DrIFT tool \citep{drift} generates instances which can be constructed purely from the information contained in type definition. However DrIFT is unable to operate with certain Haskell extensions \todo{What? Can it cope with literate Haskell?}, and requires a separate pre-processing stage.
+Applying these derivation rules is quite time consuming. Indeed, it is a form of boilerplate coding! The DrIFT tool \citep{drift} generates instances which can be constructed purely from the information contained in type definition. However DrIFT is unable to operate with certain Haskell extensions ({\TeX} style literate Haskell, C pre processor), and requires a separate pre-processing stage.
 
 As a separate project, we have developed the \derive{} tool \citep{derive}, in collaboration with Stefan O'Rear. \derive{} has predefined rules for derivation of |Uniplate| instances. The tool is based on Template Haskell \citep{template_haskell}.
 
