@@ -1,0 +1,16 @@
+Name:           uniplate
+Version:        0.1
+License:        BSD3
+Author:         Neil Mitchell
+Homepage:       http://www-users.cs.york.ac.uk/~ndm/uniplate/
+Category:       Generics
+Build-Depends:  base, mtl
+Synopsis:       Uniform type generic traversals.
+Exposed-modules:
+        Data.Generics.Play
+        Data.Generics.PlayOn
+        Data.Generics.PlayEx
+        Data.Generics.PlayManual
+        Data.Generics.PlayTypeable
+        Data.Generics.PlayData
+        Data.Generics.PlayInternal
