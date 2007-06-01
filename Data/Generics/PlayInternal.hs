@@ -7,15 +7,15 @@ module Data.Generics.PlayInternal(
 
 
 ---------------------------------------------------------------------
--- GHC 6.6
+-- GHC
 {-
-#if __GLASGOW_HASKELL__ < 606
+#if 0
 {-
 #endif
 -}
 
-import GHC.Exts(unsafeCoerce#, build)
-import Data.ByteString.Base(inlinePerformIO)
+import GHC.Exts(unsafeCoerce#, build, realWorld#)
+import GHC.IOBase(IO(IO))
 
 {-# INLINE unsafeCast #-}
 unsafeCast :: a -> b
@@ -25,8 +25,12 @@ unsafeCast = unsafeCoerce#
 builder :: forall a . (forall b . (a -> b -> b) -> b -> b) -> [a]
 builder = build
 
+{-# INLINE inlinePerformIO #-}
+inlinePerformIO :: IO a -> a
+inlinePerformIO (IO m) = case m realWorld# of (# _, r #) -> r
+
 {-
-#if __GLASGOW_HASKELL__ < 606
+#if 0
 -}
 #endif
 -}
@@ -34,9 +38,9 @@ builder = build
 
 
 ---------------------------------------------------------------------
--- !GHC 6.6
+-- !GHC
 {-
-#if __GLASGOW_HASKELL__ < 606
+#if 0
 -}
 
 import Data.Typeable
