@@ -1378,14 +1378,14 @@ uni_incrOne d k = descendEx f
                          | otherwise  = descend f x
 
 syb_incrOne d k x  | isDept d x  = syb_increase k x
-                   | otherwise   = gmapT (incrOne d k) x
+                   | otherwise   = gmapT (syb_incrOne d k) x
     where  isDept   d = False `mkQ` isDeptD d
            isDeptD  d (D n _ _) = n == d
 
 com_incrOne :: Name -> Float -> Tree c -> Tree c
 com_incrOne d k x = case x of
     D n _ _ | n == d -> com_increase k x
-    _ -> composOp (incrOne d k) x
+    _ -> composOp (com_incrOne d k) x
 \end{code}
 
 The SYB solution has grown substantially more complex, requiring two different utility functions. Compos still retains the same structure as before, requiring a case to distinguish between the types of constructor. For Uniplate we use |descend| rather than |transform|, to ensure no salaries are incremented twice.
