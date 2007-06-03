@@ -61,15 +61,3 @@ contextsOn replaceType x =
 
 
 -- foldOn is not defined, does not have sensible semantics
-
-
--- useful for definitions
-replaceOnList :: ReplaceType a b -> ReplaceType [a] b
-replaceOnList f [] = ([], \[] -> [])
-replaceOnList f (x:xs) =
-        (a ++ as,
-        \ns -> let (n1,n2) = splitAt (length a) ns in b n1 : bs n2)
-    where
-        (a , b ) = f x
-        (as, bs) = replaceOnList f xs
-
