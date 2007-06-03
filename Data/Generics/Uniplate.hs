@@ -56,13 +56,13 @@ everything x = builder (f x)
         f x cons nil = x `cons` concatCont (map (\x -> f x cons) $ children x) nil
 
 
-everythingContext :: Play on => on -> [(on, on -> on)]
-everythingContext x = (x,id) : f current
+contexts :: Play on => on -> [(on, on -> on)]
+contexts x = (x,id) : f current
   where
     (current, generate) = replaceChildren x
     f xs = [ (y, \i -> generate (pre ++ [context i] ++ post))
            | (pre,b:post) <- zip (inits xs) (tails xs)
-           , (y, context) <- everythingContext b]
+           , (y, context) <- contexts b]
 
 
 fold :: Play on => ([res] -> tmp) -> (on -> tmp -> res) -> on -> res

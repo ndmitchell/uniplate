@@ -50,14 +50,14 @@ everythingOn :: Play to => ReplaceType from to -> from -> [to]
 everythingOn replaceType x = concatMap everything $ fst $ replaceType x
 
 
-everythingContextOn :: Play to => ReplaceType from to -> from -> [(to, to -> from)]
-everythingContextOn replaceType x =
+contextsOn :: Play to => ReplaceType from to -> from -> [(to, to -> from)]
+contextsOn replaceType x =
         concat [f pre b post | (pre,b:post) <- zip (inits current) (tails current)]
     where
         (current, generate) = replaceType x
         
         f pre x post = [(cur, \new -> generate (pre ++ [new] ++ post))
-                       | (cur,gen) <- everythingContext x]
+                       | (cur,gen) <- contexts x]
 
 
 -- foldOn is not defined, does not have sensible semantics

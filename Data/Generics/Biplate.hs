@@ -50,5 +50,5 @@ everythingEx :: PlayEx from to => from -> [to]
 everythingEx = everythingOn replaceType
 
 
-everythingContextEx :: PlayEx from to => from -> [(to, to -> from)]
-everythingContextEx = everythingContextOn replaceType
+contextsEx:: PlayEx from to => from -> [(to, to -> from)]
+contextsEx = contextsOn replaceType
