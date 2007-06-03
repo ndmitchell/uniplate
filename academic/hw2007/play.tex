@@ -1231,7 +1231,8 @@ syb_simplify = everywhere (mkT simp)
 
 com_simplify :: Expr a -> Expr a
 com_simplify x = case x of
-    Sub  a b -> com_simplify $ Add (com_simplify a) (Neg (com_simplify b))
+    Sub  a b -> com_simplify $
+        Add (com_simplify a) (Neg (com_simplify b))
     Add  a b -> case  (com_simplify a, com_simplify b) of
                       (a',b')  | a' == b'   -> Mul (Val 2) a'
                                | otherwise  -> Add a' b'
