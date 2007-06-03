@@ -1377,6 +1377,7 @@ uni_incrOne d k = descendEx f
     where f x@(D n _ _)  | n == d     = uni_increase k x
                          | otherwise  = descend f x
 
+syb_incrOne :: Data a => String -> Integer -> a -> a
 syb_incrOne d k x  | isDept d x  = syb_increase k x
                    | otherwise   = gmapT (syb_incrOne d k) x
     where  isDept   d = False `mkQ` isDeptD d
@@ -1388,7 +1389,7 @@ com_incrOne d k x = case x of
     _ -> composOp (com_incrOne d k) x
 \end{code}
 
-The SYB solution has grown substantially more complex, requiring two different utility functions. Compos still retains the same structure as before, requiring a case to distinguish between the types of constructor. For Uniplate we use |descend| rather than |transform|, to ensure no salaries are incremented twice.
+The SYB solution has grown substantially more complex, requiring two different utility functions. In addition the rank-2 types of SYB have now required |syb_incrOne| to be given an explicit type signature. Compos still retains the same structure as before, requiring a case to distinguish between the types of constructor. For Uniplate we use |descend| rather than |transform|, to ensure no salaries are incremented twice.
 \end{examplename}
 
 \begin{examplename}{salaryBill}
@@ -1419,7 +1420,7 @@ Here the Uniplate solution wins by being able to use a list comprehension to sel
 \begin{tabular*}{\textwidth}{lrrrrrrrrrrrr}
  & simp & var & zero & const & ren & syms & bill & incr & incr1 & \textbf{Queries} & \textbf{Traversals} & \textbf{All} \\
 Uniplate   & 40 & 12 & 18 & 27 & 16 & 17 & 13 & 21 & 30 &  60 & 134 & 194 \\
-SYB        & 43 & 29 & 29 & 30 & 19 & 34 & 21 & 24 & 44 & 113 & 160 & 273 \\
+SYB        & 43 & 29 & 29 & 30 & 19 & 34 & 21 & 24 & 56 & 113 & 172 & 285 \\
 Compos     & 71 & 30 & 32 & 54 & 27 & 36 & 25 & 33 & 40 & 123 & 225 & 348 \\
 \hline
 \end{tabular*}
