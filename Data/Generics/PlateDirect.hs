@@ -3,14 +3,14 @@
 -- this module should not be imported directly
 
 module Data.Generics.PlateDirect(
-    module Data.Generics.PlayEx,
+    module Data.Generics.Biplate,
     PlayAll(..), play, (|+), (|-), (|*),
     PlayOne(..), playSelf,
     (||+), (||*)
     ) where
 
-import Data.Generics.PlayEx
-import Data.Generics.PlayInternal
+import Data.Generics.Biplate
+import Data.Generics.PlateInternal
 import Data.Maybe
 
 
