@@ -62,7 +62,7 @@ h3 {
     There have been several attempts at generic traversal/query methods in Haskell. One initial paper was <a href="http://doi.acm.org/10.1145/604174.604179">"Scrap your boilerplate: a practical design pattern for generic programming"</a> (<a href="http://www.cs.vu.nl/boilerplate/tldi03.pdf">free copy</a>) - which I will refer to as SYB. Another mechanism is <a href="http://doi.acm.org/10.1145/1159803.1159834">"A Pattern for Almost Compositional Functions"</a> (<a href="http://www.cs.chalmers.se/~bringert/publ/composOp/composOp.pdf">free copy</a>) - which I refer to as Compos (after the name of their class). A detailed comparison is given in the Uniplate paper (to be submitted).
 </p>
 <p>
-    The principle advantage of the Play class over these two papers is that it requires no type system extensions, compared to rank-2 types for SYB and GADT's for Compos. The simplicity of the types required means that the user is free to concentrate on the operations within the class, without requiring thought as to the type trickery required. The Uniplate pattern has been implemented in <a href="http://haskell.org/haskellwiki/Yhc">Yhc</a> for the Core data type, and in <a href="http://www-users.cs.york.ac.uk/~ndm/catch/">Catch</a> on several data types within the program.
+    The principle advantage of the Uniplate class over these two papers is that it requires no type system extensions, compared to rank-2 types for SYB and GADT's for Compos. The simplicity of the types required means that the user is free to concentrate on the operations within the class, without requiring thought as to the type trickery required. The Uniplate pattern has been implemented in <a href="http://haskell.org/haskellwiki/Yhc">Yhc</a> for the Core data type, and in <a href="http://www-users.cs.york.ac.uk/~ndm/catch/">Catch</a> on several data types within the program.
 </p>
 <p>
     This document proceeds as follows:
@@ -144,7 +144,7 @@ hasDivZero :: Expr -> Bool
 hasDivZero x = not $ null [() | Div _ (Val 0) <- universe x]
 </pre>
 <p>
-    Here the only Play method being used is <tt>universe</tt>. Given a tree, <tt>universe</tt> returns all the root of the tree, and all it's subtrees at all levels. This can be used to quickly flatten a tree structure into a list, for quick analysis via list comprehensions, as is done above. For each division by zero found, any value is created in the list comprehension, and then this is checked to see if anything did match. Returning the count of divide by zero errors is trivial, simply use <tt>length</tt> instead of <tt>not $ null</tt>.  Extra context could perhaps be given by printing some of the value that is being divided by zero, to help narrow down the error.
+    Here the only Uniplate method being used is <tt>universe</tt>. Given a tree, <tt>universe</tt> returns all the root of the tree, and all it's subtrees at all levels. This can be used to quickly flatten a tree structure into a list, for quick analysis via list comprehensions, as is done above. For each division by zero found, any value is created in the list comprehension, and then this is checked to see if anything did match. Returning the count of divide by zero errors is trivial, simply use <tt>length</tt> instead of <tt>not $ null</tt>.  Extra context could perhaps be given by printing some of the value that is being divided by zero, to help narrow down the error.
 </p>
 <p>
     <i>Exercise:</i> Write a function to find all literals that occur in an expression, together with their count.
@@ -268,20 +268,20 @@ reverseExpr = transform f
 </p>
 
 
-<h2>Defining a Play instance</h2>
+<h2>Defining a Uniplate instance</h2>
 
 <p>
-    As shown in the reversal example (just above), the only method in the Play class is <tt>replaceChildren</tt>. The Play class is defined as:
+    As shown in the reversal example (just above), the only method in the Uniplate class is <tt>replaceChildren</tt>. The Uniplate class is defined as:
 </p>
 <pre class="define">
-class Play on where
+class Uniplate on where
     replaceChildren :: on -> ([on], [on] -> on)
 </pre>
 <p>
-    The idea is that given an item, you want to return all the children, and a function that will replace all the children. An invariant is that the list given to the second function will be the same length as that returned in the first element of the pair. Let's start by constructing the Play instance for the expression type.
+    The idea is that given an item, you want to return all the children, and a function that will replace all the children. An invariant is that the list given to the second function will be the same length as that returned in the first element of the pair. Let's start by constructing the Uniplate instance for the expression type.
 </p>
 <pre>
-instance Play Expr of
+instance Uniplate Expr of
     replaceChildren x =
         case x of
             Add a b -> ([a,b], \[a,b] -> Add a b)
@@ -307,18 +307,18 @@ class Uniplate with => Biplate on with where
     The <tt>replaceType</tt> method operates much like the <tt>replaceChildren</tt>, except for the different types.  When the types of <tt>on</tt> and <tt>with</tt> are different, <tt>replaceChildrenEx</tt> returns the closest children of the requested type. When the types are the same, this function returns the root element, not it's children.
 </p>
 <p>
-    There are several mechanisms for writing <tt>PlayEx</tt> instances, discussed in the Uniplate paper.
+    There are several mechanisms for writing <tt>Biplate</tt> instances, discussed in the Uniplate paper.
 </p>
 
 <h3>Using the operations from Biplate</h3>
 
 <p>
-    To see various operations being used from the PlayEx class, take a look at <tt>Examples/ComposPaper.hs</tt>. Typically the operations are just the same as Play, with Ex on the end.
+    To see various operations being used from the Biplate class, take a look at <tt>Examples/ComposPaper.hs</tt>. Typically the operations are just the same as Uniplate, with Ex on the end.
 </p>
 <pre class="define">
-traverseEx :: Biplate on with => (with -> with) -> on -> on
-traverseExM :: (Monad m, Biplate on with) => (with -> m with) -> on -> m on
-transformEx :: Biplate on with => on -> [with]
+universeEx :: Biplate on with => on -> [with]
+transformEx :: Biplate on with => (with -> with) -> on -> on
+transformExM :: (Monad m, Biplate on with) => (with -> m with) -> on -> m on
 </pre>
 
 
