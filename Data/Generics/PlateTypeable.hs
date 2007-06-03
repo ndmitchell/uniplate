@@ -94,7 +94,71 @@ plate f = (id, \xs -> (f,xs))
 
 -- * Instances
 
+-- ** Primitive Types
+
+instance PlateAll Int to where plateAll x = plate x
+instance Uniplate Int where replaceChildren = replaceChildrenAll
+
+instance PlateAll Bool to where plateAll x = plate x
+instance Uniplate Bool where replaceChildren = replaceChildrenAll
+
+instance PlateAll Char to where plateAll x = plate x
+instance Uniplate Char where replaceChildren = replaceChildrenAll
+
+instance PlateAll Integer to where plateAll x = plate x
+instance Uniplate Integer where replaceChildren = replaceChildrenAll
+
+instance PlateAll Double to where plateAll x = plate x
+instance Uniplate Double where replaceChildren = replaceChildrenAll
+
+instance PlateAll Float to where plateAll x = plate x
+instance Uniplate Float where replaceChildren = replaceChildrenAll
+
+instance PlateAll () to where plateAll x = plate x
+instance Uniplate () where replaceChildren = replaceChildrenAll
+
+-- ** Container Types
+
 instance (PlateAll from to, Typeable from, Typeable to, Uniplate to) => PlateAll [from] to where
-    plateAll x = case x of
-        [] -> plate []
-        (x:xs) -> plate (:) |+ x |+ xs
+    plateAll []     = plate []
+    plateAll (x:xs) = plate (:) |+ x |+ xs
+
+instance (PlateAll from to, Typeable from, Typeable to, Uniplate to) => PlateAll (Maybe from) to where
+    plateAll Nothing  = plate Nothing
+    plateAll (Just x) = plate Just |+ x
+
+instance (PlateAll a to, Typeable a, PlateAll b to, Typeable b, Typeable to, Uniplate to) =>
+         PlateAll (Either a b) to where
+    plateAll (Left  x) = plate Left  |+ x
+    plateAll (Right x) = plate Right |+ x
+
+instance (PlateAll a to, Typeable a
+         ,PlateAll b to, Typeable b
+         ,Typeable to, Uniplate to) =>
+         PlateAll (a,b) to where
+    plateAll (a,b) = plate (,) |+ a |+ b
+
+instance (PlateAll a to, Typeable a
+         ,PlateAll b to, Typeable b
+         ,PlateAll c to, Typeable c
+         ,Typeable to, Uniplate to) =>
+         PlateAll (a,b,c) to where
+    plateAll (a,b,c) = plate (,,) |+ a |+ b |+ c
+
+instance (PlateAll a to, Typeable a
+         ,PlateAll b to, Typeable b
+         ,PlateAll c to, Typeable c
+         ,PlateAll d to, Typeable d
+         ,Typeable to, Uniplate to) =>
+         PlateAll (a,b,c,d) to where
+    plateAll (a,b,c,d) = plate (,,,) |+ a |+ b |+ c |+ d
+
+instance (PlateAll a to, Typeable a
+         ,PlateAll b to, Typeable b
+         ,PlateAll c to, Typeable c
+         ,PlateAll d to, Typeable d
+         ,PlateAll e to, Typeable e
+         ,Typeable to, Uniplate to) =>
+         PlateAll (a,b,c,d,e) to where
+    plateAll (a,b,c,d,e) = plate (,,,,) |+ a |+ b |+ c |+ d |+ e
+
