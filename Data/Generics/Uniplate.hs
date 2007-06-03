@@ -13,11 +13,11 @@ type ReplaceChildren on = on -> ([on], [on] -> on)
 class Play on where
     replaceChildren :: ReplaceChildren on
     
+-- * The Operations
+
 children :: Play on => on -> [on]
 children = fst . replaceChildren
 
-
--- * The Operations
 
 transform :: Play on => (on -> on) -> on -> on
 transform f x = f $ generate $ map (transform f) current
