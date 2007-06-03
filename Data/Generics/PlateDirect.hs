@@ -132,8 +132,8 @@ plate f = (id, \xs -> (f,xs))
                         (a,xs) -> case generateR xs of
                          (b,xs) -> (a b, xs)
 
-plateListDiff [] = plate []
-plateListDiff (x:xs) = plate (:) |+ x ||+ xs
+        plateListDiff [] = plate []
+        plateListDiff (x:xs) = plate (:) |+ x ||+ xs
 
 
 -- | Used for 'PlayAll' definitions where both types are the same.
