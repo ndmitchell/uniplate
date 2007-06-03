@@ -1,4 +1,4 @@
-{-# LANGUAGE MultiParamTypeClasses, UndecidableInstances #-}
+{-# LANGUAGE MultiParamTypeClasses, UndecidableInstances, ExistentialQuantification #-}
 
 module Data.Generics.PlateData(
     module Data.Generics.Biplate
