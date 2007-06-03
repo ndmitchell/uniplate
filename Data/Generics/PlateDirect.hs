@@ -93,7 +93,7 @@ plate f = (id, \xs -> (f,xs))
                         (a,(b:xs)) -> (a b, xs)
 
 
--- | the field to the right may contain the target.
+-- | The field to the right may contain the target.
 (|+) :: PlateAll item to => Type (item -> from) to -> item -> Type from to
 (|+) f item = (collect2,generate2)
     where
