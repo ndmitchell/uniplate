@@ -1,5 +1,5 @@
 {-# OPTIONS_GHC -fglasgow-exts #-}
-{-# LANGUAGE CPP #-}
+{-# LANGUAGE CPP, Rank2Types #-}
 
 module Data.Generics.PlateInternal(
     unsafeCast, inlinePerformIO, builder, concatCont
