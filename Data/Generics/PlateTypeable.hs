@@ -14,7 +14,7 @@ import Data.Typeable
 import Data.Maybe
 
 
-instance (Typeable a, Typeable b, Uniplate b, PlayAll a b) => PlayEx a b where
+instance (Typeable a, Typeable b, Uniplate b, PlayAll a b) => Biplate a b where
     replaceType x = liftType $ playMore x
 
 

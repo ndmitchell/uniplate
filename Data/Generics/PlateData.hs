@@ -76,7 +76,7 @@ instance (Data a, Typeable a) => Uniplate a where
             answer = containsMatch (undefined :: a) (undefined :: a)
 
 
-instance (Data a, Data b, Uniplate b, Typeable a, Typeable b) => PlayEx a b where
+instance (Data a, Data b, Uniplate b, Typeable a, Typeable b) => Biplate a b where
     replaceType = \x -> fromCC (collect_generate_self (fromBox answer) x)
         where
             answer :: Box b

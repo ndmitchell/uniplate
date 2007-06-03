@@ -14,7 +14,7 @@ import Data.Generics.PlateInternal
 import Data.Maybe
 
 
-instance (Uniplate b, PlayAll a b) => PlayEx a b where
+instance (Uniplate b, PlayAll a b) => Biplate a b where
     replaceType x = liftType $ playAll x
 
 instance PlayOne a => Uniplate a where
