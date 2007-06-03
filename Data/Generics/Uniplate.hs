@@ -13,8 +13,8 @@ type ReplaceChildren on = on -> ([on], [on] -> on)
 class Play on where
     replaceChildren :: ReplaceChildren on
     
-getChildren :: Play on => on -> [on]
-getChildren = fst . replaceChildren
+children :: Play on => on -> [on]
+children = fst . replaceChildren
 
 
 -- * The Operations
@@ -53,7 +53,7 @@ everything :: Play on => on -> [on]
 everything x = builder (f x)
     where
         f :: Play on => on -> (on -> res -> res) -> res -> res
-        f x cons nil = x `cons` concatCont (map (\x -> f x cons) $ getChildren x) nil
+        f x cons nil = x `cons` concatCont (map (\x -> f x cons) $ children x) nil
 
 
 everythingContext :: Play on => on -> [(on, on -> on)]
@@ -66,5 +66,5 @@ everythingContext x = (x,id) : f current
 
 
 fold :: Play on => ([res] -> tmp) -> (on -> tmp -> res) -> on -> res
-fold merge gen x = gen x $ merge $ map (fold merge gen) $ getChildren x
+fold merge gen x = gen x $ merge $ map (fold merge gen) $ children x
 

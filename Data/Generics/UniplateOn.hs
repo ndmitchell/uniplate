@@ -42,6 +42,10 @@ descendOnM replaceType f x = liftM generate $ mapM (descendM f) current
     where (current, generate) = replaceType x
 
 
+childrenOn :: Play to => ReplaceType from to -> from -> [to]
+childrenOn replaceType x = fst $ replaceType x
+
+
 everythingOn :: Play to => ReplaceType from to -> from -> [to]
 everythingOn replaceType x = concatMap everything $ fst $ replaceType x
 

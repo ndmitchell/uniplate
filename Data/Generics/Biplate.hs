@@ -45,6 +45,10 @@ descendExM :: (Monad m, PlayEx from to) => (to -> m to) -> from -> m from
 descendExM = descendOnM replaceType
 
 
+childrenEx :: PlayEx from to => from -> [to]
+childrenEx = childrenOn replaceType
+
+
 everythingEx :: PlayEx from to => from -> [to]
 everythingEx = concatMap everything . getType
 
