@@ -4,8 +4,8 @@
 
 module Data.Generics.PlateDirect(
     module Data.Generics.Biplate,
-    PlayAll(..), play, (|+), (|-), (|*),
-    PlayOne(..), playSelf,
+    PlateAll(..), plate, (|+), (|-), (|*),
+    PlateOne(..), plateSelf,
     (||+), (||*)
     ) where
 
@@ -14,11 +14,11 @@ import Data.Generics.PlateInternal
 import Data.Maybe
 
 
-instance (Uniplate b, PlayAll a b) => Biplate a b where
-    replaceType x = liftType $ playAll x
+instance (Uniplate b, PlateAll a b) => Biplate a b where
+    replaceType x = liftType $ plateAll x
 
-instance PlayOne a => Uniplate a where
-    replaceChildren x = liftType $ playOne x
+instance PlateOne a => Uniplate a where
+    replaceChildren x = liftType $ plateOne x
 
 
 type Type from to = ([to] -> [to], [to] -> (from,[to]))
@@ -31,16 +31,16 @@ liftType (a,b) = (a [], fst . b)
 -- | Children are defined as the top-most items of type to
 --   /starting beneath the root/.
 --
---   This class should only be constructed with 'play', '|+' and '|-'
-class PlayAll from to where
-    playAll :: from -> Type from to
+--   This class should only be constructed with 'plate', '|+' and '|-'
+class PlateAll from to where
+    plateAll :: from -> Type from to
 
-class PlayOne to where
-    playOne :: to -> Type to to
+class PlateOne to where
+    plateOne :: to -> Type to to
 
 
-play :: from -> Type from to
-play f = (id, \xs -> (f,xs))
+plate :: from -> Type from to
+plate f = (id, \xs -> (f,xs))
 
 
 (|*) :: Type (to -> from) to -> to -> Type from to
@@ -52,11 +52,11 @@ play f = (id, \xs -> (f,xs))
                         (a,(b:xs)) -> (a b, xs)
 
 
-(|+) :: PlayAll item to => Type (item -> from) to -> item -> Type from to
+(|+) :: PlateAll item to => Type (item -> from) to -> item -> Type from to
 (|+) f item = (collect2,generate2)
     where
         (collectL,generateL) = f
-        (collectR,generateR) = playAll item
+        (collectR,generateR) = plateAll item
         collect2 = collectL . collectR
         generate2 xs = case generateL xs of
                         (a,xs) -> case generateR xs of
@@ -77,20 +77,20 @@ play f = (id, \xs -> (f,xs))
                                   in (a x1,x2)
 
 
-(||+) :: PlayAll item to => Type ([item] -> from) to -> [item] -> Type from to
+(||+) :: PlateAll item to => Type ([item] -> from) to -> [item] -> Type from to
 (||+) f item = (collect2,generate2)
     where
         (collectL,generateL) = f
-        (collectR,generateR) = playListDiff item
+        (collectR,generateR) = plateListDiff item
         collect2 = collectL . collectR
         generate2 xs = case generateL xs of
                         (a,xs) -> case generateR xs of
                          (b,xs) -> (a b, xs)
 
 
-playListDiff [] = play []
-playListDiff (x:xs) = play (:) |+ x ||+ xs
+plateListDiff [] = plate []
+plateListDiff (x:xs) = plate (:) |+ x ||+ xs
 
 
 
-playSelf x = ((x:), \(x:xs) -> (x,xs))
+plateSelf x = ((x:), \(x:xs) -> (x,xs))

@@ -5,7 +5,7 @@
 module Data.Generics.PlateTypeable(
     module Data.Generics.Biplate,
     module Data.Typeable,
-    replaceChildrenAll, play, (|+), (|-), PlayAll(..)
+    replaceChildrenAll, plate, (|+), (|-), PlateAll(..)
     ) where
 
 import Data.Generics.Biplate
@@ -14,12 +14,12 @@ import Data.Typeable
 import Data.Maybe
 
 
-instance (Typeable a, Typeable b, Uniplate b, PlayAll a b) => Biplate a b where
-    replaceType x = liftType $ playMore x
+instance (Typeable a, Typeable b, Uniplate b, PlateAll a b) => Biplate a b where
+    replaceType x = liftType $ plateMore x
 
 
-replaceChildrenAll :: PlayAll a b => a -> ([b],[b] -> a)
-replaceChildrenAll a = liftType $ playAll a
+replaceChildrenAll :: PlateAll a b => a -> ([b],[b] -> a)
+replaceChildrenAll a = liftType $ plateAll a
 
 
 
@@ -30,31 +30,31 @@ liftType :: Type from to -> ([to], [to] -> from)
 liftType (a,b) = (a [], fst . b)
 
 
-playMore :: (Typeable from, Typeable to, PlayAll from to) => from -> Type from to
-playMore x = res
+plateMore :: (Typeable from, Typeable to, PlateAll from to) => from -> Type from to
+plateMore x = res
     where
         res = case asTypeOf (cast x) (Just $ head $ fst res []) of
-                  Nothing -> playAll x
+                  Nothing -> plateAll x
                   Just y -> ((y:), \(y:ys) -> (unsafeCast y, ys))
 
 
 -- | Children are defined as the top-most items of type to
 --   /starting beneath the root/.
 --
---   This class should only be constructed with 'play', '|+' and '|-'
-class PlayAll from to where
-    playAll :: from -> Type from to
+--   This class should only be constructed with 'plate', '|+' and '|-'
+class PlateAll from to where
+    plateAll :: from -> Type from to
 
 
-play :: from -> Type from to
-play f = (id, \xs -> (f,xs))
+plate :: from -> Type from to
+plate f = (id, \xs -> (f,xs))
 
 
-(|+) :: (Typeable item, Typeable to, PlayAll item to) => Type (item -> from) to -> item -> Type from to
+(|+) :: (Typeable item, Typeable to, PlateAll item to) => Type (item -> from) to -> item -> Type from to
 (|+) f item = (collect2,generate2)
     where
         (collectL,generateL) = f
-        (collectR,generateR) = playMore item
+        (collectR,generateR) = plateMore item
         collect2 = collectL . collectR
         generate2 xs = case generateL xs of
                         (a,xs) -> case generateR xs of
@@ -65,7 +65,7 @@ play f = (id, \xs -> (f,xs))
 (|-) (collect,generate) item = (collect,\xs -> case generate xs of (r,xs) -> (r item, xs))
 
 
-instance (PlayAll from to, Typeable from, Typeable to, Uniplate to) => PlayAll [from] to where
-    playAll x = case x of
-        [] -> play []
-        (x:xs) -> play (:) |+ x |+ xs
+instance (PlateAll from to, Typeable from, Typeable to, Uniplate to) => PlateAll [from] to where
+    plateAll x = case x of
+        [] -> plate []
+        (x:xs) -> plate (:) |+ x |+ xs
