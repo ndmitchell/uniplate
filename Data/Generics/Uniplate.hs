@@ -49,8 +49,8 @@ descendM f x = liftM generate $ mapM f current
     where (current, generate) = replaceChildren x
 
 
-everything :: Play on => on -> [on]
-everything x = builder (f x)
+universe :: Play on => on -> [on]
+universe x = builder (f x)
     where
         f :: Play on => on -> (on -> res -> res) -> res -> res
         f x cons nil = x `cons` concatCont (map (\x -> f x cons) $ children x) nil

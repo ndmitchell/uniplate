@@ -46,8 +46,8 @@ childrenEx :: PlayEx from to => from -> [to]
 childrenEx = childrenOn replaceType
 
 
-everythingEx :: PlayEx from to => from -> [to]
-everythingEx = everythingOn replaceType
+universeEx :: PlayEx from to => from -> [to]
+universeEx = universeOn replaceType
 
 
 contextsEx:: PlayEx from to => from -> [(to, to -> from)]

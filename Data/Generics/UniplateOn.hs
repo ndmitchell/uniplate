@@ -46,8 +46,8 @@ childrenOn :: Play to => ReplaceType from to -> from -> [to]
 childrenOn replaceType x = fst $ replaceType x
 
 
-everythingOn :: Play to => ReplaceType from to -> from -> [to]
-everythingOn replaceType x = concatMap everything $ fst $ replaceType x
+universeOn :: Play to => ReplaceType from to -> from -> [to]
+universeOn replaceType x = concatMap universe $ fst $ replaceType x
 
 
 contextsOn :: Play to => ReplaceType from to -> from -> [(to, to -> from)]
