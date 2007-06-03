@@ -1298,7 +1298,7 @@ syb_symbols = everything (++) ([] `mkQ` f)
 com_symbols :: Tree c -> [(Tree Var, Tree Typ)]
 com_symbols x = case x of
     SDecl t v -> [(v,t)]
-    _ -> composOpMonoid com_symbols t
+    _ -> composOpMonoid com_symbols x
 \end{code}
 
 Whereas the Compos solution explicitly traverses the tree, the Uniplate solution simply extracts the right bits. The use of lists again benefits Uniplate over SYB.
@@ -1316,7 +1316,7 @@ syb_constFold = everywhere (mkT optimise)
 
 com_constFold :: Tree c -> Tree c
 com_constFold e = case e of
-    EAdd x y -> case  (f x, f y) of
+    EAdd x y -> case  (com_constFold x, com_constFold y) of
                       (EInt n, EInt m) -> EInt (n+m)
                       (x',y') -> EAdd x' y'
     _ -> composOp com_constFold e
@@ -1377,13 +1377,13 @@ uni_incrOne d k = descendEx f
     where f x@(D n _ _)  | n == d     = uni_increase k x
                          | otherwise  = descend f x
 
-syb_incrOne :: Data a => String -> Integer -> a -> a
+syb_incrOne :: Data a => Name -> Integer -> a -> a
 syb_incrOne d k x  | isDept d x  = syb_increase k x
                    | otherwise   = gmapT (syb_incrOne d k) x
     where  isDept   d = False `mkQ` isDeptD d
            isDeptD  d (D n _ _) = n == d
 
-com_incrOne :: Name -> Float -> Tree c -> Tree c
+com_incrOne :: Name -> Integer -> Tree c -> Tree c
 com_incrOne d k x = case x of
     D n _ _ | n == d -> com_increase k x
     _ -> composOp (com_incrOne d k) x
