@@ -26,10 +26,17 @@ data Answer a = Hit {fromHit :: a} -- you just hit the element you were after (h
               | Miss -- you failed to sink my battleship!
 
 
+
 containsMatch :: (Data start, Typeable start, Data find, Typeable find) =>
                  start -> find ->
                  Box find
-containsMatch start find = Box query
+containsMatch = containsMatchClever
+
+
+containsMatchClever :: (Data start, Typeable start, Data find, Typeable find) =>
+                       start -> find ->
+                       Box find
+containsMatchClever start find = Box query
     where
         typeInt x = inlinePerformIO $ typeRepKey x
     
