@@ -12,13 +12,13 @@ import Data.List(inits,tails)
 type ReplaceType from to = from -> ([to], [to] -> from)
 
 
-traverseOn :: Play to => ReplaceType from to -> (to -> to) -> from -> from
-traverseOn replaceType f x = generate $ map (traverse f) current
+transformOn :: Play to => ReplaceType from to -> (to -> to) -> from -> from
+transformOn replaceType f x = generate $ map (transform f) current
     where (current, generate) = replaceType x
 
 
-traverseOnM :: (Monad m, Play to) => ReplaceType from to -> (to -> m to) -> from -> m from
-traverseOnM replaceType f x = liftM generate $ mapM (traverseM f) current
+transformOnM :: (Monad m, Play to) => ReplaceType from to -> (to -> m to) -> from -> m from
+transformOnM replaceType f x = liftM generate $ mapM (transformM f) current
     where (current, generate) = replaceType x
 
 

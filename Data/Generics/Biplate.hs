@@ -18,12 +18,12 @@ class Play to => PlayEx from to where
 
 -- * The Operations
 
-traverseEx :: PlayEx from to => (to -> to) -> from -> from
-traverseEx = traverseOn replaceType
+transformEx :: PlayEx from to => (to -> to) -> from -> from
+transformEx = transformOn replaceType
 
 
-traverseExM :: (Monad m, PlayEx from to) => (to -> m to) -> from -> m from
-traverseExM = traverseOnM replaceType
+transformExM :: (Monad m, PlayEx from to) => (to -> m to) -> from -> m from
+transformExM = transformOnM replaceType
 
 
 rewriteEx :: PlayEx from to => (to -> Maybe to) -> from -> from

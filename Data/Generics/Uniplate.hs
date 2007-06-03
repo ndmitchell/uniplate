@@ -19,23 +19,23 @@ children = fst . replaceChildren
 
 -- * The Operations
 
-traverse :: Play on => (on -> on) -> on -> on
-traverse f x = f $ generate $ map (traverse f) current
+transform :: Play on => (on -> on) -> on -> on
+transform f x = f $ generate $ map (transform f) current
     where (current, generate) = replaceChildren x
 
 
-traverseM :: (Monad m, Play on) => (on -> m on) -> on -> m on
-traverseM f x = mapM (traverseM f) current >>= f . generate
+transformM :: (Monad m, Play on) => (on -> m on) -> on -> m on
+transformM f x = mapM (transformM f) current >>= f . generate
     where (current, generate) = replaceChildren x
 
 
 rewrite :: Play on => (on -> Maybe on) -> on -> on
-rewrite f = traverse g
+rewrite f = transform g
     where g x = maybe x (rewrite f) (f x)
 
 
 rewriteM :: (Monad m, Play on) => (on -> m (Maybe on)) -> on -> m on
-rewriteM f = traverseM g
+rewriteM f = transformM g
     where g x = f x >>= maybe (return x) (rewriteM f)
 
 
