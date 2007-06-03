@@ -839,7 +839,7 @@ Passing the |replaceType| argument is a little tedious. In \ref{sec:use_playex} 
 By assuming that |alpha| is constant, there is another way to abstract away the |replaceType| argument.
 
 \begin{example}
-The Yhc.Core library \cite{me:yhc_core}, part of the York Haskell Compiler (Yhc), makes extensive use of |Uniplate|. In this library, the central types, along with which types they include, are:
+The Yhc.Core library \citep{me:yhc_core}, part of the York Haskell Compiler (Yhc), makes extensive use of |Uniplate|. In this library, the central types, along with which types they include, are:
 
 \begin{comment}
 \begin{code}
@@ -856,7 +856,7 @@ data CoreExpr  =  CoreVar   String
                |  CoreApp   CoreExpr  [CoreExpr]
                |  CoreCase  CoreExpr  [(CoreExpr, CoreExpr)]
                |  CoreLet   [(String, CoreExpr)] CoreExpr
-               -- other constructors
+                  -- other constructors
 \end{code}
 
 Most queries and transformations are performed on the |CoreExpr| type, however it is often convenient to start from one of the other types. Take for example the |coreSimplify| operation -- it simplifies expressions, but may be called upon one individual expression, a function, or a program. If we are willing to freeze the type of the second argument to |replaceType| as |CoreExpr| we can write a class:
