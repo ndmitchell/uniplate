@@ -1,4 +1,6 @@
-{-# LANGUAGE MultiParamTypeClasses, UndecidableInstances, ExistentialQuantification, Rank2Types #-}
+{-# OPTIONS_GHC -fglasgow-exts -cpp -fallow-undecidable-instances #-}
+{-# LANGUAGE MultiParamTypeClasses, UndecidableInstances, ExistentialQuantification, Rank2Types, CPP #-}
+-- OPTIONS_GHC is required only for 6.4.2, not 6.6.1
 
 module Data.Generics.PlateData(
     module Data.Generics.Biplate
@@ -30,13 +32,21 @@ data Answer a = Hit {fromHit :: a} -- you just hit the element you were after (h
 containsMatch :: (Data start, Typeable start, Data find, Typeable find) =>
                  start -> find ->
                  Box find
-containsMatch = containsMatchClever
 
+#if __GLASGOW_HASKELL_COMPILER__ < 606
+-- GHC 6.4.2 does not export typeRepKey, so we can't do the trick
+-- as efficiently, so we just give up and revert to always following
 
-containsMatchClever :: (Data start, Typeable start, Data find, Typeable find) =>
-                       start -> find ->
-                       Box find
-containsMatchClever start find = Box query
+containsMatch start find = Box query
+    where
+        query a = case cast a of
+                       Just y -> Hit y
+                       Nothing -> Follow
+
+#else
+-- GHC 6.6 does contain typeRepKey, so only follow when appropriate
+
+containsMatch start find = Box query
     where
         typeInt x = inlinePerformIO $ typeRepKey x
     
@@ -56,7 +66,6 @@ containsMatchClever start find = Box query
                 want2 = map fst yes
                 (yes,no) = partition (not . null . intersect want . snd) have
 
-
 containsList :: (Data a, Typeable a) => a -> [(TypeRep, [TypeRep])]
 containsList x = f [] [DataBox x]
     where
@@ -74,6 +83,8 @@ contains x = if isAlgType dtyp then concatMap f ctrs else []
         f ctr = gmapQ DataBox (asTypeOf (fromConstr ctr) x)
         ctrs = dataTypeConstrs dtyp
         dtyp = dataTypeOf x
+
+#endif
 
 
 instance (Data a, Typeable a) => Uniplate a where
