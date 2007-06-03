@@ -2,6 +2,12 @@
 {-# LANGUAGE MultiParamTypeClasses, UndecidableInstances, ExistentialQuantification, Rank2Types, CPP #-}
 -- OPTIONS_GHC is required only for 6.4.2, not 6.6.1
 
+{- |
+    This module exports 'Biplate' instances for everything with 'Data' defined.
+    Using GHC the 'Data' instances can be constructed with @deriving Data@.
+-}
+
+
 module Data.Generics.PlateData(
     module Data.Generics.Biplate
     ) where
