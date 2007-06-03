@@ -92,5 +92,5 @@ plateListDiff [] = plate []
 plateListDiff (x:xs) = plate (:) |+ x ||+ xs
 
 
-
+plateSelf :: to -> Type to to
 plateSelf x = ((x:), \(x:xs) -> (x,xs))
