@@ -644,7 +644,7 @@ _D (Data name vars ctors) = unwords $
 
 _C (Ctor name typs) =
     [name] ++ vars ++ [" -> "] ++
-    ["unit"] ++ [name] ++
+    ["unit"] ++ [name] ++ ["<>"] ++
     separate "<>" (zipWith (:) vars (map _T typs))
     where vars = ['v':show i | i <- [1..length typs]]
 
