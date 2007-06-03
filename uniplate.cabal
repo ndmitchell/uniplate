@@ -1,16 +1,26 @@
-Name:           uniplate
-Version:        0.1
-License:        BSD3
-Author:         Neil Mitchell
-Homepage:       http://www-users.cs.york.ac.uk/~ndm/uniplate/
-Category:       Generics
-Build-Depends:  base, mtl
-Synopsis:       Uniform type generic traversals.
+Name:               uniplate
+Version:            0.1
+Copyright:          2006-7, Neil Mitchell
+Maintainer:         ndmitchell@gmail.com
+Homepage:           http://www-users.cs.york.ac.uk/~ndm/uniplate/
+Build-Depends:      base, mtl
+License:            BSD3
+License-File:       LICENSE
+Author:             Neil Mitchell
+Synopsis:           Uniform type generic traversals.
+Description:
+    Uniplate is a boilerplate removal library, with similar goals to the
+    original Scrap Your Boilerplate work. It requires few extensions to
+    Haskell.
+Category:           Development
+Extensions:         CPP
+Extra-Source-Files:
+    uniplate.htm
 Exposed-modules:
-        Data.Generics.Uniplate
-        Data.Generics.UniplateOn
-        Data.Generics.Biplate
-        Data.Generics.PlateDirect
-        Data.Generics.PlateTypeable
-        Data.Generics.PlateData
-        Data.Generics.PlateInternal
+    Data.Generics.Uniplate
+    Data.Generics.UniplateOn
+    Data.Generics.Biplate
+    Data.Generics.PlateDirect
+    Data.Generics.PlateTypeable
+    Data.Generics.PlateData
+    Data.Generics.PlateInternal
