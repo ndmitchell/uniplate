@@ -14,9 +14,6 @@ import Data.Generics.UniplateOn
 --   /starting at the root/.
 class Play to => PlayEx from to where
     replaceType :: ReplaceType from to
-    
-getType :: PlayEx from to => from -> [to]
-getType = fst . replaceType
 
 
 -- * The Operations
@@ -50,7 +47,7 @@ childrenEx = childrenOn replaceType
 
 
 everythingEx :: PlayEx from to => from -> [to]
-everythingEx = concatMap everything . getType
+everythingEx = everythingOn replaceType
 
 
 everythingContextEx :: PlayEx from to => from -> [(to, to -> from)]
