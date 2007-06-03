@@ -522,7 +522,7 @@ class Uniplate alpha where
     contexts    :: alpha -> [(alpha, alpha -> alpha)]
     descend     :: (alpha -> alpha) -> alpha -> alpha
     descendM    :: Monad m => (alpha -> m alpha) -> alpha -> m alpha
-    fold        :: ([r] -> t) -> (alpha -> t -> r) -> alpha -> r
+    fold        :: (alpha -> [r] -> r) -> alpha -> r
     rewrite     :: (alpha -> Maybe alpha) -> alpha -> alpha
     rewriteM    :: Monad m  => (alpha -> m (Maybe alpha))
                                    -> alpha -> m alpha

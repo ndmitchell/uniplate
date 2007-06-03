@@ -65,6 +65,6 @@ contexts x = (x,id) : f current
            , (y, context) <- contexts b]
 
 
-fold :: Play on => ([res] -> tmp) -> (on -> tmp -> res) -> on -> res
-fold merge gen x = gen x $ merge $ map (fold merge gen) $ children x
+fold :: Play on => (on -> [r] -> r) -> on -> r
+fold op x = op x $ map (fold op) $ children x
 
