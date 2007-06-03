@@ -1412,7 +1412,20 @@ Here the Uniplate solution wins by being able to use a list comprehension to sel
 
 \subsubsection{Uniplate compared to SYB and Compos}
 
-In order to measure the size of the solutions, we have taken the code for all operations and counted the number of lexemes -- using the |lex| function provided by Haskell. For functions shared between SYB and Uniplate we have counted their code in both measurements. Uniplate requires 194 lexemes, SYB has 273 and Compos has 348.
+\begin{table*}
+\caption{Table of lexeme counts for the tasks.}
+\label{fig:lexemes}
+\vspace{3mm}
+\begin{tabular*}{\textwidth}{lrrrrrrrrrrrr}
+ & simp & var & zero & const & ren & syms & bill & incr & incr1 & \textbf{Queries} & \textbf{Traversals} & \textbf{All} \\
+Uniplate   & 40 & 12 & 18 & 27 & 16 & 17 & 13 & 21 & 30 &  60 & 134 & 194 \\
+SYB        & 43 & 29 & 29 & 30 & 19 & 34 & 21 & 24 & 44 & 113 & 160 & 273 \\
+Compos     & 71 & 30 & 32 & 54 & 27 & 36 & 25 & 33 & 40 & 123 & 225 & 348 \\
+\hline
+\end{tabular*}
+\end{table*}
+
+In order to measure the size of the solutions, we have taken the code for all operations and counted the number of lexemes -- using the |lex| function provided by Haskell. A table of results is given in Figure \ref{fig:lexemes}. For functions shared between SYB and Uniplate we have counted their code in both measurements. For the |incrOne| function we have not included the code for |increase| as well.
 
 The Compos approach requires much more residual boilerplate than Uniplate, particularly for queries, bottom-up transformations and type signatures. The Compos approach also requires a GADT representation.
 
