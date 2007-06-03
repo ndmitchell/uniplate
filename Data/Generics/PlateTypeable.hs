@@ -14,7 +14,7 @@ import Data.Typeable
 import Data.Maybe
 
 
-instance (Typeable a, Typeable b, Play b, PlayAll a b) => PlayEx a b where
+instance (Typeable a, Typeable b, Uniplate b, PlayAll a b) => PlayEx a b where
     replaceType x = liftType $ playMore x
 
 
@@ -65,7 +65,7 @@ play f = (id, \xs -> (f,xs))
 (|-) (collect,generate) item = (collect,\xs -> case generate xs of (r,xs) -> (r item, xs))
 
 
-instance (PlayAll from to, Typeable from, Typeable to, Play to) => PlayAll [from] to where
+instance (PlayAll from to, Typeable from, Typeable to, Uniplate to) => PlayAll [from] to where
     playAll x = case x of
         [] -> play []
         (x:xs) -> play (:) |+ x |+ xs

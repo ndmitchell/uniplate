@@ -12,7 +12,7 @@ import Data.Generics.UniplateOn
 
 -- | Children are defined as the top-most items of type to
 --   /starting at the root/.
-class Play to => PlayEx from to where
+class Uniplate to => PlayEx from to where
     replaceType :: ReplaceType from to
 
 

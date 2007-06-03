@@ -10,53 +10,53 @@ import Data.Generics.PlateInternal
 
 type ReplaceChildren on = on -> ([on], [on] -> on)
 
-class Play on where
+class Uniplate on where
     replaceChildren :: ReplaceChildren on
     
 -- * The Operations
 
-children :: Play on => on -> [on]
+children :: Uniplate on => on -> [on]
 children = fst . replaceChildren
 
 
-transform :: Play on => (on -> on) -> on -> on
+transform :: Uniplate on => (on -> on) -> on -> on
 transform f x = f $ generate $ map (transform f) current
     where (current, generate) = replaceChildren x
 
 
-transformM :: (Monad m, Play on) => (on -> m on) -> on -> m on
+transformM :: (Monad m, Uniplate on) => (on -> m on) -> on -> m on
 transformM f x = mapM (transformM f) current >>= f . generate
     where (current, generate) = replaceChildren x
 
 
-rewrite :: Play on => (on -> Maybe on) -> on -> on
+rewrite :: Uniplate on => (on -> Maybe on) -> on -> on
 rewrite f = transform g
     where g x = maybe x (rewrite f) (f x)
 
 
-rewriteM :: (Monad m, Play on) => (on -> m (Maybe on)) -> on -> m on
+rewriteM :: (Monad m, Uniplate on) => (on -> m (Maybe on)) -> on -> m on
 rewriteM f = transformM g
     where g x = f x >>= maybe (return x) (rewriteM f)
 
 
-descend :: Play on => (on -> on) -> on -> on
+descend :: Uniplate on => (on -> on) -> on -> on
 descend f x = generate $ map f current
     where (current, generate) = replaceChildren x
 
     
-descendM :: (Monad m, Play on) => (on -> m on) -> on -> m on
+descendM :: (Monad m, Uniplate on) => (on -> m on) -> on -> m on
 descendM f x = liftM generate $ mapM f current
     where (current, generate) = replaceChildren x
 
 
-universe :: Play on => on -> [on]
+universe :: Uniplate on => on -> [on]
 universe x = builder (f x)
     where
-        f :: Play on => on -> (on -> res -> res) -> res -> res
+        f :: Uniplate on => on -> (on -> res -> res) -> res -> res
         f x cons nil = x `cons` concatCont (map (\x -> f x cons) $ children x) nil
 
 
-contexts :: Play on => on -> [(on, on -> on)]
+contexts :: Uniplate on => on -> [(on, on -> on)]
 contexts x = (x,id) : f current
   where
     (current, generate) = replaceChildren x
@@ -65,6 +65,6 @@ contexts x = (x,id) : f current
            , (y, context) <- contexts b]
 
 
-fold :: Play on => (on -> [r] -> r) -> on -> r
+fold :: Uniplate on => (on -> [r] -> r) -> on -> r
 fold op x = op x $ map (fold op) $ children x
 

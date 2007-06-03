@@ -69,14 +69,14 @@ contains x = if isAlgType dtyp then concatMap f ctrs else []
         dtyp = dataTypeOf x
 
 
-instance (Data a, Typeable a) => Play a where
+instance (Data a, Typeable a) => Uniplate a where
     replaceChildren = \x -> fromCC (collect_generate (fromBox answer) x)
         where
             answer :: Box a
             answer = containsMatch (undefined :: a) (undefined :: a)
 
 
-instance (Data a, Data b, Play b, Typeable a, Typeable b) => PlayEx a b where
+instance (Data a, Data b, Uniplate b, Typeable a, Typeable b) => PlayEx a b where
     replaceType = \x -> fromCC (collect_generate_self (fromBox answer) x)
         where
             answer :: Box b
@@ -92,7 +92,7 @@ fromCC :: CC x a -> ([x], [x] -> a)
 fromCC (a, b) = (a [], \i -> fst (b i))
 
 
-collect_generate_self :: (Data on, Play with, Typeable on, Typeable with) =>
+collect_generate_self :: (Data on, Uniplate with, Typeable on, Typeable with) =>
                          (forall a . Typeable a => a -> Answer with) -> on -> CC with on
 collect_generate_self oracle x = res
         where
@@ -102,7 +102,7 @@ collect_generate_self oracle x = res
                        Miss -> (id, \res -> (x,res))
 
 
-collect_generate :: (Data on, Play with, Typeable on, Typeable with) =>
+collect_generate :: (Data on, Uniplate with, Typeable on, Typeable with) =>
                     (forall a . Typeable a => a -> Answer with) -> on -> CC with on
 collect_generate oracle item = fromC $ gfoldl combine create item
     where
@@ -124,7 +124,7 @@ collect_generate oracle item = fromC $ gfoldl combine create item
 {-
 OLD VERSION USING TWO SEPARATE TRAVERSALS
 
-collect_generate :: (Data on, Play with, Typeable on, Typeable with) => on -> ([with],[with] -> on)
+collect_generate :: (Data on, Uniplate with, Typeable on, Typeable with) => on -> ([with],[with] -> on)
 collect_generate item = (collect, generate)
     where
         collect = concat $ gmapQ getChildrenEx item
