@@ -20,6 +20,7 @@
 %format `and` = "\wedge{}"
 %format not = "\mathsf{not}"
 %format `mergeVal` = "\sqcap{}"
+%format elipses = "..."
 
 %format `mkQ` = "\;\textsf{\`{}\!mkQ\!\`{}}\;"
 %format `cons` = "\;\textsf{\`{}\!cons\!\`{}}\;"
