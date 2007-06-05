@@ -173,7 +173,7 @@ The ideas behind the Uniplate library have been used extensively, in both the Yh
 \S\ref{sec:use_play} introduces the traversal combinators that we propose, along with short examples. \S\ref{sec:implement_play} discusses how these combinators are implemented in terms of a single primitive. \S\ref{sec:use_playex} extends this approach to multi-type traversals, and \S\ref{sec:implement_playex} covers the extended implementation. \S\ref{sec:performance} investigates some performance optimisations to the operations. \S\ref{sec:results} gives code comparisons to other examples, including the ``paradise'' benchmark, and performance measurements. \S\ref{sec:conclusion} makes concluding remarks and suggests directions for future work.
 
 
-\section{Queries and Traversals}
+\section{Queries and Transformations}
 \label{sec:use_play}
 
 We define various queries and transformations, using the |Expr| type defined in the introduction as an example throughout. All the traversals rely on the class |Uniplate|, an instance of which is assumed for |Expr|. This instance and definition are covered in \S\ref{sec:implement_play}.
@@ -270,6 +270,41 @@ Each equation corresponds to the natural Haskell translation of the rule. The |t
 \end{example}
 
 So how does a bottom-up traversal work? The traversal starts by applying the function |f| to all the leaf nodes in the tree, then progressively working up to the root node. The condition on ordering is that before applying |f| to an expression, all the sub-expressions must have had |f| applied.
+
+\subsection{Top-Down Traversals}
+
+\todo{Explain why the standard everything' is not appropriate, in particular note that f (Add x) = x, and f (Add x) = Add (Mul x) both cause problems}
+
+Although top-down traversals are unnecessary for our library, we still believe that some transformations operate more naturally in a top-down manner. One extension to the top-down traversal pushes information downwards at the same time. We introduce the |descend| function, inspired by the Compos paper \cite{bringert:compos}.
+
+\begin{code}
+descend :: Uniplate alpha => (alpha -> alpha) -> alpha -> alpha
+\end{code}
+
+The |descend| function applies a function to all children of a node, then reconstructs a new result using those results.
+
+\begin{comment}
+\begin{code}
+data Expr = Var String | Let String Expr Expr | Add Expr Expr
+\end{code}
+\end{comment}
+
+\begin{example}
+Consider the addition of a constructor \ignore|Let String Expr Expr| -- binding the variable introduced. Now let us define a function |subst| to replace free variables with given expressions. In order to determine which variables are free, we need to ``remember'' variables that are bound as we descend. We can define |subst| as:
+
+\begin{code}
+subst :: [(String,Expr)] -> Expr -> Expr
+subst rep x =
+    case  x of
+          Let name bind x -> Let name
+              (subst rep bind)
+              (subst (filter ((/= name) . fst) rep) x)
+          Var x -> fromMaybe (Var x) (lookup x rep)
+          _ -> descend (subst rep) x
+\end{code}
+\end{example}
+
+
 
 \subsection{Rewrite Traversals}
 
@@ -427,38 +462,6 @@ uniqueVars x = evalState (transformM f x) vars
 
 Here a monadic computation is used. The program keeps track of the next item in the list to use, and replace the current item. Using the state monad, this can be done easily.
 \end{example}
-
-\subsection{Top-Down Descending}
-
-Although top-down traversals are unnecessary for our library, we still believe that some transformations operate more naturally in a top-down manner. One extension to the top-down traversal pushes information downwards at the same time. We introduce the |descend| function, inspired by the Compos paper \cite{bringert:compos}.
-
-\begin{code}
-descend :: Uniplate alpha => (alpha -> alpha) -> alpha -> alpha
-\end{code}
-
-The |descend| function applies a function to all children of a node, then reconstructs a new result using those results.
-
-\begin{comment}
-\begin{code}
-data Expr = Var String | Let String Expr Expr | Add Expr Expr
-\end{code}
-\end{comment}
-
-\begin{example}
-Consider the addition of a constructor \ignore|Let String Expr Expr| -- binding the variable introduced. Now let us define a function |subst| to replace free variables with given expressions. In order to determine which variables are free, we need to ``remember'' variables that are bound as we descend. We can define |subst| as:
-
-\begin{code}
-subst :: [(String,Expr)] -> Expr -> Expr
-subst rep x =
-    case  x of
-          Let name bind x -> Let name
-              (subst rep bind)
-              (subst (filter ((/= name) . fst) rep) x)
-          Var x -> fromMaybe (Var x) (lookup x rep)
-          _ -> descend (subst rep) x
-\end{code}
-\end{example}
-
 
 \subsection{Folds}
 
