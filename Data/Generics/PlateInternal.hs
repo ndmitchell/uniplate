@@ -13,7 +13,7 @@ module Data.Generics.PlateInternal(
 ---------------------------------------------------------------------
 -- GHC
 {-
-#if 0
+#if !__GLASGOW_HASKELL__
 {-
 #endif
 -}
@@ -38,7 +38,7 @@ inlinePerformIO :: IO a -> a
 inlinePerformIO (IO m) = case m realWorld# of (# _, r #) -> r
 
 {-
-#if 0
+#if !__GLASGOW_HASKELL__
 -}
 #endif
 -}
@@ -48,7 +48,7 @@ inlinePerformIO (IO m) = case m realWorld# of (# _, r #) -> r
 ---------------------------------------------------------------------
 -- !GHC
 {-
-#if 0
+#if !__GLASGOW_HASKELL__
 -}
 
 import Data.Typeable
