@@ -21,6 +21,7 @@
 -- # increase
 -- # incrOne
 -- # Traversable
+-- # syb_incrOne
 -- instance Eq Expr
 -- instance Uniplate Expr
 -- instance Eq Tree
