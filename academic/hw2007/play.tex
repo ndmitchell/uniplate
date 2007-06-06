@@ -98,7 +98,7 @@ generate = undefined
 
 
 \begin{abstract}
-Generic traversals over recursive data structures are often referred to as \textit{boilerplate} code. The definitions of functions involving such traversals may repeat very similar patterns, but with variations for different data types and different functionality. While other generic traversal schemes have required extensions to the type system, this paper focuses on a conceptually simpler generic concept. The |Uniplate| class is introduced, which abstracts over common queries and transformations in a simple manner.
+Generic traversals over recursive data structures are often referred to as \textit{boilerplate} code. The definitions of functions involving such traversals may repeat very similar patterns, but with variations for different data types and different functionality. This paper focuses on traversals where there is only one type of interest, requiring fewer type extensions than other boilerplate removal systems. The |Uniplate| class is introduced, which shows how all traversals can implemented in terms of a single |replaceChildren| operation.
 \end{abstract}
 
 \section{Introduction}
@@ -138,8 +138,8 @@ This definition has the following undesirable characteristics:
 \begin{itemize}
 \item adding a new constructor would require an additional equation;
 \item the |++| operation is specified many times;
-\item the code is repetitive and uninteresting;
-\item the code is unnecessarily long.
+\item the code is highly repetitive and unnecessarily long;
+\item the code cannot be shared with other similar operations.
 \end{itemize}
 
 This problem is referred to as the \textit{boilerplate} problem. Using the library developed in this paper, the above example can be rewritten as:
@@ -150,23 +150,26 @@ variables x = [y | Var y <- universe x]
 \end{code}
 \end{example}
 
-The type signature is optional, and would be inferred automatically if left absent. This example requires only Haskell 98. For more advanced examples we require multi-parameter type classes -- but no rank-2 types, functional dependencies or GADTs. The central idea is to make all operations work over a single \textit{uniform} type. By focusing on the simple case, we bring real benefits to the programmer.
+The type signature is optional, and would be inferred automatically if left absent. This example requires only Haskell 98. For more advanced examples we require multi-parameter type classes -- but no rank-2 types, functional dependencies or GADTs.
+
+The central idea is that all traversals only contain value-specific behaviour for a \textit{single uniform type}. In the |variables| example, the only type of interest is |Expr|. In practical applications, this pattern is common. By focusing only on uniform type traversals, we are able to simplify many aspects of boilerplate removal.
 
 \subsection{Contribution}
 
-Ours is far from the first technique for `scrapping the boilerplate', the area has been researched extensively. But there are a number of novel features in our approach:
+Ours is far from the first technique for `scrapping boilerplate'. The area has been researched extensively. But there are a number of distinctive features in our approach:
 
 \begin{itemize}
 \item We make use of \textit{list-comprehensions} \citep{wadler:list_comprehensions} for succinct queries.
-\item We require \textit{no language extensions} for single-type traversals, and only multi-parameter type classes \cite{jones:mptc} for multi-type traversals.
+\item We require \textit{no language extensions} for single-type traversals, and only multi-parameter type classes \citep{jones:mptc} for multi-type traversals.
 \item Our \textit{choice of operations} is new: we shun some traditionally provided operations, and provide some uncommon operations.
-\item We are able to implement our class on top of |Typeable| and |Data| \citep{lammel:syb}, making use of the built in compiler support if available.
+\item We are able to implement our class on top of |Typeable| and |Data| \citep{lammel:syb}, making optional use of the built in compiler support.
+\item We compare the \textit{conciseness} of operations using our library, showing our approach leads to less boilerplate.
 \item We compare the \textit{relative performance} of traversal mechanisms, something that has been neglected in previous papers.
 \end{itemize}
 
-We have implemented all the techniques reported here. Our scheme requires less boilerplate than alternatives in almost all cases. We encourage readers to download the Uniplate library and try it out. It can be obtained from the website at \url{http://www.cs.york.ac.uk/~ndm/uniplate/}. A copy of the library has also been released, and is available on Hackage\footnote{\url{http://hackage.haskell.org/}}.
+We have implemented all the techniques reported here. We encourage readers to download the Uniplate library and try it out. It can be obtained from the website at \url{http://www.cs.york.ac.uk/~ndm/uniplate/}. A copy of the library has also been released, and is available on Hackage\footnote{\url{http://hackage.haskell.org/}}.
 
-The ideas behind the Uniplate library have been used extensively, in both the Yhc compiler \cite{yhc} and the Catch tool \cite{me:catch_tfp}. In Catch there are over 100 Uniplate traversals.
+The ideas behind the Uniplate library have been used extensively, in both the Yhc compiler \citep{yhc} and the Catch tool \citep{me:catch_tfp}. In Catch there are over 100 Uniplate traversals.
 
 \subsection{Road map}
 
@@ -176,7 +179,7 @@ The ideas behind the Uniplate library have been used extensively, in both the Yh
 \section{Queries and Transformations}
 \label{sec:use_play}
 
-We define various queries and transformations, using the |Expr| type defined in the introduction as an example throughout. All the traversals rely on the class |Uniplate|, an instance of which is assumed for |Expr|. This instance and definition are covered in \S\ref{sec:implement_play}.
+We define various queries and transformations, using the |Expr| type defined in the introduction as an example throughout. A \textit{query} is a function that takes a value, and returns some information extracted out of the value. A \textit{transformation} takes a value, and returns a modified version of the original value. A \textit{traversal} may be either a query or a transformation. All the traversals rely on the class |Uniplate|, an instance of which is assumed for |Expr|. The definition of this class and its instances are covered in \S\ref{sec:implement_play}.
 
 \subsection{Children}
 
@@ -186,13 +189,13 @@ The first function in the Uniplate library serves as both a function, and a defi
 children :: Uniplate alpha => alpha -> [alpha]
 \end{code}
 
-The function |children| takes a value and returns all maximal proper substructures of the same type. For example:
+The function |children| takes a value and returns \textit{all maximal proper substructures of the same type}. For example:
 
 \begin{code}
 children (Add (Neg (Val 1)) (Var "x")) = [Neg (Val 1), Var "x"]
 \end{code}
 
-The |children| function is occasionally useful, but is used more commonly as a definition for other functions.
+The |children| function is occasionally useful, but is used more commonly as an auxiliary in the definitions of other functions.
 
 
 \subsection{Queries}
@@ -203,7 +206,7 @@ The Uniplate library provides a single method for implementing queries, the |uni
 universe :: Uniplate alpha => alpha -> [alpha]
 \end{code}
 
-This function takes a data structure, and returns a list of all data structures of the same type found within it. Imagining a data structure as a tree, |universe| returns the root of the tree, and all it's subtrees of the same type at all levels. For example:
+This function takes a data structure, and returns a list of \textit{all} data structures of the same type found within it. Imagining a data structure as a tree, |universe| returns the root of the tree, and all its subtrees of the same type at all levels. For example:
 
 \begin{code}
 universe (Add (Neg (Var "x")) (Val 12)) =
@@ -213,27 +216,29 @@ universe (Add (Neg (Var "x")) (Val 12)) =
     ,Val 12]
 \end{code}
 
-One use of this mechanism for querying was given in the introduction. We have found that the pattern of using a list-comprehension to examine the results is common.
+One use of this mechanism for querying was given in the introduction. Using the |universe| function, queries can be expressed very quickly and directly -- thanks to the power of Haskell's list processing. The pattern of using a list-comprehension to process the results of |universe| is common.
 
 \begin{example}
 \label{ex:zerocount}
-Consider the task of seeing how many divisions by the literal 0 there are -- as this will cause a runtime error.
+Consider the task of counting divisions by the literal 0.
 
 \begin{code}
 countDivZero :: Expr -> Int
 countDivZero x = length [() | Div _ (Val 0) <- universe x]
 \end{code}
+
+Here we make essential use of a feature of list comprehensions: if a pattern does not match, then the item is skipped. In other syntactic constructs, failing to match a pattern results in a pattern-match error.
 \end{example}
 
-Note that we make essential use of the feature of list comprehensions that if a pattern does not match, then the item is skipped. In other syntactic constructs, failing to match a pattern results in a pattern-match error. Using the |universe| function, queries can be expressed very quickly and directly -- thanks to the power of Haskell's list processing.
+\subsection{Bottom-up Transformations}
 
-\subsection{Bottom-up Traversals}
-
-Another common operation covered by many boilerplate removal systems \cite{lammel:syb} is a function that makes modifications to every node in the data structure. We define as our standard transformation a bottom up traversal.
+Another common operation provided by many boilerplate removal systems \citep{lammel:syb}\todo{more citations} is a function that transforms every node in a value. We define as our standard transformation a bottom up traversal.
 
 \begin{code}
 transform :: Uniplate alpha => (alpha -> alpha) -> alpha -> alpha
 \end{code}
+
+The |transform| function starts by applying the function |f| to all the bottom-most nodes in the tree, then progressively works up to the root node. The condition on ordering is that before applying |f| to an expression, all its uniformly typed sub-expressions must have had |f| applied.
 
 \begin{example}
 \label{ex:simplify}
@@ -243,7 +248,7 @@ Suppose we wish to remove the |Sub| constructor assuming the equivalence:
 x - y == x + (- y)
 \end{code}
 
-To apply this rewrite at all possible places in the input expression we define:
+To apply this rewrite at all possible places in an expression we define:
 
 \begin{code}
 simplify x = transform f x
@@ -269,9 +274,26 @@ simplify x = transform f x
 Each equation corresponds to the natural Haskell translation of the rule. The |transform| function manages all the required boilerplate.
 \end{example}
 
-So how does a bottom-up traversal work? The traversal starts by applying the function |f| to all the leaf nodes in the tree, then progressively working up to the root node. The condition on ordering is that before applying |f| to an expression, all the sub-expressions must have had |f| applied.
-
 \subsection{Top-Down Traversals}
+
+The Scrap Your Boilerplate approach \citep{syb:lammel} provides a top-down traversal named |everywhere'|. We describe their traversal, how it could be represented in Uniplate, and our reasons for \textit{not} providing it. We instead provide |descend|, based on the |compos| operator \cite{compos}.
+
+The |everywhere'| transformation applies a function to a value, then continues the transformation on all the children of the freshly generated values. Typically, the intention in a traversal is to apply the function to \textit{every node exactly once}. Unfortunately, |everywhere'| does not have this property. Consider the following example:
+
+\todo{Got to here}
+
+\begin{example}
+f (Neg (Neg x)) = x
+f (Neg (Add x y)) = Sub (Neg x) (Neg y)
+\end{example}
+
+
+
+
+
+
+Besides bottom-up transformations, many boilerplate schemes would a top-down transform (\cite{lammel:syb} has |everywhere'|). But if two transformers are defined, how should the user pick between them? Instead we focus on modelling transformations as rewrites -- showing why providing a top-down traversal is both unnecessary, and potentially dangerous! There is no barrier to defining a top-down transformation in our library, and we refer to such a hypothetical operation as |transform'|.
+
 
 \todo{Explain why the standard everything' is not appropriate, in particular note that f (Add x) = x, and f (Add x) = Add (Mul x) both cause problems}
 
