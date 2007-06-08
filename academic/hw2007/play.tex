@@ -276,28 +276,35 @@ Each equation corresponds to the natural Haskell translation of the rule. The |t
 
 \subsection{Top-Down Traversals}
 
-The Scrap Your Boilerplate approach \citep{syb:lammel} provides a top-down traversal named |everywhere'|. We describe their traversal, how it could be represented in Uniplate, and our reasons for \textit{not} providing it. We instead provide |descend|, based on the |compos| operator \cite{compos}.
+The Scrap Your Boilerplate approach \citep{syb:lammel} provides a top-down traversal named |everywhere'|. We describe their traversal, and our reasons for \textit{not} providing it, even though it would be trivial to write. We instead provide |descend|, based on the |compos| operator \citep{compos}.
 
-The |everywhere'| transformation applies a function to a value, then continues the transformation on all the children of the freshly generated values. Typically, the intention in a traversal is to apply the function to \textit{every node exactly once}. Unfortunately, |everywhere'| does not have this property. Consider the following example:
-
-\todo{Got to here}
+The |everywhere'| transformation applies a function to a value, then continues the transformation on all the children of the freshly generated value. Typically, the intention in a traversal is to apply the function to \textit{every node exactly once}. Unfortunately, |everywhere'| does not have this property.
 
 \begin{example}
-f (Neg (Neg x)) = x
-f (Neg (Add x y)) = Sub (Neg x) (Neg y)
+Consider the following transformation:
+
+\begin{code}
+doubleNeg (Neg (Neg x))  = x
+doubleNeg x              = x
+\end{code}
+
+The intention is clear: remove all instances of double negation. When applied in a bottom-up manner, this is the result, however when applied top-down some nodes are be missed. Consider the test case |Neg (Neg (Neg (Neg (Val 1))))| -- quadruple negation -- only the outermost double negation will be removed. The reason is that in the first equation of |doubleNeg| we return |x|, whose children we then transform, missing |x| entirely.
 \end{example}
 
+\begin{example}
+Consider the following transformation:
 
+\begin{code}
+reciprocal (Div n m)  = Mul n (Div (Val 1) m)
+reciprocal x          = x
+\end{code}
 
+This transformation removes arbitrary division, converting it to divisions where the numerator is always 1. If applied once to each node, this computation would terminate successfully. Unfortunately, top-down transformation treats the generated |Mul| as  being transformed, but cannot tell that the generated |Div| is the result of a transformation, not a fragment of the original input. This leads to a non-termination error.
+\end{example}
 
+While a top-down transformation in the style of |everywhere'| can be used successfully, it is easy to slip up. The problem is that the program cannot tell the difference between freshly created nodes, and values that come originally from the input. Making the assumption that exactly the top-most constructor was freshly constructed is sufficient in some cases, but mistakes are not caught by the type system.
 
-
-Besides bottom-up transformations, many boilerplate schemes would a top-down transform (\cite{lammel:syb} has |everywhere'|). But if two transformers are defined, how should the user pick between them? Instead we focus on modelling transformations as rewrites -- showing why providing a top-down traversal is both unnecessary, and potentially dangerous! There is no barrier to defining a top-down transformation in our library, and we refer to such a hypothetical operation as |transform'|.
-
-
-\todo{Explain why the standard everything' is not appropriate, in particular note that f (Add x) = x, and f (Add x) = Add (Mul x) both cause problems}
-
-Although top-down traversals are unnecessary for our library, we still believe that some transformations operate more naturally in a top-down manner. One extension to the top-down traversal pushes information downwards at the same time. We introduce the |descend| function, inspired by the Compos paper \cite{bringert:compos}.
+We permit top-down transformations, but require the programmer to make the traversal more explicit. We introduce the |descend| function, inspired by the Compos paper \cite{bringert:compos}. Our |descend| function allows additional arguments to be passed, and modified at each level, to allow the transformation of lower layers to depend on the higher layers.
 
 \begin{code}
 descend :: Uniplate alpha => (alpha -> alpha) -> alpha -> alpha
@@ -324,28 +331,25 @@ subst rep x =
           Var x -> fromMaybe (Var x) (lookup x rep)
           _ -> descend (subst rep) x
 \end{code}
+
+The |Var| alternative in this function may return an |Expr| from |rep|, but no additional transformation will be performed on this value, since all transformation is made explicit. We have also explicitly continued the |subst| transformation in the |Let| alternative.
 \end{example}
 
+\subsection{Rewrite Transformations}
 
-
-\subsection{Rewrite Traversals}
-
-Besides bottom-up transformations, many boilerplate schemes would a top-down transform (\cite{lammel:syb} has |everywhere'|). But if two transformers are defined, how should the user pick between them? Instead we focus on modelling transformations as rewrites -- showing why providing a top-down traversal is both unnecessary, and potentially dangerous! There is no barrier to defining a top-down transformation in our library, and we refer to such a hypothetical operation as |transform'|.
-
-We define our rewrite transformation to be:
+In addition to top-down and bottom-up transformations, we also provide rewrite transformations. The idea of a rewrite transformation is that a rule is applied exhaustive until a normal form is achieved. Consider a rewrite transformation:
 
 \begin{code}
 rewrite :: Uniplate alpha => (alpha -> Maybe alpha) -> alpha -> alpha
-rewrite rule x = elipses
 \end{code}
 
-A rewriting |rule| takes an expression of type |alpha|, and returns either |Nothing| to indicate that the rule is not applicable, or a |Just| indicating that a modification has been performed, and that the new expression should be checked for rewrites. The postcondition for |rewrite| is that there must be no places where |rule| could be applied. Another way of stating this is that the following property must hold:
+A rewrite-rule argument |r| takes an expression |e| of type |alpha|, and returns either |Nothing| to indicate that the rule is not applicable, or |Just e'| indicating that |e| is rewritten by |r| to |e'|. The intuition for |rewrite r| is that it applies |r| exhaustively; the postcondition for |rewrite| is that there must be no places where |r| could be applied. Another way of stating this is that the following property must hold:
 
 \begin{code}
 propRewrite r x = all (isNothing . r) (universe (rewrite r x))
 \end{code}
 
-It is possible to define the |rewrite| function in terms of |transform|:
+One way to define the |rewrite| function uses |transform|:
 
 \begin{code}
 rewrite :: Uniplate alpha => (alpha -> Maybe alpha) -> alpha -> alpha
@@ -353,21 +357,21 @@ rewrite f = transform g
     where g x = maybe x (rewrite f) (f x)
 \end{code}
 
-This definition tries to apply the rule everywhere in a bottom-up manner. If at any point it makes a change, then the new tree has the rewrite applied to it. Assuming the set of rules is confluent and terminating, there will be no difference between a top-down and bottom-up application of the rules.
+This definition tries to apply the rule everywhere in a bottom-up manner. If at any point it makes a change, then the new value has the rewrite applied to it. Assuming the set of rules is convergent \todo{cite baader and nipkow}, there will be no difference between a top-down and bottom-up application of the rules. In any case, the function will only terminate once a normal form is found.
 
-A disadvantage of |rewrite| is that if a rule modifies a tree only slightly, then large amounts of wasted work could be performed checking expressions repeatedly. Because of this, most programmers would rather use an explicit traversal -- namely top-down or bottom-up, and manage this rewriting themselves. But which one of top-down and bottom-up is most appropriate, and how would it be modified to ensure |rewrite| behaviour?
+A disadvantage of |rewrite| is that large amounts of wasted work could be performed checking unchanged sub-expressions repeatedly. Because of this, most programmers would rather use an explicit traversal, and manage this rewriting themselves. We show under which circumstances a bottom-up transformation obtains a normal form, and how any transformation can be modified to ensure a normal form.
 
 \subsubsection{Rewrite as Bottom-Up}
 \label{sec:rewrite_bottom}
 
-Given a rewrite |f :: alpha -> Maybe alpha|, we define the related function |f'| as follows:
+We define the function |always| that takes a rewrite rule |r| and produces a function appropriate for use with |transform|.
 
 \begin{code}
-f' :: alpha -> alpha
-f' x = maybe x id (f x)
+always :: (alpha -> Maybe alpha) -> (alpha -> alpha)
+always r x = fromMaybe x (r x)
 \end{code}
 
-What are the preconditions on |f| such that for all |x|, \ignore|rewrite f x == transform f' x|? We can start by defining a more abstract representation of a rewrite rule:
+What are the preconditions on |r| such that \ignore|forall |x| `dot` rewrite r x == transform (always r) x|? We can start by defining a more abstract representation of a rewrite rule:
 
 \begin{code}
 type Rewrite  = [(Tree,Tree)]
