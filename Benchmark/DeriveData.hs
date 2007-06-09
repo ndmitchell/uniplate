@@ -1,5 +1,5 @@
 
-module DeriveData(module Data.Generics.PlayData) where
+module DeriveData(module Data.Generics.PlateData) where
 
-import Data.Generics.PlayData
+import Data.Generics.PlateData
 import Data

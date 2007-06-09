@@ -8,7 +8,7 @@ import DeriveCompos
 import OperationsCommon
 import DeriveHand
 
-import Data.Generics.PlayEx as Play
+import Data.Generics.Biplate as Play
 import Data.Generics as SYB
 
 
@@ -33,12 +33,14 @@ variables_raw = rawExpr id f
         f (NDiv  x y  ) = f x ++ f y
 
 
-variables_play = playExpr id $ \x -> [y | NVar y <- Play.everything x]
+variables_play = playExpr id $ \x -> [y | NVar y <- Play.universe x]
 
+{-
 variables_play2 = alt "fold" $ playExpr id $ fold concat f
     where
         f (NVar x) c = x : c
         f _ c = c
+-}
 
 variables_syb = sybExpr id $ SYB.everything (++) ([] `mkQ` f)
     where
@@ -66,12 +68,14 @@ zeros_raw = rawExpr id f
         f (NMul  x y  ) = f x + f y
         f (NDiv  x y  ) = f x + f y
 
-zeros_play = playExpr id $ \x -> length [() | NDiv _ (NVal 0) <- Play.everything x]
+zeros_play = playExpr id $ \x -> length [() | NDiv _ (NVal 0) <- Play.universe x]
 
+{-
 zeros_play2 = alt "fold" $ playExpr id $ fold sum f
     where
         f (NDiv _ (NVal 0)) c = 1 + c
         f _ c = c
+-}
 
 zeros_syb = sybExpr id $ SYB.everything (+) (0 `mkQ` f)
     where
@@ -102,7 +106,7 @@ simp (NSub x y)           = simp $ NAdd x (NNeg y)
 simp (NAdd x y) | x == y  = NMul (NVal 2) x
 simp x                    = x
 
-simplify_play = playExpr2 $ traverse simp
+simplify_play = playExpr2 $ transform simp
 
 simplify_play2 = alt "rewrite" $ playExpr2 $ rewrite f
     where
@@ -133,7 +137,7 @@ rename_compos = compStm2 f
             
 rename_op (NV x) = NV ("_" ++ x)
 
-rename_play = playStm2 $ traverseEx rename_op
+rename_play = playStm2 $ transformEx rename_op
 
 rename_syb = sybStm2 $ everywhere (mkT rename_op)
 
@@ -163,7 +167,7 @@ symbols_compos = compStm rewrapPairC f
             CSDecl typ var -> [(var,typ)]
             _ -> composOpMonoid f t
 
-symbols_play = playStm rewrapPairN $ \x -> [(v,t) | NSDecl t v <- everythingEx x]
+symbols_play = playStm rewrapPairN $ \x -> [(v,t) | NSDecl t v <- universeEx x]
 
 symbols_syb = sybStm rewrapPairN $ SYB.everything (++) ([] `mkQ` f)
     where
@@ -197,7 +201,7 @@ constFold_compos = compStm2 f
 const_op (NEAdd (NEInt n) (NEInt m)) = NEInt (n+m)
 const_op x = x
 
-constFold_play = playStm2 $ traverseEx const_op
+constFold_play = playStm2 $ transformEx const_op
 
 constFold_syb = sybStm2 $ everywhere (mkT const_op)
 
@@ -222,7 +226,7 @@ increase = task "increase" [increase_play v, increase_syb v, increase_comp v, in
 increase_op k (NS s) = NS (s+k)
 
 increase_play k = playPar2 (increase_play_int k)
-increase_play_int k = traverseEx (increase_op k)
+increase_play_int k = transformEx (increase_op k)
 
 increase_comp k = compPar2 $ increase_comp_int k
 increase_comp_int k = f k
@@ -298,7 +302,7 @@ bill_comp = compPar id f
 bill_syb = sybPar id $ SYB.everything (+) (0 `mkQ` billS)
     where billS (NS x) = x
 
-bill_play = playPar id $ \x -> sum [x | NS x <- everythingEx x]
+bill_play = playPar id $ \x -> sum [x | NS x <- universeEx x]
 
 bill_raw = rawPar id c
     where

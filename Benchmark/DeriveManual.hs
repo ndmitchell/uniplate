@@ -3,71 +3,71 @@
 module DeriveManual where
 
 import Data
-import Data.Generics.PlayManual
+import Data.Generics.PlateDirect
 
 
-instance PlayOne NExpr where
-    playOne x =
+instance PlateOne NExpr where
+    plateOne x =
         case x of
-            NNeg  a    -> play NNeg |* a
-            NAdd  a b  -> play NAdd |* a |* b
-            NSub  a b  -> play NSub |* a |* b
-            NMul  a b  -> play NMul |* a |* b
-            NDiv  a b  -> play NDiv |* a |* b
-            _          -> play x
+            NNeg  a    -> plate NNeg |* a
+            NAdd  a b  -> plate NAdd |* a |* b
+            NSub  a b  -> plate NSub |* a |* b
+            NMul  a b  -> plate NMul |* a |* b
+            NDiv  a b  -> plate NDiv |* a |* b
+            _          -> plate x
 
 
-instance PlayAll NStm NVar where
-    playAll x =
+instance PlateAll NStm NVar where
+    plateAll x =
         case x of
-            NSDecl a b -> play (NSDecl a) |* b
-            NSAss a b -> play NSAss |* a |+ b
-            NSBlock x -> play NSBlock ||+ x
-            NSReturn x -> play NSReturn |+ x
+            NSDecl a b -> plate (NSDecl a) |* b
+            NSAss a b -> plate NSAss |* a |+ b
+            NSBlock x -> plate NSBlock ||+ x
+            NSReturn x -> plate NSReturn |+ x
 
-instance PlayAll NStm NStm where
-    playAll = playSelf
+instance PlateAll NStm NStm where
+    plateAll = plateSelf
 
-instance PlayOne NVar where
-    playOne x = play x
+instance PlateOne NVar where
+    plateOne x = plate x
 
-instance PlayAll NExp NVar where
-    playAll x =
+instance PlateAll NExp NVar where
+    plateAll x =
         case x of
-            NEStm x -> play NEStm |+ x
-            NEAdd x y -> play NEAdd |+ x |+ y
-            NEVar x -> play NEVar |* x
-            _ -> play x
+            NEStm x -> plate NEStm |+ x
+            NEAdd x y -> plate NEAdd |+ x |+ y
+            NEVar x -> plate NEVar |* x
+            _ -> plate x
 
-instance PlayOne NStm where
-    playOne x =
+instance PlateOne NStm where
+    plateOne x =
         case x of
-            NSAss x y -> play (NSAss x) |+ y
-            NSBlock x -> play NSBlock ||* x
-            NSReturn x -> play NSReturn |+ x
-            _ -> play x
+            NSAss x y -> plate (NSAss x) |+ y
+            NSBlock x -> plate NSBlock ||* x
+            NSReturn x -> plate NSReturn |+ x
+            _ -> plate x
 
-instance PlayAll NStm NExp where
-    playAll x =
+instance PlateAll NStm NExp where
+    plateAll x =
         case x of
-            NSAss x y -> play (NSAss x) |* y
-            NSBlock x -> play NSBlock ||+ x
-            NSReturn x -> play NSReturn |* x
-            _ -> play x
+            NSAss x y -> plate (NSAss x) |* y
+            NSBlock x -> plate NSBlock ||+ x
+            NSReturn x -> plate NSReturn |* x
+            _ -> plate x
 
-instance PlayAll NExp NStm where
-    playAll x =
+instance PlateAll NExp NStm where
+    plateAll x =
         case x of
-            NEStm x -> play NEStm |* x
-            NEAdd x y -> play NEAdd |+ x |+ y
-            _ -> play x
+            NEStm x -> plate NEStm |* x
+            NEAdd x y -> plate NEAdd |+ x |+ y
+            _ -> plate x
 
-instance PlayOne NExp where
-    playOne x =
+instance PlateOne NExp where
+    plateOne x =
         case x of
-            NEStm x -> play NEStm |+ x
-            NEAdd x y -> play NEAdd |* x |* y
-            _ -> play x
+            NEStm x -> plate NEStm |+ x
+            NEAdd x y -> plate NEAdd |* x |* y
+            _ -> plate x
 
 
 {-
@@ -79,28 +79,28 @@ data NPerson = NP String String deriving (Data,Typeable)
 data NSalary = NS Integer deriving (Data,Typeable)
 -}
 
-instance PlayAll NCompany NSalary where
-    playAll (NC x) = play NC ||+ x
+instance PlateAll NCompany NSalary where
+    plateAll (NC x) = plate NC ||+ x
 
-instance PlayAll NDept NSalary where
-    playAll (ND a b c) = play (ND a) |+ b ||+ c
+instance PlateAll NDept NSalary where
+    plateAll (ND a b c) = plate (ND a) |+ b ||+ c
 
-instance PlayAll NUnt NSalary where
-    playAll (NPU a) = play NPU |+ a
-    playAll (NDU a) = play NDU |+ a
+instance PlateAll NUnt NSalary where
+    plateAll (NPU a) = plate NPU |+ a
+    plateAll (NDU a) = plate NDU |+ a
 
-instance PlayAll NUnt NDept where
-    playAll (NDU a) = play NDU |* a
-    playAll x = play x
+instance PlateAll NUnt NDept where
+    plateAll (NDU a) = plate NDU |* a
+    plateAll x = plate x
 
-instance PlayAll NEmployee NSalary where
-    playAll (NE a b) = play (NE a) |* b
+instance PlateAll NEmployee NSalary where
+    plateAll (NE a b) = plate (NE a) |* b
 
-instance PlayOne NSalary where
-    playOne x = play x
+instance PlateOne NSalary where
+    plateOne x = plate x
 
-instance PlayOne NDept where
-    playOne (ND a b c) = play (ND a b) ||+ c
+instance PlateOne NDept where
+    plateOne (ND a b c) = plate (ND a b) ||+ c
 
-instance PlayAll NCompany NDept where
-    playAll (NC x) = play NC ||* x
+instance PlateAll NCompany NDept where
+    plateAll (NC x) = plate NC ||* x

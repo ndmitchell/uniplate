@@ -3,10 +3,10 @@
 module DeriveHand where
 
 import Data
-import Data.Generics.PlayEx
+import Data.Generics.Biplate
 
 
-instance Play NExpr where
+instance Uniplate NExpr where
     replaceChildren x =
         case x of
             NNeg  a    -> ([a]    , \(a':_)    -> NNeg  a'     )
@@ -17,7 +17,7 @@ instance Play NExpr where
             _         -> ([]     , \_         -> x           )
 
 
-instance PlayEx NStm NVar where
+instance Biplate NStm NVar where
     replaceType x =
         case x of
             NSDecl a b -> ([b], \(b':_) -> NSDecl a b')
@@ -28,10 +28,10 @@ instance PlayEx NStm NVar where
             NSReturn x -> (get, \xs -> NSReturn (gen xs))
                 where (get,gen) = replaceType x
 
-instance Play NVar where
+instance Uniplate NVar where
     replaceChildren x = ([], \_ -> x)
 
-instance PlayEx NExp NVar where
+instance Biplate NExp NVar where
     replaceType x =
         case x of
             NEStm x -> (get, \xs -> NEStm (gen xs))
@@ -46,17 +46,17 @@ instance PlayEx NExp NVar where
             
             _ -> ([], \_ -> x)
 
-instance (PlayEx y x, Play x) => PlayEx [y] x where
+instance (Biplate y x, Uniplate x) => Biplate [y] x where
     replaceType [] = ([], \_ -> [])
     replaceType (x:xs) = (get1++get2, \ys -> let (a,b) = splitAt (length get1) ys in gen1 a : gen2 b)
         where
             (get1,gen1) = replaceType x
             (get2,gen2) = replaceType xs
 
-instance PlayEx NStm NStm where
+instance Biplate NStm NStm where
     replaceType x = ([x], \(x':_) -> x')
 
-instance Play NStm where
+instance Uniplate NStm where
     replaceChildren x =
         case x of
             NSAss a b -> (get,\xs -> NSAss a (gen xs))
@@ -67,7 +67,7 @@ instance Play NStm where
                 where (get,gen) = replaceType a
             _ -> ([], \_ -> x)
 
-instance PlayEx NExp NStm where
+instance Biplate NExp NStm where
     replaceType x =
         case x of
             NEStm a -> ([a], \(a':_) -> NEStm a')
@@ -77,7 +77,7 @@ instance PlayEx NExp NStm where
                     (get2,gen2) = replaceType b
             _ -> ([], \_ -> x)
 
-instance PlayEx NStm NExp where
+instance Biplate NStm NExp where
     replaceType x =
         case x of
             NSAss a b -> ([b], \(b':_) -> NSAss a b')
@@ -86,7 +86,7 @@ instance PlayEx NStm NExp where
                 where (get,gen) = replaceType a
             _ -> ([], \_ -> x)
 
-instance Play NExp where
+instance Uniplate NExp where
     replaceChildren x =
         case x of
             NEStm a -> (get, \xs -> NEStm (gen xs))
@@ -95,30 +95,30 @@ instance Play NExp where
             _ -> ([], \_ -> x)
 
 
-instance PlayEx NCompany NSalary where
+instance Biplate NCompany NSalary where
     replaceType (NC xs) = (get, \xs -> NC (gen xs))
         where (get,gen) = replaceType xs
 
-instance PlayEx NDept NSalary where
+instance Biplate NDept NSalary where
     replaceType (ND a (NE b c) d) = (c:get, \(x:xs) -> ND a (NE b x) (gen xs))
         where (get,gen) = replaceType d
 
-instance PlayEx NUnt NSalary where
+instance Biplate NUnt NSalary where
     replaceType (NPU (NE a b)) = ([b], \(x:_) -> NPU (NE a x))
     replaceType (NDU x) = (get, \xs -> NDU (gen xs))
         where (get,gen) = replaceType x
 
-instance Play NSalary where
+instance Uniplate NSalary where
     replaceChildren x = ([], \_ -> x)
 
-instance PlayEx NCompany NDept where
+instance Biplate NCompany NDept where
     replaceType (NC x) = (x, NC)
 
-instance PlayEx NUnt NDept where
+instance Biplate NUnt NDept where
     replaceType (NDU x) = ([x], \(x':_) -> NDU x')
     replaceType x = ([], \_ -> x)
 
-instance Play NDept where
+instance Uniplate NDept where
     replaceChildren (ND a b c) = (get, \xs -> ND a b (gen xs))
         where (get,gen) = replaceType c
 

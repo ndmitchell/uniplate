@@ -4,82 +4,82 @@ module DeriveTypeable where
 
 import Data
 import Data.Typeable
-import Data.Generics.PlayTypeable
+import Data.Generics.PlateTypeable
 
 
-instance Play NExpr where
+instance Uniplate NExpr where
     replaceChildren = replaceChildrenAll
 
-instance (Typeable a, Play a) => PlayAll NExpr a where
-    playAll x =
+instance (Typeable a, Uniplate a) => PlateAll NExpr a where
+    plateAll x =
         case x of
-            NNeg a    -> play NNeg |+ a
-            NAdd a b  -> play NAdd |+ a |+ b
-            NSub a b  -> play NSub |+ a |+ b
-            NMul a b  -> play NMul |+ a |+ b
-            NDiv a b  -> play NDiv |+ a |+ b
-            _ -> play x
+            NNeg a    -> plate NNeg |+ a
+            NAdd a b  -> plate NAdd |+ a |+ b
+            NSub a b  -> plate NSub |+ a |+ b
+            NMul a b  -> plate NMul |+ a |+ b
+            NDiv a b  -> plate NDiv |+ a |+ b
+            _ -> plate x
 
 
-instance Play NStm where
+instance Uniplate NStm where
     replaceChildren = replaceChildrenAll
 
-instance Play NExp where
+instance Uniplate NExp where
     replaceChildren = replaceChildrenAll
 
-instance Play NVar where
+instance Uniplate NVar where
     replaceChildren = replaceChildrenAll
 
-instance Play NTyp where
+instance Uniplate NTyp where
     replaceChildren = replaceChildrenAll
 
 
-instance (Typeable a, Play a) => PlayAll NStm a where
-    playAll x =
+instance (Typeable a, Uniplate a) => PlateAll NStm a where
+    plateAll x =
         case x of
-            NSDecl a b -> play NSDecl   |+ a |+ b
-            NSAss  a b -> play NSAss    |+ a |+ b
-            NSBlock a  -> play NSBlock  |+ a
-            NSReturn a -> play NSReturn |+ a
+            NSDecl a b -> plate NSDecl   |+ a |+ b
+            NSAss  a b -> plate NSAss    |+ a |+ b
+            NSBlock a  -> plate NSBlock  |+ a
+            NSReturn a -> plate NSReturn |+ a
 
-instance (Typeable a, Play a) => PlayAll NExp a where
-    playAll x =
+instance (Typeable a, Uniplate a) => PlateAll NExp a where
+    plateAll x =
         case x of
-            NEStm a   -> play NEStm |+ a
-            NEAdd a b -> play NEAdd |+ a |+ b
-            NEVar a   -> play NEVar |+ a
-            _ -> play x
+            NEStm a   -> plate NEStm |+ a
+            NEAdd a b -> plate NEAdd |+ a |+ b
+            NEVar a   -> plate NEVar |+ a
+            _ -> plate x
 
-instance (Typeable a, Play a) => PlayAll NVar a where
-    playAll x = play x
+instance (Typeable a, Uniplate a) => PlateAll NVar a where
+    plateAll x = plate x
 
-instance (Typeable a, Play a) => PlayAll NTyp a where
-    playAll x = play x
+instance (Typeable a, Uniplate a) => PlateAll NTyp a where
+    plateAll x = plate x
 
 
 
-instance Play NCompany where replaceChildren = replaceChildrenAll
-instance Play NDept where replaceChildren = replaceChildrenAll
-instance Play NUnt where replaceChildren = replaceChildrenAll
-instance Play NEmployee where replaceChildren = replaceChildrenAll
-instance Play NPerson where replaceChildren = replaceChildrenAll
-instance Play NSalary where replaceChildren = replaceChildrenAll
+instance Uniplate NCompany where replaceChildren = replaceChildrenAll
+instance Uniplate NDept where replaceChildren = replaceChildrenAll
+instance Uniplate NUnt where replaceChildren = replaceChildrenAll
+instance Uniplate NEmployee where replaceChildren = replaceChildrenAll
+instance Uniplate NPerson where replaceChildren = replaceChildrenAll
+instance Uniplate NSalary where replaceChildren = replaceChildrenAll
 
-instance (Typeable a, Play a) => PlayAll NCompany a where
-    playAll (NC x) = play NC |+ x
+instance (Typeable a, Uniplate a) => PlateAll NCompany a where
+    plateAll (NC x) = plate NC |+ x
 
-instance (Typeable a, Play a) => PlayAll NDept a where
-    playAll (ND x y z) = play (ND x) |+ y |+ z
+instance (Typeable a, Uniplate a) => PlateAll NDept a where
+    plateAll (ND x y z) = plate (ND x) |+ y |+ z
 
-instance (Typeable a, Play a) => PlayAll NUnt a where
-    playAll (NPU x) = play NPU |+ x
-    playAll (NDU x) = play NDU |+ x
+instance (Typeable a, Uniplate a) => PlateAll NUnt a where
+    plateAll (NPU x) = plate NPU |+ x
+    plateAll (NDU x) = plate NDU |+ x
 
-instance (Typeable a, Play a) => PlayAll NEmployee a where
-    playAll (NE x y) = play NE |+ x |+ y
+instance (Typeable a, Uniplate a) => PlateAll NEmployee a where
+    plateAll (NE x y) = plate NE |+ x |+ y
 
-instance (Typeable a, Play a) => PlayAll NPerson a where
-    playAll x = play x
+instance (Typeable a, Uniplate a) => PlateAll NPerson a where
+    plateAll x = plate x
 
-instance (Typeable a, Play a) => PlayAll NSalary a where
-    playAll x = play x
+instance (Typeable a, Uniplate a) => PlateAll NSalary a where
+    plateAll x = plate x
