@@ -185,7 +185,7 @@ The ideas behind the Uniplate library have been used extensively, in both the Yh
 \section{Queries and Transformations}
 \label{sec:use_play}
 
-We define various queries and transformations, using the |Expr| type defined in the introduction as an example throughout. A \textit{query} is a function that takes a value, and returns some information extracted out of the value. A \textit{transformation} takes a value, and returns a modified version of the original value. A \textit{traversal} may be either a query or a transformation. All the traversals rely on the class |Uniplate|, an instance of which is assumed for |Expr|. The definition of this class and its instances are covered in \S\ref{sec:implement_play}.
+We define various traversals, using the |Expr| type defined in the introduction as an example throughout. We divide \textit{traversals} into two categories: queries and transformations. A \textit{query} is a function that takes a value, and extracts some information of a different type. A \textit{transformation} takes a value, and returns a modified version of the original value. All the traversals rely on the class |Uniplate|, an instance of which is assumed for |Expr|. The definition of this class and its instances are covered in \S\ref{sec:implement_play}.
 
 \subsection{Children}
 
@@ -239,7 +239,7 @@ Here we make essential use of a feature of list comprehensions: if a pattern doe
 
 \subsection{Bottom-up Transformations}
 
-Another common operation provided by many boilerplate removal systems \citep{lammel:syb}\todo{more citations} is a function that transforms every node in a value. We define as our standard transformation a bottom-up traversal.
+Another common operation provided by many boilerplate removal systems \citep{lammel:syb,stratego,strafunski,ren:generic_recursion_toolbox} is a function is applied to every node in a value. We define as standard a bottom-up transformation.
 
 \begin{code}
 transform :: Uniplate alpha => (alpha -> alpha) -> alpha -> alpha
@@ -822,6 +822,8 @@ The |Uniplate| class takes a value of type |alpha|, and operates on its substruc
 We first introduce |UniplateOn|, which requires an explicit function to find the occurrences of  type |alpha| within type |beta|. We then make use of Multi-parameter type classes (MPTC's) to generalise this function into a type class, named |Biplate|.
 
 \subsection{The |UniplateOn| Operations}
+
+\todo{Perhaps replaceType should be renamed to replaceChildrenEx?}
 
 We define a set of operations, including |universeOn| and |transformOn|, which take an additional argument relative to the standard |Uniplate| operators. We call this additional argument |replaceType|, because it describes how to move from the containing type (|beta|) to the contained type (|alpha|).
 
