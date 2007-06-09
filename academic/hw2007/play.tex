@@ -40,7 +40,9 @@
 
 \newenvironment{example}{\yesexample}{\noexample}
 \newenvironment{revisit}[1]{\subsubsection*{Example #1 (revisited)}}{\noexample}
-\newenvironment{examplename}[1]{\subsubsection*{Example (#1)}}{\noexample}
+\newenvironment{examplename}[1]
+    {\subsubsection*{Example \arabic{exmp} (#1)}\refstepcounter{exmp}}
+    {\noexample}
 
 \newcommand{\K}{\ensuremath{^\ast}} % kleene star
 \newcommand{\D}{\ensuremath{\cdot}} % central dot
@@ -956,8 +958,6 @@ All methods can be fully automated using \derive{}, and all provide a simplified
 \subsection{Direct instances}
 \label{sec:implement_playdirect}
 
-\todo{Got to here}
-
 Writing direct instances requires the |Data.Generics.PlateDirect| module to be imported. This style requires a maximum of $n^2$ instance definitions, where $n$ is the number of types which contain each other, but gives the highest performance and most type-safety. These instances still depend on the type of each field, but are easier to define than the |Uniplate| instance discussed in \S\ref{sec:play_instances}. An example for |Expr| would be:
 
 \begin{comment}
@@ -988,7 +988,7 @@ instance PlateOne Expr where
             _         -> plate x
 \end{code}
 
-Four combinators (| ||*|, | ||+|, | ||-| and | ||||*|) indicate the structure of the field to the right. The | ||*| combinator says that the value on the right is of the target type, | ||+| says that the target type is contained within the value, | ||-| says that the target type is not in the value, and | ||||*| says that the value to the right is a list of the target type. We use the law that |plate f ||- x| is equivalent to |plate (f x)| to obtain the definition presented above.
+Five combinators (| ||*|, | ||+|, | ||-|, | ||*| and | ||||+|) indicate the structure of the field to the right. The | ||*| combinator says that the value on the right is of the target type, | ||+| says that a value of the target type \textit{may be} contained within the right operand, | ||-| says that values of the target type \textit{cannot occur} in the right operand. | ||||*| and | ||||+| are versions of | ||*| and | ||+| that for when the value to the right is a \textit{list} either of the target type, or containing the target type. We use the law that |plate f ||- x| is equivalent to |plate (f x)| to obtain the definition presented above.
 
 This style of definition naturally expands to the multi-type traversal, for example:
 
@@ -1002,17 +1002,17 @@ instance PlateAll Stmt Expr where
             While     a b    -> plate While     |*   a |+  b
 \end{code}
 
-From the defintions of |PlateOne| and |PlateAll| the library can define |Uniplate| and |Biplate| instances. The information provided with | ||-| and | ||+| directs the search more precisely -- cutting out redundant exploration down branches that do not have the target type. The use of | ||||*| is an optimisation which allows a list of the target type to be directly manipulated with |replaceChildren| -- instead of producing and consuming this list twice.
+From the definitions of |PlateOne| and |PlateAll| the library can define |Uniplate| and |Biplate| instances. The information provided with | ||-| and | ||+| avoids redundant exploration down branches that do not have the target type. The use of | ||||*| is an optimisation which allows a list of the target type to be directly manipulated with |replaceChildren| instead of producing and consuming this list twice. The use of | ||||+| avoids the definition of additional instances.
 
-In the worst case, this approach requires an instance for each container/contained pair. In reality few traversal pairs are actually needed. The restricted number of type classes also gives increased type safety; instance such as \ignore|Biplate Expr Stmt| do not exist, so this error can be eliminated.
+In the worst case, this approach requires an instance for each container/contained pair. In reality few traversal pairs are actually needed. The restricted number of type classes also gives increased type safety; instances such as \ignore|Biplate Expr Stmt| do not exist
 
-Even though it makes full use of library provided primitives to structure the instances, We have named this approach ``Manual''. The reason is that the person (or tool) writing the instances must be aware of the types -- not simply applying syntactic rules. In our experience these combinators offer similar performance to hand-tuned instances, see \S\ref{sec:results_speed} for measurements.
+The person (or tool) writing the instances must be aware of the types; it is not just a matter of applying syntactic rules. In our experience these combinators offer similar performance to hand-tuned instances; see \S\ref{sec:results_speed} for measurements.
 
 
 \subsection{|Typeable| based instances}
 \label{sec:implement_playtypeable}
 
-Instead of writing $O(n^2)$ class instances to capture the notion of which target is being looked for, we can use the |Typeable| class to test at runtime whether we have reached the target type. We present derivations much as before, based on the combinators | ||+| and | ||-|:
+Instead of writing $O(n^2)$ class instances to locate values of the target type, we can use the |Typeable| class to test at runtime whether we have reached the target type. We present derivations much as before, based on the combinators | ||+| and | ||-|:
 
 \begin{comment}
 \begin{code}
@@ -1047,9 +1047,9 @@ instance (Typeable a, Uniplate a) => PlateAll Stmt a where
             While     a b    -> plate While     |+  a |+ b
 \end{code}
 
-This instance scheme provides no | ||*| combinator -- these instances have no notion of which type we are searching for, so could not possibly answer as to whether it had been found. The | ||+| combinator is the most common, continuing the traversal. However, if we were to use | ||+| when the right-hand value was an |Int|, or other primitive type we did not wish to examine, we would require a |PlateAll| definition for |Int|. To omit these unnecessary instances, we can use | ||-| to indicate that the type is not of interest.
+This instance scheme provides no | ||*| combinator -- these instances have no notion of which type we are searching for, so could not possibly answer as to whether it had been found. The | ||+| combinator is the most common, denoting that the value on the right may be of the target type, or may contain values of the target type. However, if we were to use | ||+| when the right-hand value was an |Int|, or other primitive type we did not wish to examine, we would require a |PlateAll| definition for |Int|. To omit these unnecessary instances, we can use | ||-| to indicate that the type is not of interest.
 
-The |Data.Generics.PlateTypeable| module is able to automatically infer |Biplate| instances given a |PlateAll|. Alas this is not the case for |Uniplate|. Instead we must manually write:
+The |Data.Generics.PlateTypeable| module is able to automatically infer |Biplate| instances given a |PlateAll|. Alas this is not the case for |Uniplate|. Instead we must explicitly declare:
 
 \begin{code}
 instance Uniplate Expr where
@@ -1082,7 +1082,7 @@ data Expr  = ... \? \? deriving (Typeable, Data)
 data Stmt  = ... \? \? deriving (Typeable, Data)
 \end{code}
 
-The disadvantages of this approach are (1) \textit{lack of type safety} - you can now do entirely meaningless operations, which the earlier definitions would have spotted as being an error; (2) \textit{compiler dependence} -- it will only work where |Data.Generics| is supported, namely GHC at the present time.\footnote{Hugs supports the required rank-2 types for |Data.Generics|, but the work to port the library has not been done yet.} The clear advantage is that there is almost no work to creating instances.
+The disadvantages of this approach are (1) \textit{lack of type safety} -- there are now |Biplate| instances for many pairs of types where one is not a container of the other; (2) \textit{compiler dependence} -- it will only work where |Data.Generics| is supported, namely GHC at the present time.\footnote{Hugs supports the required rank-2 types for |Data.Generics|, but the work to port the library has not been done yet.} The clear advantage is that there is almost no work to creating instances.
 
 \begin{figure}
 \ignore\begin{code}
@@ -1104,20 +1104,13 @@ repChildren item = (collect, generate)
 
 How do we implement the Uniplate class instances? The fundamental operation is given in Figure \ref{fig:playdata}. The \ignore|repChildren| function descends to each of the child nodes, and is guarded by a |Typeable| cast to ensure that \ignore|alpha /= beta|. The operation to get the children can be done using |gmapQ|. The operation to replace the children is more complex, requiring a state monad to keep track of the items to insert.
 
-The instance in Figure \ref{fig:playdata} is not optimised for speed, in particular the use of |splitAt| and |length| require the list of children to be traversed multiple times. We discuss improvements in \S\ref{sec:optimise_playdata}.
+The instance in Figure \ref{fig:playdata} is not optimised for speed. Uses of |splitAt| and |length| require the list of children to be traversed multiple times. We discuss improvements in \S\ref{sec:optimise_playdata}.
 
 
 \section{Performance Improvements}
 \label{sec:performance}
 
-This section describes some of the performance improvements we have been able to make. First we focus on our optimisation of |universe|, using continuation passing and some |foldr|/|build| fusion properties. Next we turn to our |Data| class based instances, including the reasons we are able to outperform SYB.
-
-We suspect there are further places for improvement:
-
-\begin{itemize}
-\item Continuation passing style may eliminate tuple construction and consumption.
-\item List fusion may be able to eliminate some of the lists in |replaceChildren|.
-\end{itemize}
+This section describes some of the performance improvements we have been able to make. First we focus on our optimisation of |universe|, using continuation passing and some |foldr|/|build| fusion \cite{spj:rules} properties. Next we turn to our |Data| class based instances, including the reasons we are able to outperform SYB.
 
 \subsection{Optimising the |universe| function}
 \label{sec:optimise_everything}
@@ -1129,7 +1122,7 @@ universe :: Uniplate on => on -> [on]
 universe x = x : concatMap universe (children x)
 \end{code}
 
-The disadvantage of this code is that |concatMap| produces and consumes the list at every level, requiring one reconstruction per level of depth in the data structure. We can fix this by using continuations:
+A disadvantage is that |concatMap| produces and consumes a list at every level in the data structure. We can fix this by using continuations:
 
 \begin{code}
 universe x = f x []
@@ -1156,13 +1149,11 @@ concatCont xs rest = foldr ($) rest xs
 \subsection{Optimising |PlateData|}
 \label{sec:optimise_playdata}
 
-The |Uniplate| instance implemented in terms of |Data| is an area of the library we are particularly proud of. Using the existing SYB framework, specifically the |Data| derivation built into the GHC compiler, we can remove the overhead of writing instances. Managing to layer |Uniplate| over the |Data| instances, \textit{and} perform better than SYB is not something we initially believed to be possible.
+Surprisingly, it is possible to layer |Uniplate| over |Data| instances, with better performance than SYB itself. The first optimisation is to generate the two members of the |replaceChildren| with only one pass over the data value. We cannot use |gmapM| or |gmapQ| -- we must instead use |gfoldl| directly. We also make use of continuation passing style in some places, particularly to eliminate appending to the end of a list and discovering which children have been used.
 
-The first optimisation is to generate the two members of the |replaceChildren| with only one pass over the data value. We cannot use |gmapM| or |gmapQ| -- we must instead use |gfoldl| directly. We also make use of continuation passing style in some places, particularly to eliminate appending to the end of a list and discovering which children have been used.
+With this first improvement in place we perform much the same operations as SYB. But the list creation in |replaceChildren| at each step gives an overhead of about 15\% slower than SYB.
 
-With all these changes in place we perform much the same operations as SYB, but have the overhead of list creation at each step. We are able to push this approach to within about 15\% of the speed of SYB operations.
-
-The next optimisation relies on the extra information present in the |Uniplate| operations -- namely the target type. A boilerplate operation can be viewed as walking over a data structure, looking for target nodes to examine. In SYB, any node of any type can be examined in one operation, for Uniplate the target it is a single uniform type. This extra knowledge means that if a node is reached which is not a container for the target type, no further exploration is required within this node. Computing which types are containers for the target type can be done relatively easily with the SYB framework \citep{lammel:syb2}:
+The next optimisation relies on the extra information present in the |Uniplate| operations -- namely the target type. A boilerplate operation can be viewed as walking over a data structure, looking for target values to process. In SYB, the target values may be of \textit{any} type. For Uniplate the target is a single uniform type. If a node is reached which is not a container for the target type, no further exploration is required within this node. Computing which types are containers for the target type can be done relatively easily with the SYB framework \citep{lammel:syb2}:
 
 \ignore\begin{code}
 data DataBox = forall a . (Typeable a, Data a) => DataBox a
@@ -1175,30 +1166,30 @@ contains x = if isAlgType dtyp then concatMap f ctrs else []
         dtyp = dataTypeOf x
 \end{code}
 
-The \ignore|contains| function takes a phantom argument which is never evaluated. If returns all the fields of all possible constructors, along with a type representation from |typeOf|. This list of types and their containers can have its transitive closure taken, and all types can be divided into three sets:
+The \ignore|contains| function takes a phantom argument which is never evaluated. It returns all the fields of all possible constructors, along with a type representation from |typeOf|. Hence all types can be divided into three sets:
 
 \begin{enumerate}
 \item The singleton set containing the type of the target.
-\item The set of types which \textit{may} contain the target type.
-\item The set of types which \textit{do not} contain the target type.
+\item The set of other types which \textit{may} contain the target type.
+\item The set of other types which \textit{do not} contain the target type.
 \end{enumerate}
 
-When examining a value, if its type is a member of the set which does not contain the target, we can prune the search at this point. We compute these sets for each type only once, by using a CAF inside the class to store it. The cost of computing these sets is small.
+We compute these sets for each type only once, by using a CAF inside the class to store it. The cost of computing them is small. When examining a value, if its type is a member of set 3 we can prune the search.
 
-This trick is surprisingly effective. Take for example an operation over |Bool| on the value |(True,"Haskell")|. The SYB approach finds 16 subcomponents, Uniplate touches 3 subcomponents -- as soon as it notices the |String| it will stop. By increasing the length of the string, SYB performs increasingly more work -- Uniplate does not.
+This trick is surprisingly effective. Take for example an operation over |Bool| on the value |(True,"Haskell")|. The SYB approach finds 16 subcomponents, Uniplate touches 3 only subcomponents.
 
-With all these optimisations we can perform both queries and transformations faster than SYB, for most operations. In the benchmarks we range from 4\% worse to 127\% better, with an average of 56\% faster. Full details are presented in \S\ref{sec:results_speed}.
+With all these optimisations we can usually perform both queries and transformations faster than SYB. In the benchmarks we range from 4\% worse to 127\% better, with an average of 56\% faster. Full details are presented in \S\ref{sec:results_speed}.
 
 
 \section{Results and Evaluation}
 \label{sec:results}
 
-We evaluate our boilerplate reduction scheme in two ways: firstly by the amount of boilerplate it removes, and secondly by its runtime performance. The first is more important, but can sometimes be down to personal preference. We first give a set of nine example programs, written using Uniplate, SYB and Compos operations. We then compare the runtime of these operations.
+We evaluate our boilerplate reduction scheme in two ways: firstly by the amount of boilerplate it removes, and secondly by its runtime performance. The first is more important, and can be measured by lexeme counts -- although the complexity may still be down to personal preference. We first give a set of nine example programs, written using Uniplate, SYB and Compos operations. We then compare the runtime of these operations.
 
 \subsection{Boilerplate Reduction}
 \label{sec:results_boilerplate}
 
-As test applications we have taken the first three examples from this paper, three from the Compos paper \citep{bringert:compos}, and the three given in the SYB paper \citep{lammel:syb} termed the ``Paradise Benchmark''. In all cases the Compos, SYB and Uniplate functions are given an appropriately prefixed name. In some instances, a function can be defined in the same way in both SYB and Uniplate -- where this is possible we have done so. Type signatures have omitted where the compiler is capable of the inferring them.
+As test applications we have taken the first three examples from this paper, three from the Compos paper \citep{bringert:compos}, and the three given in the SYB paper \citep{lammel:syb} termed the ``Paradise Benchmark''. In all cases the Compos, SYB and Uniplate functions are given an appropriately prefixed name. In some instances, a function can be defined in the same way in both SYB and Uniplate; where this is possible we have done so. Type signatures are omitted where the compiler is capable of the inferring them.
 
 \subsubsection{Examples from this Paper}
 
@@ -1235,7 +1226,7 @@ com_zeroCount x = case x of
     _ -> composOpFold 0 (+) com_zeroCount x
 \end{code}
 
-In the Uniplate solution the list of |()| is perhaps inelegant. However, Uniplate is the only scheme that is able to use the standard |length| function: the other two express the operation as a fold. Compos requires additional boilerplate, to continue the operation on |Div y| -- which may be easy to overlook.
+In the Uniplate solution the list of |()| is perhaps inelegant. However, Uniplate is the only scheme that is able to use the standard |length| function: the other two express the operation as a fold. Compos requires additional boilerplate to continue the operation on |Div y|.
 \end{revisit}
 
 \begin{revisit}{\ref{ex:simplify}}
@@ -1303,7 +1294,7 @@ com_rename t = case t of
     _   -> composOp com_rename t
 \end{code}
 
-The Uniplate definition is the shortest, as there is only one constructor in type |Var|. In contrast Compos has merged all constructors into one GADT, so cannot benefit from this knowledge.
+The Uniplate definition is the shortest, as there is only one constructor in type |Var|. As Compos redefines all constructors in one GADT, it cannot benefit from this knowledge.
 \end{examplename}
 
 \begin{examplename}{symbols}
@@ -1342,7 +1333,7 @@ com_constFold e = case e of
     _ -> composOp com_constFold e
 \end{code}
 
-The constant-folding operation is a bottom-up transformation, requiring subexpressions to have been replaced before patterning matching upon them. Compos only supports top-down transformations, requiring a small traversal in the middle. Uniplate and SYB both support bottom-up transformations.
+The constant-folding operation is a bottom-up transformation, requiring subexpressions to have been replaced before an expression is examined. Compos only supports top-down transformations, requiring a small traversal in the middle. Uniplate and SYB both support bottom-up transformations.
 \end{examplename}
 
 \subsubsection{The Paradise Benchmark from SYB}
@@ -1366,7 +1357,7 @@ data Salary    = S Integer
 
 The Paradise benchmark was introduced in SYB \citep{lammel:syb}. The data type is shown in Figure \ref{fig:paradise}. The idea is that this data type represents an XML file, and a Haskell program is being written to perform various operations over it. The Compos paper includes an encoding into a GADT, with tag types for each of the different types.
 
-We have made one alteration to the data type -- |Salary| is no longer of type |Float| but of type |Integer|. In various experiments we found that the rounding errors for floating point numbers made different definitions return different results. This change is of no consequence to the boilerplate code.\footnote{This should remind us that storing your salary in a non-exact manner is probably not a great idea!}
+We have made one alteration to the data type: |Salary| is no longer of type |Float| but of type |Integer|. In various experiments we found that the rounding errors for floating point numbers made different definitions return different results.\footnote{Storing your salary in a non-exact manner is probably not a great idea!} This change is of no consequence to the boilerplate code.
 
 \begin{examplename}{increase}
 
@@ -1459,7 +1450,7 @@ When compared to SYB, Uniplate seems much more similar. For queries, Uniplate is
 This section compares the speed of solutions for the nine examples given in the previous section, along with hand-coded versions without any boilerplate. We use four |Uniplate| instances, provided by:
 
 \begin{description}
-\item[Manual:] These are |Uniplate| and |Biplate| instances written by hand. We have chosen not to use continuation-passing to implement these instances, as it quickly becomes deeply complex.
+\item[Hand Written:] These are |Uniplate| and |Biplate| instances written by hand. We have chosen not to use continuation-passing to implement these instances, as it quickly becomes deeply complex.
 \item[Direct:] These instances use the direct combinators from \S\ref{sec:implement_playdirect}.
 \item[Typeable:] These instances use the standard |Typeable| combinators from \S\ref{sec:implement_playtypeable}.
 \item[Data:] These instances use the SYB |Data| instances directly, as described in \S\ref{sec:implement_playdata}.
@@ -1492,25 +1483,27 @@ SYB            &  2.21 &  5.88 & 16.62 &  2.30 &  2.13 &  5.56 & 24.29 &  3.12 &
 \end{figure}
 \end{comment}
 
-The results are presented in Table \ref{fig:results}. Using well tuned instances (hand coded or Manual), Uniplate is roughly the same speed as Compos -- but about 50\% slower than hand-tuned operations. Using the Data instances provided by SYB, we are able to outperform SYB itself! See \ref{sec:performance} for details of some of the optimisations used.
+The results are presented in Table \ref{fig:results}. Using hand coded or Direct instances, Uniplate is roughly the same speed as Compos -- but about 50\% slower than hand-tuned operations. Using the Data instances provided by SYB, we are able to outperform SYB itself! See \S\ref{sec:performance} for details of some of the optimisations used.
 
 
 \section{Related Work}
 \label{sec:related}
 
-The Uniplate library is intended to be a way to remove the boilerplate of recursive traversals from Haskell programs. It is far from the first library to attempt this.
+The Uniplate library is intended to be a way to remove the boilerplate of recursive traversals from Haskell programs. It is far from the first library to attempt boilerplate removal.
 
 \paragraph{The SYB library} \citep{lammel:syb} is perhaps the most popular boilerplate removal system in Haskell. One of the reasons for its success is tight integration with the GHC compiler, lowering the barrier to use. We have compared directly against traversals written in SYB in \S\ref{sec:results_boilerplate}, and have also covered how to implement Uniplate in terms of SYB in \S\ref{sec:implement_playdata}. All our operations are shorter and simpler than the equivalents in SYB, and we are able to operate without the extension of rank-2 types. Most of these benefits stem directly from our definition of children as being the children of the same uniform type, contrasting with the SYB approach of all direct children.
 
 The SYB library is, however, more powerful than Uniplate. If you wish to visit nodes of different type in a single traversal, Uniplate is unsuitable. The |Data| and |Typeable| methods have also been pushed further in successive papers \citep{lammel:syb2,lammel:syb3} -- in directions which we suspect Uniplate is unable to go.
 
-\paragraph{The Compos library} \citep{bringert:compos} is another approach to the removal of boilerplate, requiring GADTs \citep{spj:gadt} along with rank-2 types. The Compos library requires an existing data type to be rewritten as a GADT. The conversion from standard Haskell data structures to GADT's presents several problems: they are GHC specific, deriving is not supported on GADTs, and GADTs require explicit type signatures. Some of these problems come about as a result of GADTs being a recent addition. The Compos approach is also harder to write instances for, having no simple instance generation framework, and no automatic derivation tool (although one could be written). The inner |composOp| operator is very powerful, and indeed we have chosen to replicate it in our library as |descend|. But the Compos library is unable to replicate the query to a list, or the bottom-up traversal from our library.
+\paragraph{The Compos library} \citep{bringert:compos} is another approach to the removal of boilerplate, requiring GADTs \citep{spj:gadt} along with rank-2 types. The Compos library requires an existing data type to be rewritten as a GADT. The conversion from standard Haskell data structures to GADT's presents several problems: they are GHC specific, deriving is not supported on GADTs, and GADTs require explicit type signatures. Some of these problems come about as a result of GADTs being a recent addition. The Compos approach is also harder to write instances for, having no simple instance generation framework, and no automatic derivation tool (although one could be written). The inner |composOp| operator is very powerful, and indeed we have chosen to replicate it in our library as |descend|. But the Compos library is unable to replicate either |universe| or |transform| from our library.
 
 \paragraph{The Stratego tool} \citep{stratego} provides support for generic operations, focusing on both the operations and the strategies for applying them. This approach is performed in an \textit{untyped} language, although a typed representation can be modelled \cite{lammel:typed_generic_strategies}. Rather than being a Haskell library, instead it is a domain specific language that can be integrated with Haskell.
 
 \paragraph{The Strafunski library} \citep{strafunski, lammel:polymorphic_symphony} has two aspects: generic transformations and traversals for trees of any type; and features to integrate components into a larger programming system. Focusing on the generic operations, these are performed using strategy combinators which can define special case behaviour for particular types, along with a default to perform in other situations. The Strafunski library is integrated with Haskell, primarily providing support for generic programming in application areas that involve term traversals over large abstract syntax trees. The Strafunski style of generic programming is to view traversals as a kind of generic function that can traverse into sub terms, while also mixing type-specific behaviour
 
-\paragraph{The Applicative library} \citep{mcbride:applicative} works by threading an Applicative operation through a data structure, in a similar way to threading a Monad through the structure. There is additionally a notion of |Traversable| functor, which can be used to provide generic programming. While the Applicative library can be used for generic programming, this task was not its original purpose, and the authors note they have ``barely begun to explore'' the power as a generic toolkit.
+\paragraph{The Applicative library} \citep{mcbride:applicative} works by threading an Applicative operation through a data structure, in a similar way to threading a Monad through the structure. There is additionally a notion of |Traversable| functor, which can be used to provide generic programming. While the Applicative library can be used for generic programming, this task was not its original purpose, and the authors note they have ``barely begun to explore'' its power as a generic toolkit.
+
+\paragraph{Generic Programming} There are a number of other libraries which deal with generic programming, aimed more at writing data type generic functions, but which can be used for boilerplate removal. There is a Haskell generics suite\footnote{\url{http://darcs.haskell.org/generics/}}, which showcases several of approaches \citep{weirich:replib,hinze:generics_masses,oleg:smash,hinze:generic_haskell}.
 
 
 \section{Conclusions and Future Work}
@@ -1518,13 +1511,16 @@ The SYB library is, however, more powerful than Uniplate. If you wish to visit n
 
 We have presented the Uniplate library. It defines the classes |Uniplate| and |Biplate|, along with a small set of operations to perform queries and transformations. We have illustrated by example that the boilerplate required in our system is less than in others (\S\ref{sec:results_boilerplate}), and that we can achieve these results without sacrificing speed (\S\ref{sec:results_speed}). Our library is both practical and portable, finding use in a number of applications, and using fewer extensions to the Haskell language than alternatives.
 
-The use of boilerplate reduction strategies in Haskell is not yet ubiquitous, as we feel it should be. We have focused on simplicity throughout our design, working within the natural typed design of Haskell, rather than trying to extend it. Hopefully the removal of complicated language features (particularly `scary' types) will allow a wider base of users to reap the benefits that boilerplate free programming can offer.
+We suspect that there several places for improvements in the speed: further use of continuation passing style may eliminate tuple construction and consumption; list fusion may be able to eliminate some of the intermediate lists in |replaceChildren|. We have made extensive practical use of the Uniplate library, but there may be some traversals which deserve to be added to the library.
 
-The restriction to a uniformly typed value set in a traversal allows the power of list processing to be utilised. We feel this decision plays to Haskell's strengths, without being limiting in practice.
+The restriction to a uniformly typed value set in a traversal allows the power of well-developed techniques for list processing such as list-comprehensions to be exploited. We feel this decision plays to Haskell's strengths, without being limiting in practice.
+
+The use of boilerplate reduction strategies in Haskell is not yet ubiquitous, as we feel it should be. We have focused on simplicity throughout our design, working within the natural typed design of Haskell, rather than trying to extend it. Hopefully the removal of complicated language features (particularly `scary' types) will allow a wider base of users to enjoy the benefits of boilerplate-free programming.
+
 
 \acks
 
-The first author is a PhD student supported by a studentship from the Engineering and Physical Sciences Research Council of the UK. Thanks to Bj\"{o}rn Bringert for feedback on an earlier version of this document, Eric Mertens for various ideas and code snippets and Stefan O'Rear for work on the \textsc{Derive} tool.
+The first author is a PhD student supported by a studentship from the Engineering and Physical Sciences Research Council of the UK. Thanks to Bj\"{o}rn Bringert and Jules Bean for feedback on an earlier drafts of this paper. Thanks to Eric Mertens for various ideas and code snippets and Stefan O'Rear for work on the \derive{} tool.
 
 \bibliographystyle{plainnat}
 \bibliography{play}
