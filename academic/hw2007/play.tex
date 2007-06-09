@@ -371,7 +371,7 @@ always :: (alpha -> Maybe alpha) -> (alpha -> alpha)
 always r x = fromMaybe x (r x)
 \end{code}
 
-What are the preconditions on |r| such that \ignore|forall |x| `dot` rewrite r x == transform (always r) x|? We can start by defining a more abstract representation of a rewrite rule:
+What are the preconditions on |r| such that \ignore|forall x `dot` rewrite r x == transform (always r) x|? We can start by defining a more abstract representation of a rewrite rule:
 
 \begin{code}
 type Rewrite  = [(Tree,Tree)]
@@ -854,8 +854,7 @@ universeOn :: Uniplate alpha => ReplaceType beta alpha -> beta -> [alpha]
 universeOn replaceType x =
     concatMap universe $ fst $ replaceType x
 
-transformOn ::  Uniplate alpha => ReplaceType beta alpha ->
-               (alpha -> alpha) -> beta -> beta
+transformOn ::  Uniplate alpha => ReplaceType beta alpha -> (alpha -> alpha) -> beta -> beta
 transformOn replaceType f x =
     generate $ map (transform f) current
     where (current, generate) = replaceType x

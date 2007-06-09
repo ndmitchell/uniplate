@@ -10,6 +10,8 @@
 -- # gfoldl
 -- # UniplateOn
 -- # composOp
+-- # compos
+-- # rep
 -- # On
 -- # Ex
 -- # coreSimplify
@@ -46,6 +48,8 @@ k = undefined
 rule = undefined
 x = undefined
 operate = undefined
+r = undefined
+e' = undefined
 
 elipses = undefined
 
