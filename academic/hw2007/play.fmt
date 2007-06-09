@@ -21,6 +21,8 @@
 %format not = "\mathsf{not}"
 %format `mergeVal` = "\sqcap{}"
 %format elipses = "..."
+%format children_ = "\Varid{children}"
+%format context = "\Varid{context}"
 
 %format `mkQ` = "\;\textsf{\`{}\!mkQ\!\`{}}\;"
 %format `cons` = "\;\textsf{\`{}\!cons\!\`{}}\;"

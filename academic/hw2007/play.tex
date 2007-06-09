@@ -12,6 +12,10 @@
 %include polycode.fmt
 %include play.fmt
 
+% from the ICFP website
+\bibpunct();A{},
+\let\cite=\citep
+
 % general stuff
 \newcommand{\T}[1]{\texttt{#1}}
 \newcommand{\C}[1]{\textsf{#1}}
@@ -98,7 +102,7 @@ generate = undefined
 
 
 \begin{abstract}
-Generic traversals over recursive data structures are often referred to as \textit{boilerplate} code. The definitions of functions involving such traversals may repeat very similar patterns, but with variations for different data types and different functionality. This paper focuses on traversals where there is only one type of interest, requiring fewer type extensions than other boilerplate removal systems. The |Uniplate| class is introduced, which shows how all traversals can implemented in terms of a single |replaceChildren| operation.
+Generic traversals over recursive data structures are often referred to as \textit{boilerplate} code. The definitions of functions involving such traversals may repeat very similar patterns, but with variations for different data types and different functionality. This paper focuses on traversals where only one type has value-specific behaviour, requiring fewer type extensions than other boilerplate removal systems. The |Uniplate| class is introduced, which shows how all traversals can implemented in terms of a single |replaceChildren| operation.
 \end{abstract}
 
 \section{Introduction}
@@ -163,7 +167,7 @@ Ours is far from the first technique for `scrapping boilerplate'. The area has b
 \item We require \textit{no language extensions} for single-type traversals, and only multi-parameter type classes \citep{jones:mptc} for multi-type traversals.
 \item Our \textit{choice of operations} is new: we shun some traditionally provided operations, and provide some uncommon operations.
 \item We are able to implement our class on top of |Typeable| and |Data| \citep{lammel:syb}, making optional use of the built in compiler support.
-\item We compare the \textit{conciseness} of operations using our library, showing our approach leads to less boilerplate.
+\item We compare the \textit{conciseness} of operations using our library, by counting lexemes, showing our approach leads to less boilerplate.
 \item We compare the \textit{relative performance} of traversal mechanisms, something that has been neglected in previous papers.
 \end{itemize}
 
@@ -173,7 +177,7 @@ The ideas behind the Uniplate library have been used extensively, in both the Yh
 
 \subsection{Road map}
 
-\S\ref{sec:use_play} introduces the traversal combinators that we propose, along with short examples. \S\ref{sec:implement_play} discusses how these combinators are implemented in terms of a single primitive. \S\ref{sec:use_playex} extends this approach to multi-type traversals, and \S\ref{sec:implement_playex} covers the extended implementation. \S\ref{sec:performance} investigates some performance optimisations to the operations. \S\ref{sec:results} gives code comparisons to other examples, including the ``paradise'' benchmark, and performance measurements. \S\ref{sec:conclusion} makes concluding remarks and suggests directions for future work.
+\S\ref{sec:use_play} introduces the traversal combinators that we propose, along with short examples. \S\ref{sec:implement_play} discusses how these combinators are implemented in terms of a single primitive. \S\ref{sec:use_playex} extends this approach to multi-type traversals, and \S\ref{sec:implement_playex} covers the extended implementation. \S\ref{sec:performance} investigates some performance optimisations to the operations. \S\ref{sec:results} gives code comparisons to other examples, including the ``paradise'' benchmark, and performance measurements. \S\ref{sec:related} presents related work, \S\ref{sec:conclusion} makes concluding remarks and suggests directions for future work.
 
 
 \section{Queries and Transformations}
@@ -192,7 +196,8 @@ children :: Uniplate alpha => alpha -> [alpha]
 The function |children| takes a value and returns \textit{all maximal proper substructures of the same type}. For example:
 
 \begin{code}
-children (Add (Neg (Val 1)) (Var "x")) = [Neg (Val 1), Var "x"]
+children (Add (Neg (Val 1)) (Var "x")) =
+    [Neg (Val 1), Var "x"]
 \end{code}
 
 The |children| function is occasionally useful, but is used more commonly as an auxiliary in the definitions of other functions.
@@ -232,13 +237,13 @@ Here we make essential use of a feature of list comprehensions: if a pattern doe
 
 \subsection{Bottom-up Transformations}
 
-Another common operation provided by many boilerplate removal systems \citep{lammel:syb}\todo{more citations} is a function that transforms every node in a value. We define as our standard transformation a bottom up traversal.
+Another common operation provided by many boilerplate removal systems \citep{lammel:syb}\todo{more citations} is a function that transforms every node in a value. We define as our standard transformation a bottom-up traversal.
 
 \begin{code}
 transform :: Uniplate alpha => (alpha -> alpha) -> alpha -> alpha
 \end{code}
 
-The |transform| function starts by applying the function |f| to all the bottom-most nodes in the tree, then progressively works up to the root node. The condition on ordering is that before applying |f| to an expression, all its uniformly typed sub-expressions must have had |f| applied.
+The |transform| function starts by applying the function |f| to all the bottom-most nodes in the tree, then progressively works up to the root node. The condition on ordering is that before applying |f| to an expression, all its children must have had |f| applied.
 
 \begin{example}
 \label{ex:simplify}
@@ -276,7 +281,7 @@ Each equation corresponds to the natural Haskell translation of the rule. The |t
 
 \subsection{Top-Down Traversals}
 
-The Scrap Your Boilerplate approach \citep{syb:lammel} provides a top-down traversal named |everywhere'|. We describe their traversal, and our reasons for \textit{not} providing it, even though it would be trivial to write. We instead provide |descend|, based on the |compos| operator \citep{compos}.
+The Scrap Your Boilerplate approach \cite{lammel:syb} provides a top-down traversal named |everywhere'|. We describe their traversal, and our reasons for \textit{not} providing it, even though it would be trivial to write. We instead provide |descend|, based on the |compos| operator \cite{bringert:compos}.
 
 The |everywhere'| transformation applies a function to a value, then continues the transformation on all the children of the freshly generated value. Typically, the intention in a traversal is to apply the function to \textit{every node exactly once}. Unfortunately, |everywhere'| does not have this property.
 
@@ -310,7 +315,7 @@ We permit top-down transformations, but require the programmer to make the trave
 descend :: Uniplate alpha => (alpha -> alpha) -> alpha -> alpha
 \end{code}
 
-The |descend| function applies a function to all children of a node, then reconstructs a new result using those results.
+The |descend| function applies a function to all children of a node, then reconstructs a new value using those results.
 
 \begin{comment}
 \begin{code}
@@ -319,7 +324,7 @@ data Expr = Var String | Let String Expr Expr | Add Expr Expr
 \end{comment}
 
 \begin{example}
-Consider the addition of a constructor \ignore|Let String Expr Expr| -- binding the variable introduced. Now let us define a function |subst| to replace free variables with given expressions. In order to determine which variables are free, we need to ``remember'' variables that are bound as we descend. We can define |subst| as:
+Consider the addition of a constructor \ignore|Let String Expr Expr|. Now let us define a function |subst| to replace free variables with given expressions. In order to determine which variables are free, we need to ``remember'' variables that are bound as we descend. We can define |subst| as:
 
 \begin{code}
 subst :: [(String,Expr)] -> Expr -> Expr
@@ -357,7 +362,7 @@ rewrite f = transform g
     where g x = maybe x (rewrite f) (f x)
 \end{code}
 
-This definition tries to apply the rule everywhere in a bottom-up manner. If at any point it makes a change, then the new value has the rewrite applied to it. Assuming the set of rules is convergent \todo{cite baader and nipkow}, there will be no difference between a top-down and bottom-up application of the rules. In any case, the function will only terminate once a normal form is found.
+This definition tries to apply the rule everywhere in a bottom-up manner. If at any point it makes a change, then the new value has the rewrite applied to it. The function will only terminate once a normal form is found.
 
 A disadvantage of |rewrite| is that large amounts of wasted work could be performed checking unchanged sub-expressions repeatedly. Because of this, most programmers would rather use an explicit traversal, and manage this rewriting themselves. We show under which circumstances a bottom-up transformation obtains a normal form, and how any transformation can be modified to ensure a normal form.
 
@@ -372,6 +377,8 @@ always r x = fromMaybe x (r x)
 \end{code}
 
 What are the preconditions on |r| such that \ignore|forall x `dot` rewrite r x == transform (always r) x|? We can start by defining a more abstract representation of a rewrite rule:
+
+\todo{Do we want this? Perhaps just informally stating the answer is the best policy}
 
 \begin{code}
 type Rewrite  = [(Tree,Tree)]
@@ -469,7 +476,7 @@ We consider top-down transformations to be more complex and less useful than bot
 
 \subsection{Action Transformations}
 
-Rewrite traversals apply a set of rules \textit{repeatedly} until a fixed point is found. The alternative is an action traversal, where each node is visited and transformed \textit{once}. The |transform| function can be used to perform this, but a standard technique is to thread a monad through the actions. We do this by introducing |transformM|.
+Rewrite transformations apply a set of rules \textit{repeatedly} until a normal form is found. The alternative is an action transformation, where each node is visited and transformed \textit{once}. In some transformations, some state will be maintained and updated as the operation proceeds. The standard technique is to thread a monad through the operation, which we do using |transformM|.
 
 \begin{example}
 Suppose we wish to rename each variable to be unique:
@@ -486,19 +493,18 @@ uniqueVars x = evalState (transformM f x) vars
         f x        = return x
 \end{code}
 
-Here a monadic computation is used. The program keeps track of the next item in the list to use, and replace the current item. Using the state monad, this can be done easily.
+Here a \textit{state monad} is used to keep track of the list of names not yet used.
 \end{example}
 
 \subsection{Folds}
 
-Traditionally in Haskell a fold replaces each constructor with an alternative \cite{sheard:fold}. To define a complete fold on a data type, each constructor must be represented -- giving boilerplate problems once more. We define a fold which provides a default operation:
+A fold is a homomorphism that replaces each constructor with a function \cite{sheard:fold}. To define a complete fold on a data type, each constructor must be represented -- giving boilerplate problems once more. We define a fold which provides a default operation:
 
 \begin{code}
 fold :: Uniplate alpha => (alpha -> [r] -> r) -> alpha -> r
-fold operate = elipses
 \end{code}
 
-The |operate| argument takes a node, and the results for all the children, and combines them to create a new result.
+The |fold| function uses the functional argument to combine a value, and the results of |fold| on its children, into a new result.
 
 \begin{example}
 Imagine that |Expr| programmers are paid by the \textit{depth of expression} they produce:
@@ -513,13 +519,13 @@ The result at each level is one more than the maximum of all the children (with 
 
 \subsection{Contexts}
 
-The final operation in the library seems to be a novelty -- we have not seen it in any other generics library, even in those which attempt to include all variations \citep{ren:generic_recursion_toolbox}. This operation can be viewed as similar to contextual pattern matching \citep{mohnen:context_patterns}. This function was actually contributed by a user, which we feel enhances our claim that average users can construct their own operations upon our framework.
+The final operation in the library seems to be a novelty -- we have not seen it in any other generics library, even in those which attempt to include all variations \citep{ren:generic_recursion_toolbox}. This operation can be viewed as similar to contextual pattern matching \citep{mohnen:context_patterns}.\footnote{This function was actually contributed by Eric Mertens, a user of the library, which we feel enhances our claim that users can construct their own operations upon our framework.}
 
 \begin{code}
 contexts :: Uniplate alpha => alpha -> [(alpha, alpha -> alpha)]
 \end{code}
 
-This function returns lists with two elements. The first element of each pair is an element of the data structure which would have been returned by |universe|. The other is the function which would replace the hole which the given expression was removed from. It has the following properties:
+This function returns lists of pairs. The first element of each pair is an element of the data structure which would have been returned by |universe|. The other is the function which would replace the hole which the given expression was removed from. It has the following properties:
 
 \begin{code}
 propUniverse x = universe x == map fst (contexts x)
@@ -527,9 +533,7 @@ propId x = all (== x) [b a | (a,b) <- contexts x]
 \end{code}
 
 \begin{example}
-Imagine that you wish to increment or decrement \textit{any single} literal by 1, either increasing or decreasing. The function is:
-
-Now we are able to easily write our function:
+Suppose that mutation testing requires all expressions obtained by incrementing or decrementing \textit{any single} literal in an original expression.
 
 \begin{code}
 mutants :: Expr -> [Expr]
@@ -573,28 +577,22 @@ Requiring each instance of the |Uniplate| class to implement ten separate method
 
 \begin{code}
 replaceChildren :: Uniplate alpha => alpha -> ([alpha], [alpha] -> alpha)
-replaceChildren x = (children,generate)
+replaceChildren x = (children_,context)
 \end{code}
 
-Given |x|, the function |replaceChildren| returns a pair: |children| - all the maximal proper substructures of the same type; |generate| - a function to generate a new value with a different set of children.
+Given a value |x|, the function |replaceChildren| returns a pair: |children_| - all the maximal proper substructures of the same type; |context| - a function to insert a new set of children into the existing value. The caller of |context| must ensure that the length of the list given to |context| is the same as the length of |children_|.
 
-The caller of |generate| must ensure that the length of the list given to it is the same as the length of |children|. The implementor of |replaceChildren| must ensure two conditions:
+The result pair splits the information in the value, but by combining the |context| with the |children_| the original value can be recovered:
 
 \begin{code}
-propId x = x == generate children
-    where (children,generate) = replaceChildren x
-
--- \todo{Avoid fst, why?}
-propRep x ys = (length ys == length children) ==>
-               (fst (replaceChildren (generate ys)) == ys)
-    where (children,generate) = replaceChildren x
+propId x = x == context children_
+    where (children_,context) = replaceChildren x
 \end{code}
-
 
 \subsection{Operations in terms of |replaceChildren|}
 \label{sec:using_replacechildren}
 
-Defining the ten operations of \S\ref{sec:use_play} in terms of |replaceChildren| is easy. We define the five functions as examples. All the definitions are short.
+All ten operations of \S\ref{sec:use_play} can be defined in terms of |replaceChildren| very directly. We define five functions as examples.
 
 \begin{code}
 children :: Uniplate alpha => alpha -> [alpha]
@@ -605,19 +603,19 @@ universe x = x :
     concatMap universe (children x)
 
 transform :: Uniplate alpha => (alpha -> alpha) -> alpha -> alpha
-transform f x = f $ generate $ map (transform f) current
-    where (current, generate) = replaceChildren x
+transform f x = f $ context $ map (transform f) children_
+    where (children_, context) = replaceChildren x
 
 transformM :: (Monad m, Uniplate alpha) => (alpha -> m alpha) -> alpha -> m alpha
-transformM f x = mapM (transformM f) current >>= f . generate
-    where (current, generate) = replaceChildren x
+transformM f x = mapM (transformM f) children_ >>= f . context
+    where (children_, context) = replaceChildren x
 
 descend :: Uniplate alpha => (alpha -> alpha) -> alpha -> alpha
-descend f x = generate $ map f current
-    where (current, generate) = replaceChildren x
+descend f x = context $ map f children_
+    where (children_, context) = replaceChildren x
 \end{code}
 
-The common pattern is to call |replaceChildren|, then perform some action on the current children, before combining them back. Writing additional traversals with different properties can be done in a similar manner. The definition of |universe| can be improved -- something we return to in \S\ref{sec:optimise_everything}.
+The common pattern is to call |replaceChildren|, then perform some action on the current children, often calling |context| to create a modified value. Some of these definitions can be made more efficient -- something we return to in \S\ref{sec:optimise_everything}.
 
 \subsection{Writing |Uniplate| instances}
 \label{sec:play_instances}
@@ -638,7 +636,7 @@ instance Uniplate Expr where
 
 We define a |Uniplate| instance for the |Expr| type in Figure \ref{fig:play_expr}.
 
-The distinguishing feature of our library is that the children are defined in terms of their type. While this feature keeps the queries and traversals simple, it does mean that the instance definition depends on the types of the constructors. We now describe the derivation rules, followed by information on the \derive{} tool that performs this task automatically. By optionally making use of Multi-Parameter Type Classes we are able to eliminate some of this complexity, see \S\ref{sec:implement_playex}.
+The distinguishing feature of our library is that the children are defined in terms of their type. While this feature keeps the queries and traversals simple, it does mean that the instance definition depends on the types of the constructors. We now describe the derivation rules, followed by information on the \derive{} tool that performs this task automatically. (If we are willing to make use of Multi-Parameter Type Classes simpler derivation rules can be used: see \S\ref{sec:implement_playex}.)
 
 
 \subsection{Derivation Rules}
@@ -646,12 +644,12 @@ The distinguishing feature of our library is that the children are defined in te
 To model the derivation of an instance, it is necessary to have a model of data types:
 
 \begin{code}
-type Name  = String
-type Var   = String
-
 data Data  = Data Name [Var] [Ctor]
 data Ctor  = Ctor Name [Type]
 data Type  = TyPrim | TyVar Var | TyApp Data [Type]
+
+type Name  = String
+type Var   = String
 
 dataName (Data x _ _) = x
 \end{code}
@@ -705,7 +703,7 @@ dList a x = case x of
 
 To generate a particular operation we can then instantiate the |unit|, |target| and |<>| functions.
 
-\subsubsection{|getChildren|}
+\subsubsection{Defining |getChildren|}
 
 The |dExpr| and |dList| functions can be used to define the operation of getting the children:
 
@@ -717,10 +715,10 @@ target  = (:[])
 (<>)    = (++)
 \end{code}
 
-From these definitions we can do some reasoning. For example, |dList| is equivalent to |concatMap|. From this property, we can see that |concatMap (const [])| is equivalent to |const []|. This information can be used to simplify some instances.
+From these definitions we can do some reasoning. For example, |dList == concatMap|, and |concatMap (const []) == const []|. This information can be used to simplify some instances.
 
 
-\subsubsection{|setChildren|}
+\subsubsection{Defining |setChildren|}
 
 We define |setChildren| as:
 
@@ -744,7 +742,7 @@ value c ns = fst $ c ns
                 in   (a' b',ns3)
 \end{code}
 
-We improve the simplification opportunities and runtime speed if we move to continuations:
+We improve the simplification opportunities and runtime speed if we use a continuation function to encode the pair.
 
 \begin{code}
 setChildren x = value (dExpr x)
@@ -766,9 +764,7 @@ value   c  ns         = c ns const
                  c (a' b') ns
 \end{code}
 
-This transformation uses a continuation function to encode the pair.
-
-\subsection{|replaceChildren|}
+\subsection{Defining |replaceChildren|}
 
 We define |replaceChildren| in terms of |getChildren| and |setChildren|:
 
@@ -777,13 +773,13 @@ instance Uniplate Expr where
     replaceChildren x = (getChildren x, setChildren x)
 \end{code}
 
-It is possible to define one single instantiation which performs both operations at once -- avoiding the need to examine each value twice. This can be done building on from the continuation model of |setChildren|.
+Alternatively, it is possible to define one single instantiation which performs both operations at once, avoiding the need to examine each value twice.
 
-\subsection{Using Derive}
+\subsection{Automated Derivation of |replaceChildren|}
 
-Applying these derivation rules is quite time consuming. Indeed, it is a form of boilerplate coding! The DrIFT tool \citep{drift} generates instances which can be constructed purely from the information contained in type definition. However DrIFT is unable to operate with certain Haskell extensions ({\TeX} style literate Haskell, C pre processor), and requires a separate pre-processing stage.
+Applying these derivation rules is a form of boilerplate coding! The DrIFT tool \citep{drift} generates instances which can be constructed purely from the information contained in type definition. However DrIFT is unable to operate with certain Haskell extensions ({\TeX} style literate Haskell, C pre processor), and requires a separate pre-processing stage.
 
-As a separate project, we have developed the \derive{} tool \citep{derive}, in collaboration with Stefan O'Rear. \derive{} has predefined rules for derivation of |Uniplate| instances. The tool is based on Template Haskell \citep{template_haskell}.
+In collaboration with Stefan O'Rear we have developed the \derive{} tool \citep{derive}. \derive{} is based on Template Haskell \citep{template_haskell} and has predefined rules for derivation of |Uniplate| instances. It has special rules to optimise out redundant patterns to produce cleaner code.
 
 \begin{example}
 \begin{code}
@@ -804,8 +800,6 @@ instance Uniplate Term where
 \end{code}
 \end{example}
 
-\derive{} has special rules to optimise out redundant patterns to produce cleaner code. The use of \derive{} removes the need for a user to understand the rules to create an instance of the |Uniplate| class.
-
 
 \section{Multi-type Queries and Traversals}
 \label{sec:use_playex}
@@ -819,15 +813,15 @@ data Stmt  =  Assign    String  Expr
            |  While     Expr    Stmt
 \end{code}
 
-We can define a |Uniplate| instance for |Stmt|, and perform queries and traversals upon it. However, we may run into limitations. Consider the task of extracting all literals from within a |Stmt| -- this requires boilerplate to find the values of type |Expr|.
+We could define a |Uniplate| instance for |Stmt|, and perform queries and traversals upon it. However, we may run into limitations. Consider the task of extracting all literals from within a |Stmt| -- this requires boilerplate to find the values of type |Expr|.
 
-The |Uniplate| class takes a value of type |alpha|, and operates on its children of type |alpha|. What we now require is something that takes a value of type |beta|, but operates on the children of type |alpha| within it -- we call this class |Biplate|. Typically the type |beta| will be a container of |alpha|. We can extend our operations by specifying how to find the |alpha|'s within the |beta|'s, and then perform the standard |Uniplate| operations upon the |alpha| type. In the above example, \ignore|alpha = Expr|, and \ignore|beta = Stmt|.
+The |Uniplate| class takes a value of type |alpha|, and operates on its substructures of type |alpha|. What we now require is something that takes a value of type |beta|, but operates on the children of type |alpha| within it -- we call this class |Biplate|. Typically the type |beta| will be a container of |alpha|. We can extend our operations by specifying how to find the |alpha|'s within the |beta|'s, and then perform the standard |Uniplate| operations upon the |alpha| type. In the above example, \ignore|alpha = Expr|, and \ignore|beta = Stmt|.
 
-We first introduce |UniplateOn|, which requires an explicit function to move between the |alpha| and |beta|. We then make use of Multi-parameter type classes (MPTC's) to generalise this function into a type class, named |Biplate|.
+We first introduce |UniplateOn|, which requires an explicit function to find the occurrences of  type |alpha| within type |beta|. We then make use of Multi-parameter type classes (MPTC's) to generalise this function into a type class, named |Biplate|.
 
 \subsection{The |UniplateOn| Operations}
 
-We define a set of operations, including |universeOn| and |transformOn|, which take an additional argument relative to the standard |Uniplate| operators. We call this additional argument |replaceType|, which describes how to move from the containing type (|beta|) to the contained type (|alpha|).
+We define a set of operations, including |universeOn| and |transformOn|, which take an additional argument relative to the standard |Uniplate| operators. We call this additional argument |replaceType|, because it describes how to move from the containing type (|beta|) to the contained type (|alpha|).
 
 \begin{comment}
 \begin{code}
@@ -840,7 +834,7 @@ type ReplaceType beta alpha = beta -> ([alpha], [alpha] -> beta)
 replaceType :: ReplaceType beta alpha
 \end{code}
 
-The intuition for |replaceType| is that starting from |beta|, the function should return the highest children in the tree of type |alpha|. If \ignore|alpha == beta| the root node should be returned:
+The intuition for |replaceType| is that given a structure of type |beta|, the function should return the highest children in it of type |alpha|. If \ignore|alpha == beta| the root node should be returned:
 
 \begin{code}
 replaceTypeSelf :: ReplaceType alpha alpha
@@ -862,9 +856,7 @@ transformOn replaceType f x =
 
 These operations are similar to the original |universe| and |transform|. The functions unwrap |beta| values to find the |alpha| values within them, operate using the standard |Uniplate| operations upon the |alpha|, then rewrap if necessary.
 
-Passing the |replaceType| argument is a little tedious. In \ref{sec:use_playex} we shall use MPTC's to encapsulte it in a type class, and have it passed as a dictionary argument.
-
-By assuming that |alpha| is constant, there is another way to abstract away the |replaceType| argument.
+If |alpha| is constant, there is another way to abstract away the |replaceType| argument, as the following example shows.
 
 \begin{example}
 The Yhc.Core library \citep{me:yhc_core}, part of the York Haskell Compiler (Yhc), makes extensive use of |Uniplate|. In this library, the central types, along with which types they include, are:
@@ -887,7 +879,7 @@ data CoreExpr  =  CoreVar   String
                   -- other constructors
 \end{code}
 
-Most queries and transformations are performed on the |CoreExpr| type, however it is often convenient to start from one of the other types. Take for example the |coreSimplify| operation -- it simplifies expressions, but may be called upon one individual expression, a function, or a program. If we are willing to freeze the type of the second argument to |replaceType| as |CoreExpr| we can write a class:
+Most queries and transformations are performed on the |CoreExpr| type. However it is often convenient to start from one of the other types. For example, |coreSimplify :: CoreExpr -> CoreExpr| may be called on one individual expression, or to all expressions in a function, or a program. If we are willing to freeze the type of the second argument to |replaceType| as |CoreExpr| we can write a class:
 
 \begin{code}
 class  UniplateExpr beta where
@@ -905,18 +897,16 @@ instance UniplateExpr beta => UniplateExpr [beta]
 \end{code}
 \end{example}
 
-This technique has been used in the Yhc compiler. The Yhc compiler is written in Haskell 98 to allow for bootstrapping, which requires the restriction to single-parameter type classes.
+This technique has been used in the Yhc compiler. The Yhc compiler is written in Haskell 98 to allow for bootstrapping, so only the standard single-parameter type classes are available.
 
 \subsection{The |Biplate| class}
 
-If we are willing to make use of Multi-parameter type classes \cite{jones:mptc} we can define a class |Biplate| which includes the |replaceType| function.
+If we are willing to make use of \textit{multi-parameter type classes} \cite{jones:mptc} we can define a class |Biplate| which includes the |replaceType| function.
 
 \begin{code}
 class  Uniplate alpha => Biplate beta alpha where
        replaceType :: ReplaceType beta alpha
 \end{code}
-
-This takes us outside the realm of Haskell 98, however we feel that the MPTC is conceptually simple to understand. We have not required functional dependencies, and our code is all able to execute on both Hugs and GHC.
 
 We can now implement |universeEx| and |transformEx| in terms of their |On| counterparts:
 
@@ -928,7 +918,7 @@ transformEx  :: Biplate beta alpha => (alpha -> alpha) -> beta -> beta
 transformEx  = transformOn  replaceType
 \end{code}
 
-We now present two examples from \S\ref{sec:use_play}, but implemented using |Biplate|. These operations will now work on |Expr|, |Stmt| or many other types -- being strictly more general than the previous versions.
+In general the move to |Biplate| requires few code changes, merely the use of the new set of |Ex| functions. We now present generalisations of two examples from \S\ref{sec:use_play}, implemented using |Biplate|. We extend the |variables| and |simplify| functions to work on |Expr|, |Stmt| or many other types.
 
 \begin{revisit}{\ref{ex:variables}}
 \begin{code}
@@ -936,7 +926,7 @@ variables :: Biplate beta Expr => beta -> [String]
 variables x = [y | Var y <- universeEx x]
 \end{code}
 
-The |variables| example from before requires only one change: the addition of the |Ex| suffix to |universe|. The type signature has changed so that instead of \ignore|Expr -> [String]| we have replaced |Expr| with \ignore|Biplate beta Expr => beta|. Another way of looking at this is instead of requiring the input to be an |Expr|, we merely require that from the input we know how to reach an |Expr|.
+The definition of |variables| requires only one change: the addition of the |Ex| suffix to |universe|. The type signature has changed so that instead of \ignore|Expr -> [String]| we have replaced |Expr| with \ignore|Biplate beta Expr => beta|. Instead of requiring the input to be an |Expr|, we merely require that from the input we know how to reach an |Expr|.
 \end{revisit}
 
 \begin{revisit}{\ref{ex:simplify}}
@@ -947,24 +937,26 @@ simplify x = transformEx f x
            f x          = x
 \end{code}
 
-With |simplify| we have again made one single change: the addition of |Ex| at the end of |transform|. In general the move to |Biplate| requires few code changes, merely the use of the new set of |Ex| functions.
+In this redefinition of |simplify| we have again made one single change: the addition of |Ex| at the end of |transform|.
 \end{revisit}
 
 \section{Implementing |Biplate|}
 \label{sec:implement_playex}
 
-The complicating feature of |replaceType| is that when defining |Biplate| where \ignore|alpha == beta| the function does not descend to the children, but simply returns its argument. This ``same type'' restriction can be captured either using the type system, or using |Typeable|. We present three methods for defining a |Biplate| instance -- offering a trade-off between performance, compatibility and volume of code.
+The complicating feature of |replaceType| is that when defining |Biplate| where \ignore|alpha == beta| the function does not descend to the children, but simply returns its argument. This ``same type'' restriction can be captured either using the type system, or using the |Typeable| class \cite{lammel:syb}. We present three methods for defining a |Biplate| instance -- offering a trade-off between performance, compatibility and volume of code.
 
 \begin{enumerate}
-\item Manual requires $O(n^2)$ instances, but offers the highest performance with the fewest extensions.
+\item Direct definition requires $O(n^2)$ instances, but offers the highest performance with the fewest extensions.
 \item The |Typeable| class can be used, requiring $O(n)$ instances and no further Haskell extensions, but worse performance.
 \item The |Data| class can be used, providing fully automatic instances with GHC, but requiring the use of rank-2 types, and performing the slowest.
 \end{enumerate}
 
-All methods can be fully automated using \derive{}, and all provide a simplified method for writing |Uniplate| instances. The |Biplate| class is independent of the method used to implement the instances. This abstraction allows the user to start with the simplest instance scheme available to them, allow a move to alternative schemes afterwards, to gain increased performance and compatibility.
+All methods can be fully automated using \derive{}, and all provide a simplified method for writing |Uniplate| instances. The |Biplate| class definition is independent of the method used to implement the instances. This abstraction allows the user to start with the simplest instance scheme available to them, then move to alternative schemes, to gain increased performance and compatibility.
 
 \subsection{Direct instances}
 \label{sec:implement_playdirect}
+
+\todo{Got to here}
 
 Writing direct instances requires the |Data.Generics.PlateDirect| module to be imported. This style requires a maximum of $n^2$ instance definitions, where $n$ is the number of types which contain each other, but gives the highest performance and most type-safety. These instances still depend on the type of each field, but are easier to define than the |Uniplate| instance discussed in \S\ref{sec:play_instances}. An example for |Expr| would be:
 
