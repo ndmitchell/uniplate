@@ -635,8 +635,7 @@ children :: Uniplate alpha => alpha -> [alpha]
 children = fst . replaceChildren
 
 universe :: Uniplate alpha => alpha -> [alpha]
-universe x = x :
-    concatMap universe (children x)
+universe x = x : concatMap universe (children x)
 
 transform :: Uniplate alpha => (alpha -> alpha) -> alpha -> alpha
 transform f x = f $ context $ map (transform f) children_
@@ -1024,7 +1023,7 @@ instance PlateOne Expr where
             _         -> plate x
 \end{code}
 
-Five combinators (| ||*|, | ||+|, | ||-|, | ||*| and | ||||+|) indicate the structure of the field to the right. The | ||*| combinator says that the value on the right is of the target type, | ||+| says that a value of the target type \textit{may be} contained within the right operand, | ||-| says that values of the target type \textit{cannot occur} in the right operand. | ||||*| and | ||||+| are versions of | ||*| and | ||+| that for when the value to the right is a \textit{list} either of the target type, or containing the target type. We use the law that |plate f ||- x| is equivalent to |plate (f x)| to obtain the definition presented above.
+Five combinators (| ||*|, | ||+|, | ||-|, | ||||*| and | ||||+|) indicate the structure of the field to the right. The | ||*| combinator says that the value on the right is of the target type, | ||+| says that a value of the target type \textit{may be} contained within the right operand, | ||-| says that values of the target type \textit{cannot occur} in the right operand. | ||||*| and | ||||+| are versions of | ||*| and | ||+| that for when the value to the right is a \textit{list} either of the target type, or containing the target type. We use the law that |plate f ||- x| is equivalent to |plate (f x)| to obtain the definition presented above.
 
 This style of definition naturally expands to the multi-type traversal, for example:
 
@@ -1124,15 +1123,15 @@ The disadvantages of this approach are (1) \textit{lack of type safety} -- there
 \ignore\begin{code}
 repChildren  :: (Data alpha, Uniplate beta, Typeable alpha, Typeable beta)
              => alpha -> ([beta],[beta] -> alpha)
-repChildren item = (collect, generate)
+repChildren x = (children_, context)
     where
-        collect = concat $ gmapQ getChildrenEx item
+        children_ = concat $ gmapQ (fst . replaceType) x
 
-        generate xs = evalState (gmapM f item) xs
-        f x = do  let (col,gen) = replaceChildrenEx x
-                  (as,bs) <- liftM (splitAt $ length col) get
+        context xs = evalState (gmapM f x) xs
+        f y = do  let (cs,con) = replaceType y
+                  (as,bs) <- liftM (splitAt $ length cs) get
                   put bs
-                  return $ gen as
+                  return $ con as
 \end{code}
 \caption{Code for |Uniplate| in terms of |Data|.}
 \label{fig:playdata}
@@ -1197,7 +1196,7 @@ data DataBox = forall alpha `o` (Typeable alpha, Data alpha) => DataBox alpha
 contains :: (Data alpha, Typeable alpha) => alpha -> [DataBox]
 contains x = if isAlgType dtyp then concatMap f ctrs else []
     where
-        f ctr = gmapQ DataBox (asTypeOf (fromConstr ctr) x)
+        f c = gmapQ DataBox (asTypeOf (fromConstr c) x)
         ctrs = dataTypeConstrs dtyp
         dtyp = dataTypeOf x
 \end{code}
@@ -1460,12 +1459,15 @@ Here the Uniplate solution wins by being able to use a list comprehension to sel
 
 \subsubsection{Uniplate compared to SYB and Compos}
 
+\newlength{\maxwidth}
+\settowidth{\maxwidth}{Uniplate Typeable}
+
 \begin{table*}
 \caption{Table of lexeme counts for the tasks.}
 \label{fig:lexemes}
 \vspace{3mm}
 \begin{tabular*}{\textwidth}{lrrrrrrrrrrrr}
- & simp & var & zero & const & ren & syms & bill & incr & incr1 & \textbf{Queries} & \textbf{Traversals} & \textbf{All} \\
+\hspace{\maxwidth} & simp & var & zero & const & ren & syms & bill & incr & incr1 & \textbf{Queries} & \textbf{Traversals} & \textbf{All} \\
 Uniplate   & 40 & 12 & 18 & 27 & 16 & 17 & 13 & 21 & 30 &  60 & 134 & 194 \\
 SYB        & 43 & 29 & 29 & 30 & 19 & 34 & 21 & 24 & 56 & 113 & 172 & 285 \\
 Compos     & 71 & 30 & 32 & 54 & 27 & 36 & 25 & 33 & 40 & 123 & 225 & 348 \\

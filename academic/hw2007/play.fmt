@@ -39,6 +39,7 @@
 %format |+ = "\mathsf{\hspace{1mm}|\hspace{-0.5mm}\hbox{\small{+}}\;}"
 %format |* = "\mathsf{\hspace{1mm}|\hspace{-0.65mm}*\;}"
 %format ||* = "\mathsf{\hspace{1mm}||\hspace{-0.65mm}*\;}"
+%format ||+ = "\mathsf{\hspace{1mm}||\hspace{-0.5mm}\hbox{\small{+}}\;}"
 
 %format _T = "\mathcal{T}"
 %format _C = "\mathcal{C}"
@@ -66,6 +67,8 @@
 %format a2  = "\Varid{a_2}"
 %format b1  = "\Varid{b_1}"
 %format b2  = "\Varid{b_2}"
+%format con  = "\Varid{con}"
+%format cs  = "\Varid{cs}"
 %format c1  = "\Varid{c_1}"
 %format c2  = "\Varid{c_2}"
 %format p1  = "\Varid{p_1}"
