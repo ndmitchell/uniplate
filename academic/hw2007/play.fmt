@@ -53,6 +53,7 @@
 %format nsn = "\Varid{ns_n}"
 %format x'  = "\Varid{x^\prime{}}"
 %format a'  = "\Varid{a^\prime{}}"
+%format e'  = "\Varid{e^\prime{}}"
 %format b'  = "\Varid{b^\prime{}}"
 %format xs' = "\Varid{xs^\prime{}}"
 %format x1' = "\Varid{x_1^\prime{}}"

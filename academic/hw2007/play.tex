@@ -285,7 +285,7 @@ Each equation corresponds to the natural Haskell translation of the rule. The |t
 
 The Scrap Your Boilerplate approach \cite{lammel:syb} provides a top-down traversal named |everywhere'|. We describe their traversal, and our reasons for \textit{not} providing it, even though it would be trivial to write. We instead provide |descend|, based on the |compos| operator \cite{bringert:compos}.
 
-The |everywhere'| transformation applies a function to a value, then continues the transformation on all the children of the freshly generated value. Typically, the intention in a traversal is to apply the function to \textit{every node exactly once}. Unfortunately, |everywhere'| does not have this property.
+The |everywhere'| transformation applies a function to a value, then continues the transformation on all the children of the freshly generated value. Typically, the intention in a transformation is to apply the function to \textit{every node exactly once}. Unfortunately, |everywhere'| does not have this property.
 
 \begin{example}
 Consider the following transformation:
@@ -295,7 +295,7 @@ doubleNeg (Neg (Neg x))  = x
 doubleNeg x              = x
 \end{code}
 
-The intention is clear: remove all instances of double negation. When applied in a bottom-up manner, this is the result, however when applied top-down some nodes are be missed. Consider the test case |Neg (Neg (Neg (Neg (Val 1))))| -- quadruple negation -- only the outermost double negation will be removed. The reason is that in the first equation of |doubleNeg| we return |x|, whose children we then transform, missing |x| entirely.
+The intention is clear: remove all instances of double negation. When applied in a bottom-up manner, this is the result, however when applied top-down some nodes are missed. Consider the value |Neg (Neg (Neg (Neg (Val 1))))| -- quadruple negation -- only the outermost double negation will be removed. The reason is that in the first equation of |doubleNeg| we return |x|, whose children we then transform, missing |x| entirely.
 \end{example}
 
 \begin{example}
@@ -309,7 +309,7 @@ reciprocal x          = x
 This transformation removes arbitrary division, converting it to divisions where the numerator is always 1. If applied once to each node, this computation would terminate successfully. Unfortunately, top-down transformation treats the generated |Mul| as  being transformed, but cannot tell that the generated |Div| is the result of a transformation, not a fragment of the original input. This leads to a non-termination error.
 \end{example}
 
-While a top-down transformation in the style of |everywhere'| can be used successfully, it is easy to slip up. The problem is that the program cannot tell the difference between freshly created nodes, and values that come originally from the input. Making the assumption that exactly the top-most constructor was freshly constructed is sufficient in some cases, but mistakes are not caught by the type system.
+While a top-down transformation in the style of |everywhere'| can be used successfully, it is easy to slip up. The problem is that the program cannot tell the difference between freshly created nodes, and values that come originally from the input. Making the assumption that the top-most constructor was freshly constructed is sufficient in some cases, but allows easy mistakes to be made.
 
 We permit top-down transformations, but require the programmer to make the traversal more explicit. We introduce the |descend| function, inspired by the Compos paper \cite{bringert:compos}. Our |descend| function allows additional arguments to be passed, and modified at each level, to allow the transformation of lower layers to depend on the higher layers.
 
@@ -344,7 +344,7 @@ The |Var| alternative in this function may return an |Expr| from |rep|, but no a
 
 \subsection{Rewrite Transformations}
 
-In addition to top-down and bottom-up transformations, we also provide rewrite transformations. The idea of a rewrite transformation is that a rule is applied exhaustive until a normal form is achieved. Consider a rewrite transformation:
+In addition to top-down and bottom-up transformations, we also provide rewrite transformations. The idea of a rewrite transformation is that a rule is applied exhaustively until a normal form is achieved. Consider a rewrite transformation:
 
 \begin{code}
 rewrite :: Uniplate alpha => (alpha -> Maybe alpha) -> alpha -> alpha
@@ -366,7 +366,7 @@ rewrite f = transform g
 
 This definition tries to apply the rule everywhere in a bottom-up manner. If at any point it makes a change, then the new value has the rewrite applied to it. The function will only terminate once a normal form is found.
 
-A disadvantage of |rewrite| is that large amounts of wasted work could be performed checking unchanged sub-expressions repeatedly. Because of this, most programmers would rather use an explicit traversal, and manage this rewriting themselves. We show under which circumstances a bottom-up transformation obtains a normal form, and how any transformation can be modified to ensure a normal form.
+A disadvantage of |rewrite| is that large amounts of wasted work could be performed checking unchanged sub-expressions repeatedly. Because of this, performance sensitive programmers would prefer to use an explicit traversal, and manage this rewriting themselves. We show under which circumstances a bottom-up transformation obtains a normal form, and how any transformation can be modified to ensure a normal form.
 
 \subsubsection{Rewrite as Bottom-Up}
 \label{sec:rewrite_bottom}
@@ -378,7 +378,40 @@ always :: (alpha -> Maybe alpha) -> (alpha -> alpha)
 always r x = fromMaybe x (r x)
 \end{code}
 
-What are the preconditions on |r| such that \ignore|forall x `dot` rewrite r x == transform (always r) x|? We can start by defining a more abstract representation of a rewrite rule:
+What are the preconditions on |r| such that \ignore|forall x `o` rewrite r x == transform (always r) x|? The answer is that the values on the right-hand side of |r| must not overlap with the values on the left-hand side.
+
+\begin{revisit}{\ref{ex:simplify}}
+
+Recall the |simplify| transformation, as a rewrite:
+
+\begin{code}
+r (Sub x y)           = Just $ Add x (Neg y)
+r (Add x y) | x == y  = Just $ Mul (Val 2) x
+r _                   = Nothing
+\end{code}
+
+Here |Add| occurs on the right-hand side of the first line, and on the left-hand side of the second. From this we can construct a value where the two alternatives differ:
+
+\ignore\begin{code}
+let x = Sub (Neg (Var "q")) (Var "q")
+
+rewrite    r           x == Mul (Val 2) (Var "q")
+transform  (always r)  x == Add (Var "q") (Neg (Var "q"))
+\end{code}
+
+So is it possible to remedy this situation? Yes. Whenever the right-hand side introduces a new constructor, |f| must be reapplied:
+
+\begin{code}
+f (Sub x y)           = f $ Add x (f $ Neg y)
+f (Add x y) | x == y  = f $ Mul (f $ Val 2) x
+f x                   = x
+\end{code}
+
+This approach guarantees that no rewrite is possible as the result of the transformation. In fact, only one additional |f| application is necessary, the one attached to the construction of an |Add| value.
+\end{revisit}
+
+\begin{comment}
+ We can start by defining a more abstract representation of a rewrite rule:
 
 \todo{Do we want this? Perhaps just informally stating the answer is the best policy}
 
@@ -475,6 +508,7 @@ f (Mul  x y) | Val 1   <- f x = f y
 We have both explicitly continued the execution \textit{before} performing a pattern match, and in the last branch where a leaf is returned, we explicitly continue \textit{afterwards}.
 
 We consider top-down transformations to be more complex and less useful than bottom-up traversals, and we do not include them in our library. A previous version of our library did include top-down traversals, but we found they were rarely the correct choice. We discovered that most uses of top-down traversals were to model rewrites where information was pushed down, and it was easy to get the definition wrong in corner cases. This experience lead us to the decision that top-down traversals do not deserve library support. We include |rewrite| but suspect that most users would be better off using |transform|, modified as described above.
+\end{comment}
 
 \subsection{Action Transformations}
 
@@ -1158,9 +1192,9 @@ With this first improvement in place we perform much the same operations as SYB.
 The next optimisation relies on the extra information present in the |Uniplate| operations -- namely the target type. A boilerplate operation can be viewed as walking over a data structure, looking for target values to process. In SYB, the target values may be of \textit{any} type. For Uniplate the target is a single uniform type. If a node is reached which is not a container for the target type, no further exploration is required within this node. Computing which types are containers for the target type can be done relatively easily with the SYB framework \citep{lammel:syb2}:
 
 \ignore\begin{code}
-data DataBox = forall a . (Typeable a, Data a) => DataBox a
+data DataBox = forall alpha `o` (Typeable alpha, Data alpha) => DataBox alpha
 
-contains :: (Data a, Typeable a) => a -> [DataBox]
+contains :: (Data alpha, Typeable alpha) => alpha -> [DataBox]
 contains x = if isAlgType dtyp then concatMap f ctrs else []
     where
         f ctr = gmapQ DataBox (asTypeOf (fromConstr ctr) x)
