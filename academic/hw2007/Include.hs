@@ -24,6 +24,7 @@
 -- # incrOne
 -- # Traversable
 -- # syb_incrOne
+-- # r
 -- instance Eq Expr
 -- instance Uniplate Expr
 -- instance Eq Tree
@@ -48,11 +49,12 @@ k = undefined
 rule = undefined
 x = undefined
 operate = undefined
-r = undefined
 e' = undefined
 
 elipses = undefined
 
+instance Eq (a -> b) where
+    _ == _ = True
 
 (==>) a b = not a || b
 
