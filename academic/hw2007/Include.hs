@@ -13,7 +13,7 @@
 -- # compos
 -- # rep
 -- # On
--- # Ex
+-- # Bi
 -- # coreSimplify
 -- # Data.Generics.PlateTypeable
 -- # Data.Generics.PlateDirect

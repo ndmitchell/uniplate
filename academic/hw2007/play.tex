@@ -946,33 +946,33 @@ class  Uniplate alpha => Biplate beta alpha where
 We can now implement |universeEx| and |transformEx| in terms of their |On| counterparts:
 
 \begin{code}
-universeEx   :: Biplate beta alpha => beta -> [alpha]
-universeEx   = universeOn   biplate
+universeBi   :: Biplate beta alpha => beta -> [alpha]
+universeBi   = universeOn   biplate
 
-transformEx  :: Biplate beta alpha => (alpha -> alpha) -> beta -> beta
-transformEx  = transformOn  biplate
+transformBi  :: Biplate beta alpha => (alpha -> alpha) -> beta -> beta
+transformBi  = transformOn  biplate
 \end{code}
 
-In general the move to |Biplate| requires few code changes, merely the use of the new set of |Ex| functions. We now present generalisations of two examples from \S\ref{sec:use_play}, implemented using |Biplate|. We extend the |variables| and |simplify| functions to work on |Expr|, |Stmt| or many other types.
+In general the move to |Biplate| requires few code changes, merely the use of the new set of |Bi| functions. We now present generalisations of two examples from \S\ref{sec:use_play}, implemented using |Biplate|. We extend the |variables| and |simplify| functions to work on |Expr|, |Stmt| or many other types.
 
 \begin{revisit}{\ref{ex:variables}}
 \begin{code}
 variables :: Biplate beta Expr => beta -> [String]
-variables x = [y | Var y <- universeEx x]
+variables x = [y | Var y <- universeBi x]
 \end{code}
 
-The definition of |variables| requires only one change: the addition of the |Ex| suffix to |universe|. The type signature has changed so that instead of \ignore|Expr -> [String]| we have replaced |Expr| with \ignore|Biplate beta Expr => beta|. Instead of requiring the input to be an |Expr|, we merely require that from the input we know how to reach an |Expr|.
+The definition of |variables| requires only one change: the addition of the |Bi| suffix to |universe|. The type signature has changed so that instead of \ignore|Expr -> [String]| we have replaced |Expr| with \ignore|Biplate beta Expr => beta|. Instead of requiring the input to be an |Expr|, we merely require that from the input we know how to reach an |Expr|.
 \end{revisit}
 
 \begin{revisit}{\ref{ex:simplify}}
 \begin{code}
 simplify :: Biplate beta Expr => beta -> beta
-simplify x = transformEx f x
+simplify x = transformBi f x
     where  f (Sub x y)  = Add x (Neg y)
            f x          = x
 \end{code}
 
-In this redefinition of |simplify| we have again made one single change: the addition of |Ex| at the end of |transform|.
+In this redefinition of |simplify| we have again made one single change: the addition of |Bi| at the end of |transform|.
 \end{revisit}
 
 \section{Implementing |Biplate|}
@@ -1317,7 +1317,7 @@ The |warnAssign| function from the Compos paper could be implemented much more n
 \ignore\begin{code}
 ren (V x) = V ("_" ++ x)
 
-uni_rename = transformEx ren
+uni_rename = transformBi ren
 
 syb_rename = everywhere (mkT ren)
 
@@ -1333,7 +1333,7 @@ The Uniplate definition is the shortest, as there is only one constructor in typ
 \begin{examplename}{symbols}
 
 \ignore\begin{code}
-uni_symbols x = [(v,t) | SDecl t v <- universeEx x]
+uni_symbols x = [(v,t) | SDecl t v <- universeBi x]
 
 syb_symbols = everything (++) ([] `mkQ` f)
     where  f (SDecl t v)  = [(v,t)]
@@ -1354,7 +1354,7 @@ Whereas the Compos solution explicitly traverses the tree, the Uniplate solution
 optimise (EAdd (EInt n) (EInt m)) = EInt (n+m)
 optimise x = x
 
-uni_constFold = transformEx optimise
+uni_constFold = transformBi optimise
 
 syb_constFold = everywhere (mkT optimise)
 
@@ -1399,7 +1399,7 @@ The first function discussed in the SYB paper is |increase|. This function incre
 \ignore\begin{code}
 incS k (S s) = S (s + k)
 
-uni_increase k = transformEx (incS k)
+uni_increase k = transformBi (incS k)
 
 syb_increase k = everywhere (mkT (incS k))
 
@@ -1417,7 +1417,7 @@ In the Compos solution all constructors belong to the same GADT, so instead of j
 The |incrOne| function performs the same operation as |increase|, but only within a named department. The one subtlety is that if the named department contains a department with the same name within it, then the salaries of that contained department should only be increased once. We are able to reuse the |increase| function from the previous section in all cases.
 
 \ignore\begin{code}
-uni_incrOne d k = descendEx f
+uni_incrOne d k = descendBi f
     where f x@(D n _ _)  | n == d     = uni_increase k x
                          | otherwise  = descend f x
 
@@ -1441,7 +1441,7 @@ The SYB solution has grown substantially more complex, requiring two different u
 The final function is one which sums all the salaries.
 
 \ignore\begin{code}
-uni_salaryBill x = sum [s | S s <- universeEx x]
+uni_salaryBill x = sum [s | S s <- universeBi x]
 
 syb_salaryBill = everything (+) (0 `mkQ` billS)
    where billS (S s) = s
