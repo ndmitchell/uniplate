@@ -38,41 +38,41 @@ class Uniplate to => Biplate from to where
 
 -- ** Queries
 
-universeEx :: Biplate from to => from -> [to]
-universeEx = universeOn biplate
+universeBi :: Biplate from to => from -> [to]
+universeBi = universeOn biplate
 
 
-childrenEx :: Biplate from to => from -> [to]
-childrenEx = childrenOn biplate
+childrenBi :: Biplate from to => from -> [to]
+childrenBi = childrenOn biplate
 
 
 -- ** Transformations
 
-transformEx :: Biplate from to => (to -> to) -> from -> from
-transformEx = transformOn biplate
+transformBi :: Biplate from to => (to -> to) -> from -> from
+transformBi = transformOn biplate
 
 
-transformExM :: (Monad m, Biplate from to) => (to -> m to) -> from -> m from
-transformExM = transformOnM biplate
+transformBiM :: (Monad m, Biplate from to) => (to -> m to) -> from -> m from
+transformBiM = transformOnM biplate
 
 
-rewriteEx :: Biplate from to => (to -> Maybe to) -> from -> from
-rewriteEx = rewriteOn biplate
+rewriteBi :: Biplate from to => (to -> Maybe to) -> from -> from
+rewriteBi = rewriteOn biplate
 
 
-rewriteExM :: (Monad m, Biplate from to) => (to -> m (Maybe to)) -> from -> m from
-rewriteExM = rewriteOnM biplate
+rewriteBiM :: (Monad m, Biplate from to) => (to -> m (Maybe to)) -> from -> m from
+rewriteBiM = rewriteOnM biplate
 
 
-descendEx :: Biplate from to => (to -> to) -> from -> from
-descendEx = descendOn biplate
+descendBi :: Biplate from to => (to -> to) -> from -> from
+descendBi = descendOn biplate
 
 
-descendExM :: (Monad m, Biplate from to) => (to -> m to) -> from -> m from
-descendExM = descendOnM biplate
+descendBiM :: (Monad m, Biplate from to) => (to -> m to) -> from -> m from
+descendBiM = descendOnM biplate
 
 
 -- ** Others
 
-contextsEx:: Biplate from to => from -> [(to, to -> from)]
-contextsEx = contextsOn biplate
+contextsBi:: Biplate from to => from -> [(to, to -> from)]
+contextsBi = contextsOn biplate
