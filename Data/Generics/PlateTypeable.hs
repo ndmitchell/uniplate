@@ -15,14 +15,14 @@
     >   plateAll (Add x y) = plate Add |+ x |+ y
     >
     > instance Uniplate Expr where
-    >   replaceChildren = replaceChildrenAll
+    >   uniplate = uniplateAll
 -}
 
 module Data.Generics.PlateTypeable(
     module Data.Generics.Biplate,
     module Data.Typeable,
     -- * The Class
-    PlateAll(..), replaceChildrenAll,
+    PlateAll(..), uniplateAll,
     -- * The Combinators
     plate, (|+), (|-)
     ) where
@@ -34,12 +34,12 @@ import Data.Maybe
 
 
 instance (Typeable a, Typeable b, Uniplate b, PlateAll a b) => Biplate a b where
-    replaceType x = liftType $ plateMore x
+    biplate x = liftType $ plateMore x
 
 
 -- | This function is used to write a 'Uniplate' instance from a 'PlateAll' one
-replaceChildrenAll :: PlateAll a b => a -> ([b],[b] -> a)
-replaceChildrenAll a = liftType $ plateAll a
+uniplateAll :: PlateAll a b => a -> ([b],[b] -> a)
+uniplateAll a = liftType $ plateAll a
 
 
 
@@ -97,25 +97,25 @@ plate f = (id, \xs -> (f,xs))
 -- ** Primitive Types
 
 instance PlateAll Int to where plateAll x = plate x
-instance Uniplate Int where replaceChildren = replaceChildrenAll
+instance Uniplate Int where uniplate = uniplateAll
 
 instance PlateAll Bool to where plateAll x = plate x
-instance Uniplate Bool where replaceChildren = replaceChildrenAll
+instance Uniplate Bool where uniplate = uniplateAll
 
 instance PlateAll Char to where plateAll x = plate x
-instance Uniplate Char where replaceChildren = replaceChildrenAll
+instance Uniplate Char where uniplate = uniplateAll
 
 instance PlateAll Integer to where plateAll x = plate x
-instance Uniplate Integer where replaceChildren = replaceChildrenAll
+instance Uniplate Integer where uniplate = uniplateAll
 
 instance PlateAll Double to where plateAll x = plate x
-instance Uniplate Double where replaceChildren = replaceChildrenAll
+instance Uniplate Double where uniplate = uniplateAll
 
 instance PlateAll Float to where plateAll x = plate x
-instance Uniplate Float where replaceChildren = replaceChildrenAll
+instance Uniplate Float where uniplate = uniplateAll
 
 instance PlateAll () to where plateAll x = plate x
-instance Uniplate () where replaceChildren = replaceChildrenAll
+instance Uniplate () where uniplate = uniplateAll
 
 -- ** Container Types
 

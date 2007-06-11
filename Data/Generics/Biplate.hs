@@ -31,7 +31,7 @@ import Data.Generics.UniplateOn
 -- | Children are defined as the top-most items of type to
 --   /starting at the root/.
 class Uniplate to => Biplate from to where
-    replaceType :: ReplaceType from to
+    biplate :: BiplateType from to
 
 
 -- * The Operations
@@ -39,40 +39,40 @@ class Uniplate to => Biplate from to where
 -- ** Queries
 
 universeEx :: Biplate from to => from -> [to]
-universeEx = universeOn replaceType
+universeEx = universeOn biplate
 
 
 childrenEx :: Biplate from to => from -> [to]
-childrenEx = childrenOn replaceType
+childrenEx = childrenOn biplate
 
 
 -- ** Transformations
 
 transformEx :: Biplate from to => (to -> to) -> from -> from
-transformEx = transformOn replaceType
+transformEx = transformOn biplate
 
 
 transformExM :: (Monad m, Biplate from to) => (to -> m to) -> from -> m from
-transformExM = transformOnM replaceType
+transformExM = transformOnM biplate
 
 
 rewriteEx :: Biplate from to => (to -> Maybe to) -> from -> from
-rewriteEx = rewriteOn replaceType
+rewriteEx = rewriteOn biplate
 
 
 rewriteExM :: (Monad m, Biplate from to) => (to -> m (Maybe to)) -> from -> m from
-rewriteExM = rewriteOnM replaceType
+rewriteExM = rewriteOnM biplate
 
 
 descendEx :: Biplate from to => (to -> to) -> from -> from
-descendEx = descendOn replaceType
+descendEx = descendOn biplate
 
 
 descendExM :: (Monad m, Biplate from to) => (to -> m to) -> from -> m from
-descendExM = descendOnM replaceType
+descendExM = descendOnM biplate
 
 
 -- ** Others
 
 contextsEx:: Biplate from to => from -> [(to, to -> from)]
-contextsEx = contextsOn replaceType
+contextsEx = contextsOn biplate

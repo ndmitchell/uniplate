@@ -49,10 +49,10 @@ import Data.Maybe
 
 
 instance (Uniplate b, PlateAll a b) => Biplate a b where
-    replaceType x = liftType $ plateAll x
+    biplate x = liftType $ plateAll x
 
 instance PlateOne a => Uniplate a where
-    replaceChildren x = liftType $ plateOne x
+    uniplate x = liftType $ plateOne x
 
 
 type Type from to = ([to] -> [to], [to] -> (from,[to]))

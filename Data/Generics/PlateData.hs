@@ -93,14 +93,14 @@ contains x = if isAlgType dtyp then concatMap f ctrs else []
 
 
 instance (Data a, Typeable a) => Uniplate a where
-    replaceChildren = \x -> fromCC (collect_generate (fromBox answer) x)
+    uniplate = \x -> fromCC (collect_generate (fromBox answer) x)
         where
             answer :: Box a
             answer = containsMatch (undefined :: a) (undefined :: a)
 
 
 instance (Data a, Data b, Uniplate b, Typeable a, Typeable b) => Biplate a b where
-    replaceType = \x -> fromCC (collect_generate_self (fromBox answer) x)
+    biplate = \x -> fromCC (collect_generate_self (fromBox answer) x)
         where
             answer :: Box b
             answer = containsMatch (undefined :: a) (undefined :: b)

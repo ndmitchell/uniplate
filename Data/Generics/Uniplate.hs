@@ -30,9 +30,9 @@ type ReplaceChildren on = on -> ([on], [on] -> on)
 class Uniplate on where
     -- | The underlying method in the class
     --
-    -- > replaceChildren (Add (Val 1) (Neg (Val 2))) = ([Val 1, Neg (Val 2)], \[a,b] -> Add a b)
-    -- > replaceChildren (Val 1)                     = ([]                  , \[]    -> Val 1  )
-    replaceChildren :: ReplaceChildren on
+    -- > uniplate (Add (Val 1) (Neg (Val 2))) = ([Val 1, Neg (Val 2)], \[a,b] -> Add a b)
+    -- > uniplate (Val 1)                     = ([]                  , \[]    -> Val 1  )
+    uniplate :: ReplaceChildren on
     
 -- * The Operations
 
@@ -55,9 +55,9 @@ universe x = builder (f x)
 
 -- | Get the direct children of a node. Usually using 'universe' is more appropriate.
 --
--- @children = fst . 'replaceChildren'@
+-- @children = fst . 'uniplate'@
 children :: Uniplate on => on -> [on]
-children = fst . replaceChildren
+children = fst . uniplate
 
 
 
@@ -73,13 +73,13 @@ children = fst . replaceChildren
 -- >          f x = x
 transform :: Uniplate on => (on -> on) -> on -> on
 transform f x = f $ generate $ map (transform f) current
-    where (current, generate) = replaceChildren x
+    where (current, generate) = uniplate x
 
 
 -- | Monadic variant of 'transform'
 transformM :: (Monad m, Uniplate on) => (on -> m on) -> on -> m on
 transformM f x = mapM (transformM f) current >>= f . generate
-    where (current, generate) = replaceChildren x
+    where (current, generate) = uniplate x
 
 
 -- | Rewrite by applying a rule everywhere you can. Ensures that the rule cannot
@@ -106,13 +106,13 @@ rewriteM f = transformM g
 -- used to provide a top-down transformation.
 descend :: Uniplate on => (on -> on) -> on -> on
 descend f x = generate $ map f current
-    where (current, generate) = replaceChildren x
+    where (current, generate) = uniplate x
 
 
 -- | Monadic variant of 'descend'    
 descendM :: (Monad m, Uniplate on) => (on -> m on) -> on -> m on
 descendM f x = liftM generate $ mapM f current
-    where (current, generate) = replaceChildren x
+    where (current, generate) = uniplate x
 
 
 
@@ -125,7 +125,7 @@ descendM f x = liftM generate $ mapM f current
 contexts :: Uniplate on => on -> [(on, on -> on)]
 contexts x = (x,id) : f current
   where
-    (current, generate) = replaceChildren x
+    (current, generate) = uniplate x
     f xs = [ (y, \i -> generate (pre ++ [context i] ++ post))
            | (pre,b:post) <- zip (inits xs) (tails xs)
            , (y, context) <- contexts b]
