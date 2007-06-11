@@ -137,7 +137,7 @@ rename_compos = compStm2 f
             
 rename_op (NV x) = NV ("_" ++ x)
 
-rename_play = playStm2 $ transformEx rename_op
+rename_play = playStm2 $ transformBi rename_op
 
 rename_syb = sybStm2 $ everywhere (mkT rename_op)
 
@@ -167,7 +167,7 @@ symbols_compos = compStm rewrapPairC f
             CSDecl typ var -> [(var,typ)]
             _ -> composOpMonoid f t
 
-symbols_play = playStm rewrapPairN $ \x -> [(v,t) | NSDecl t v <- universeEx x]
+symbols_play = playStm rewrapPairN $ \x -> [(v,t) | NSDecl t v <- universeBi x]
 
 symbols_syb = sybStm rewrapPairN $ SYB.everything (++) ([] `mkQ` f)
     where
@@ -201,7 +201,7 @@ constFold_compos = compStm2 f
 const_op (NEAdd (NEInt n) (NEInt m)) = NEInt (n+m)
 const_op x = x
 
-constFold_play = playStm2 $ transformEx const_op
+constFold_play = playStm2 $ transformBi const_op
 
 constFold_syb = sybStm2 $ everywhere (mkT const_op)
 
@@ -226,7 +226,7 @@ increase = task "increase" [increase_play v, increase_syb v, increase_comp v, in
 increase_op k (NS s) = NS (s+k)
 
 increase_play k = playPar2 (increase_play_int k)
-increase_play_int k = transformEx (increase_op k)
+increase_play_int k = transformBi (increase_op k)
 
 increase_comp k = compPar2 $ increase_comp_int k
 increase_comp_int k = f k
@@ -252,7 +252,7 @@ increase_raw k = rawPar2 c
 incrone = task "incrone" [incrone_play n v, incrone_syb n v, incrone_comp n v, incrone_raw n v]
     where v = 100; n = "" -- most common department name
 
-incrone_play name k = playPar2 $ descendEx $ f name k
+incrone_play name k = playPar2 $ descendBi $ f name k
     where
         f name k a@(ND n _ _) | name == n = increase_play_int k a
                               | otherwise = descend (f name k) a
@@ -302,7 +302,7 @@ bill_comp = compPar id f
 bill_syb = sybPar id $ SYB.everything (+) (0 `mkQ` billS)
     where billS (NS x) = x
 
-bill_play = playPar id $ \x -> sum [x | NS x <- universeEx x]
+bill_play = playPar id $ \x -> sum [x | NS x <- universeBi x]
 
 bill_raw = rawPar id c
     where

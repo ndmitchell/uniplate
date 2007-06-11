@@ -8,7 +8,7 @@ import Data.Generics.PlateTypeable
 
 
 instance Uniplate NExpr where
-    replaceChildren = replaceChildrenAll
+    uniplate = uniplateAll
 
 instance (Typeable a, Uniplate a) => PlateAll NExpr a where
     plateAll x =
@@ -22,16 +22,16 @@ instance (Typeable a, Uniplate a) => PlateAll NExpr a where
 
 
 instance Uniplate NStm where
-    replaceChildren = replaceChildrenAll
+    uniplate = uniplateAll
 
 instance Uniplate NExp where
-    replaceChildren = replaceChildrenAll
+    uniplate = uniplateAll
 
 instance Uniplate NVar where
-    replaceChildren = replaceChildrenAll
+    uniplate = uniplateAll
 
 instance Uniplate NTyp where
-    replaceChildren = replaceChildrenAll
+    uniplate = uniplateAll
 
 
 instance (Typeable a, Uniplate a) => PlateAll NStm a where
@@ -58,12 +58,12 @@ instance (Typeable a, Uniplate a) => PlateAll NTyp a where
 
 
 
-instance Uniplate NCompany where replaceChildren = replaceChildrenAll
-instance Uniplate NDept where replaceChildren = replaceChildrenAll
-instance Uniplate NUnt where replaceChildren = replaceChildrenAll
-instance Uniplate NEmployee where replaceChildren = replaceChildrenAll
-instance Uniplate NPerson where replaceChildren = replaceChildrenAll
-instance Uniplate NSalary where replaceChildren = replaceChildrenAll
+instance Uniplate NCompany where uniplate = uniplateAll
+instance Uniplate NDept where uniplate = uniplateAll
+instance Uniplate NUnt where uniplate = uniplateAll
+instance Uniplate NEmployee where uniplate = uniplateAll
+instance Uniplate NPerson where uniplate = uniplateAll
+instance Uniplate NSalary where uniplate = uniplateAll
 
 instance (Typeable a, Uniplate a) => PlateAll NCompany a where
     plateAll (NC x) = plate NC |+ x
