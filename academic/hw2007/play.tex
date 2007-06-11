@@ -158,7 +158,7 @@ variables x = [y | Var y <- universe x]
 
 The type signature is optional, and would be inferred automatically if left absent. This example requires only Haskell 98. For more advanced examples we require multi-parameter type classes -- but no rank-2 types, functional dependencies or GADTs.
 
-The central idea is that all traversals only contain value-specific behaviour for a \textit{single uniform type}. In the |variables| example, the only type of interest is |Expr|. In practical applications, this pattern is common. By focusing only on uniform type traversals, we are able to simplify many aspects of boilerplate removal.
+The central idea is that all traversals only contain value-specific behaviour for a \textit{single uniform type}. In the |variables| example, the only type of interest is |Expr|. In practical applications, this pattern is common\footnote{Most examples in boilerplate removal papers meet this restriction, even though the systems being discussed are more powerful}. By focusing only on uniform type traversals, we are able to simplify many aspects of boilerplate removal.
 
 \subsection{Contribution}
 
