@@ -50,6 +50,7 @@ rule = undefined
 x = undefined
 operate = undefined
 e' = undefined
+everywhere' = undefined
 
 elipses = undefined
 
