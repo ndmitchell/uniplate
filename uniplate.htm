@@ -56,7 +56,7 @@ h3 {
 </p>
 
 <p style="margin-left:10%;margin-right:10%;margin-bottom:25px;text-align:justify;">
-    Generic transformations and queries are often referred to as boilerplate code - they remain relatively similar as the action performed by the code changes, and can often outnumber the actual intent of the code in terms of lines. While other generic traversal schemes have shown how powerful new features can be added to compilers, and how the type system can be manipulated into accepting these operations, this document focuses on a conceptually simpler generic concept. The <i>Uniplate</i> class is introduced, which abstracts over common traversals and queries in a simple manner.
+    Generic transformations and queries are often referred to as boilerplate code - they remain relatively similar as the action performed by the code changes, and can often outnumber the actual intent of the code in terms of lines. While other generic traversal schemes have shown how powerful new features can be added to compilers, and how the type system can be manipulated into accepting these operations, this document focuses on a conceptually simpler generic concept. The <i>Uniplate</i> class is introduced, which abstracts over common traversals and queries in a simple manner. A more complete document on the Uniplate class will be available from the <a href="http://www-users.cs.york.ac.uk/~ndm/uniplate/">project website</a> shortly.
 </p>
 <p>
     There have been several attempts at generic traversal/query methods in Haskell. One initial paper was <a href="http://doi.acm.org/10.1145/604174.604179">"Scrap your boilerplate: a practical design pattern for generic programming"</a> (<a href="http://www.cs.vu.nl/boilerplate/tldi03.pdf">free copy</a>) - which I will refer to as SYB. Another mechanism is <a href="http://doi.acm.org/10.1145/1159803.1159834">"A Pattern for Almost Compositional Functions"</a> (<a href="http://www.cs.chalmers.se/~bringert/publ/composOp/composOp.pdf">free copy</a>) - which I refer to as Compos (after the name of their class). A detailed comparison is given in the Uniplate paper (to be submitted).
@@ -73,7 +73,7 @@ h3 {
     <li>Extensions to Biplate</li>
 </ol>
 <p>
-    All the examples used in this document can be found in the darcs repository, under the <tt>Examples</tt> directory.
+    The libraries is available through <a href="http://hackage.haskell.org/cgi-bin/hackage-scripts/package/uniplate-1.0">Hackage</a> or darcs:
 </p>
 <pre>
 darcs get --partial <a href="http://www.cs.york.ac.uk/fp/darcs/uniplate">http://www.cs.york.ac.uk/fp/darcs/uniplate</a>
@@ -128,7 +128,7 @@ data Expr = Val Int
           deriving (Show, Eq)
 </pre>
 <p>
-    Assume that a Uniplate class has already been written; so now <tt>instance Uniplate Expr</tt> is available to us. Some examples are presented, in rough order of increasingly complexity. These examples are all available in the <tt>Examples/Expr.hs</tt> file.
+    Assume that a Uniplate class has already been written; so now <tt>instance Uniplate Expr</tt> is available to us. Some examples are presented, in rough order of increasingly complexity.
 </p>
 
 <h3>Checking for division by zero</h3>
@@ -236,7 +236,7 @@ contexts :: Uniplate on => on -> [(on, on -> on)]
 <pre>
 mutate :: Expr -> [Expr]
 mutate x = concat [[gen $ Val $ i-1, gen $ Val $ i+1]
-                  | (Val i, gen) <- mutants x]
+                  | (Val i, gen) <- contexts x]
 </pre>
 <p>
    The <tt>transform</tt> function is useful for doing an operation to all nodes in a tree, but sometimes you only want to apply a transformation once. This is less common, but is sometimes required. The idea is that the context provides the information required to recreate the original expression, but with this node altered.
@@ -248,10 +248,10 @@ mutate x = concat [[gen $ Val $ i-1, gen $ Val $ i+1]
 <h3>Reverse notation</h3>
 
 <pre class="define">
-replaceChildren :: Uniplate on => on -> ([on], [on] -> on)
+uniplate :: Uniplate on => on -> ([on], [on] -> on)
 </pre>
 <p>
-    In general, <tt>universe</tt> and <tt>transform</tt> are used most of the time, and <tt>transformM</tt> is used occasionally. The Uniplate class is built upon the operation <tt>replaceChildren</tt>, which takes an expression, and returns a pair with the children of that expression, and a function to generate that expression with a new set of children in place. This operation can be directly exploited if required, although should be handled with caution.
+    In general, <tt>universe</tt> and <tt>transform</tt> are used most of the time, and <tt>transformM</tt> is used occasionally. The Uniplate class is built upon the operation <tt>uniplate</tt>, which takes an expression, and returns a pair with the children of that expression, and a function to generate that expression with a new set of children in place. This operation can be directly exploited if required, although should be handled with caution.
 </p>
 <p>
     Let us make a function that reverses the order of all the inputs, say if the user is working in Right-to-Left mode on their computer:
@@ -261,28 +261,28 @@ reverseExpr :: Expr -> Expr
 reverseExpr = transform f
     where
         f x = generate $ reverse collect
-            where (collect,generate) = replaceChildren x
+            where (collect,generate) = uniplate x
 </pre>
 <p>
-    This expression does a standard <tt>transform</tt>, but at each iteration calls <tt>replaceChildren</tt>, then reverses the children set before regenerating the original expression. This shows the underlying mechanism on which the library is based, and isn't recommended for average users.
+    This expression does a standard <tt>transform</tt>, but at each iteration calls <tt>uniplate</tt>, then reverses the children set before regenerating the original expression. This shows the underlying mechanism on which the library is based, and isn't recommended for average users.
 </p>
 
 
 <h2>Defining a Uniplate instance</h2>
 
 <p>
-    As shown in the reversal example (just above), the only method in the Uniplate class is <tt>replaceChildren</tt>. The Uniplate class is defined as:
+    As shown in the reversal example (just above), the only method in the Uniplate class is <tt>uniplate</tt>. The Uniplate class is defined as:
 </p>
 <pre class="define">
 class Uniplate on where
-    replaceChildren :: on -> ([on], [on] -> on)
+    uniplate :: on -> ([on], [on] -> on)
 </pre>
 <p>
     The idea is that given an item, you want to return all the children, and a function that will replace all the children. An invariant is that the list given to the second function will be the same length as that returned in the first element of the pair. Let's start by constructing the Uniplate instance for the expression type.
 </p>
 <pre>
 instance Uniplate Expr of
-    replaceChildren x =
+    uniplate x =
         case x of
             Add a b -> ([a,b], \[a,b] -> Add a b)
             ...
@@ -301,10 +301,10 @@ instance Uniplate Expr of
 </p>
 <pre class="define">
 class Uniplate with => Biplate on with where
-    replaceType :: on -> ([with], [with] -> on)
+    biplate :: on -> ([with], [with] -> on)
 </pre>
 <p>
-    The <tt>replaceType</tt> method operates much like the <tt>replaceChildren</tt>, except for the different types.  When the types of <tt>on</tt> and <tt>with</tt> are different, <tt>replaceChildrenEx</tt> returns the closest children of the requested type. When the types are the same, this function returns the root element, not it's children.
+    The <tt>biplate</tt> method operates much like the <tt>biplate</tt>, except for the different types.  When the types of <tt>on</tt> and <tt>with</tt> are different, <tt>biplate</tt> returns the closest children of the requested type. When the types are the same, this function returns the root element, not it's children.
 </p>
 <p>
     There are several mechanisms for writing <tt>Biplate</tt> instances, discussed in the Uniplate paper.
@@ -313,12 +313,12 @@ class Uniplate with => Biplate on with where
 <h3>Using the operations from Biplate</h3>
 
 <p>
-    To see various operations being used from the Biplate class, take a look at <tt>Examples/ComposPaper.hs</tt>. Typically the operations are just the same as Uniplate, with Ex on the end.
+    To see various operations being used from the Biplate class, see the Uniplate paper. Typically the operations are just the same as Uniplate, with <tt>Bi</tt> on the end.
 </p>
 <pre class="define">
-universeEx :: Biplate on with => on -> [with]
-transformEx :: Biplate on with => (with -> with) -> on -> on
-transformExM :: (Monad m, Biplate on with) => (with -> m with) -> on -> m on
+universeBi:: Biplate on with => on -> [with]
+transformBi :: Biplate on with => (with -> with) -> on -> on
+transformBiM :: (Monad m, Biplate on with) => (with -> m with) -> on -> m on
 </pre>
 
 
