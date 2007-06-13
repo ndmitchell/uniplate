@@ -1289,6 +1289,40 @@ This is a modified version of |simplify| discussed in \S\ref{sec:rewrite_bottom}
 
 \subsubsection{Multi-type examples from the Compos paper}
 
+\newlength{\maxfirst}
+\settowidth{\maxfirst}{Uniplate Typeable}
+\newlength{\maxany}
+\settowidth{\maxany}{00.00}
+
+\begin{table*}
+\caption{Table of lexeme counts for the tasks.}
+\label{fig:lexemes}
+\vspace{3mm}
+\begin{tabular*}{\textwidth}{lrrrrrrrrrrrr}
+\hspace{\maxfirst} & \makebox[\maxany][r]{simp} & \makebox[\maxany][r]{var} & \makebox[\maxany][r]{zero} & \makebox[\maxany][r]{const} & \makebox[\maxany][r]{ren} & \makebox[\maxany][r]{syms} & \makebox[\maxany][r]{bill} & \makebox[\maxany][r]{incr} & \makebox[\maxany][r]{incr1} & \textbf{Query} & \textbf{Transform} & \makebox[\maxany][r]{\textbf{All}} \\
+Uniplate   & 40 & 12 & 18 & 27 & 16 & 17 & 13 & 21 & 30 &  60 & 134 & 194 \\
+SYB        & 43 & 29 & 29 & 30 & 19 & 34 & 21 & 24 & 56 & 113 & 172 & 285 \\
+Compos     & 71 & 30 & 32 & 54 & 27 & 36 & 25 & 33 & 40 & 123 & 225 & 348 \\
+\hline
+\end{tabular*}
+\end{table*}
+
+\begin{table*}
+\caption{Table of timing results, expressed as multiples of minimum time for a hand-tuned solution.}
+\label{fig:results}
+\vspace{3mm}
+\begin{tabular*}{\textwidth}{lrrrrrrrrrrrr}
+\hspace{\maxfirst} & \makebox[\maxany][r]{simp} & \makebox[\maxany][r]{var} & \makebox[\maxany][r]{zero} & \makebox[\maxany][r]{const} & \makebox[\maxany][r]{ren} & \makebox[\maxany][r]{syms} & \makebox[\maxany][r]{bill} & \makebox[\maxany][r]{incr} & \makebox[\maxany][r]{incr1} & \textbf{Query} & \textbf{Transform} & \makebox[\maxany][r]{\textbf{All}} \\
+Compos             &  1.34 &  1.17 &  1.74 &  1.28 &  1.22 &  1.30 &  2.49 &  1.52 &  1.57 &  1.68 &  1.39 &  1.51 \\
+Uniplate Manual    &  1.16 &  1.44 &  2.64 &  1.27 &  1.36 &  1.48 &  2.28 &  1.27 &  1.08 &  1.96 &  1.23 &  1.55 \\
+Uniplate Direct    &  1.22 &  1.61 &  3.28 &  1.21 &  1.18 &  1.38 &  2.35 &  1.19 &  1.16 &  2.15 &  1.19 &  1.62 \\
+Uniplate Typeable  &  1.43 &  2.09 &  4.81 &  1.42 &  1.37 &  2.63 &  5.86 &  1.53 &  1.53 &  3.85 &  1.46 &  2.52 \\
+Uniplate Data      &  2.30 &  4.64 & 12.70 &  1.84 &  1.89 &  3.60 & 10.70 &  2.07 &  1.69 &  7.91 &  1.96 &  4.60 \\
+SYB            &  2.21 &  5.88 & 16.62 &  2.30 &  2.13 &  5.56 & 24.29 &  3.12 &  2.35 & 13.09 &  2.42 &  7.16 \\
+\hline
+\end{tabular*}
+\end{table*}
+
 \begin{figure}
 \ignore\begin{code}
 data Stm  =  SDecl    Typ Var
@@ -1458,24 +1492,6 @@ Here the Uniplate solution wins by being able to use a list comprehension to sel
 
 \subsubsection{Uniplate compared to SYB and Compos}
 
-\newlength{\maxfirst}
-\settowidth{\maxfirst}{Uniplate Typeable}
-\newlength{\maxany}
-\settowidth{\maxany}{00.00}
-
-\begin{table*}
-\caption{Table of lexeme counts for the tasks.}
-\label{fig:lexemes}
-\vspace{3mm}
-\begin{tabular*}{\textwidth}{lrrrrrrrrrrrr}
-\hspace{\maxfirst} & \makebox[\maxany][r]{simp} & \makebox[\maxany][r]{var} & \makebox[\maxany][r]{zero} & \makebox[\maxany][r]{const} & \makebox[\maxany][r]{ren} & \makebox[\maxany][r]{syms} & \makebox[\maxany][r]{bill} & \makebox[\maxany][r]{incr} & \makebox[\maxany][r]{incr1} & \textbf{Query} & \textbf{Transform} & \makebox[\maxany][r]{\textbf{All}} \\
-Uniplate   & 40 & 12 & 18 & 27 & 16 & 17 & 13 & 21 & 30 &  60 & 134 & 194 \\
-SYB        & 43 & 29 & 29 & 30 & 19 & 34 & 21 & 24 & 56 & 113 & 172 & 285 \\
-Compos     & 71 & 30 & 32 & 54 & 27 & 36 & 25 & 33 & 40 & 123 & 225 & 348 \\
-\hline
-\end{tabular*}
-\end{table*}
-
 In order to measure the size of the solutions, we have taken the code for all operations and counted the number of lexemes -- using the |lex| function provided by Haskell. A table of results is given in Figure \ref{fig:lexemes}. For functions shared between SYB and Uniplate we have counted their code in both measurements. For the |incrOne| function we have not included the code for |increase| as well.
 
 The Compos approach requires much more residual boilerplate than Uniplate, particularly for queries, bottom-up transformations and type signatures. The Compos approach also requires a GADT representation.
@@ -1496,22 +1512,6 @@ This section compares the speed of solutions for the nine examples given in the 
 \end{description}
 
 All data structures used have 100 values randomly generated using QuickCheck \citep{quickcheck} and saved. In order to ensure a fair comparison, we define one data structure which is the same as the original, and one which is a GADT encoding. All operations take these original data structures, transform them into the appropriate structure, apply the operation and then unwrap them. We measure all results as multiples of the time taken for a \textit{raw} transformation. We compiled all programs with GHC 6.6 and -O2 on Windows XP.
-
-\begin{table*}
-\caption{Table of timing results, expressed as multiples of minimum time for a hand-tuned solution.}
-\label{fig:results}
-\vspace{3mm}
-\begin{tabular*}{\textwidth}{lrrrrrrrrrrrr}
-\hspace{\maxfirst} & \makebox[\maxany][r]{simp} & \makebox[\maxany][r]{var} & \makebox[\maxany][r]{zero} & \makebox[\maxany][r]{const} & \makebox[\maxany][r]{ren} & \makebox[\maxany][r]{syms} & \makebox[\maxany][r]{bill} & \makebox[\maxany][r]{incr} & \makebox[\maxany][r]{incr1} & \textbf{Query} & \textbf{Transform} & \makebox[\maxany][r]{\textbf{All}} \\
-Compos             &  1.34 &  1.17 &  1.74 &  1.28 &  1.22 &  1.30 &  2.49 &  1.52 &  1.57 &  1.68 &  1.39 &  1.51 \\
-Uniplate Manual    &  1.16 &  1.44 &  2.64 &  1.27 &  1.36 &  1.48 &  2.28 &  1.27 &  1.08 &  1.96 &  1.23 &  1.55 \\
-Uniplate Direct    &  1.22 &  1.61 &  3.28 &  1.21 &  1.18 &  1.38 &  2.35 &  1.19 &  1.16 &  2.15 &  1.19 &  1.62 \\
-Uniplate Typeable  &  1.43 &  2.09 &  4.81 &  1.42 &  1.37 &  2.63 &  5.86 &  1.53 &  1.53 &  3.85 &  1.46 &  2.52 \\
-Uniplate Data      &  2.30 &  4.64 & 12.70 &  1.84 &  1.89 &  3.60 & 10.70 &  2.07 &  1.69 &  7.91 &  1.96 &  4.60 \\
-SYB            &  2.21 &  5.88 & 16.62 &  2.30 &  2.13 &  5.56 & 24.29 &  3.12 &  2.35 & 13.09 &  2.42 &  7.16 \\
-\hline
-\end{tabular*}
-\end{table*}
 
 \begin{comment}
 \begin{figure}
