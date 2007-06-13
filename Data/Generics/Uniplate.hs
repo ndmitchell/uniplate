@@ -24,7 +24,7 @@ import Data.Generics.PlateInternal
 --
 --   Taking a value, the function should return all the immediate children
 --   of the same type, and a function to replace them.
-type ReplaceChildren on = on -> ([on], [on] -> on)
+type UniplateType on = on -> ([on], [on] -> on)
 
 -- | The standard Uniplate class, all operations require this
 class Uniplate on where
@@ -32,7 +32,7 @@ class Uniplate on where
     --
     -- > uniplate (Add (Val 1) (Neg (Val 2))) = ([Val 1, Neg (Val 2)], \[a,b] -> Add a b)
     -- > uniplate (Val 1)                     = ([]                  , \[]    -> Val 1  )
-    uniplate :: ReplaceChildren on
+    uniplate :: UniplateType on
     
 -- * The Operations
 
