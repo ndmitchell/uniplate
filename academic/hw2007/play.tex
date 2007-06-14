@@ -114,13 +114,13 @@ Generic traversals over recursive data structures are often referred to as \text
 Take a simple example of a recursive data type:
 
 \begin{code}
-data Expr  =  Add  Expr  Expr  |  Val  Int          
+data Expr  =  Add  Expr  Expr  |  Val  Int
            |  Sub  Expr  Expr  |  Var  String
            |  Mul  Expr  Expr  |  Neg  Expr
            |  Div  Expr  Expr
 \end{code}
 
-The |Expr| type represents a small expression language for integer expressions, which permits free variables. Suppose we need to extract a list of all the variables in an expression:
+The |Expr| type represents a small language for integer expressions, which permits free variables. Suppose we need to extract a list of all the variables in an expression:
 
 \begin{code}
 variables :: Expr -> [String]
@@ -150,7 +150,7 @@ Ours is far from the first technique for `scrapping boilerplate'. The area has b
 
 \begin{itemize}
 \item We require \textit{no language extensions} for single-type traversals, and only multi-parameter type classes \citep{jones:mptc} for multi-type traversals.
-\item Our \textit{choice of operations} is new: we shun some traditionally provided operations, and provide some uncommon operations.
+\item Our \textit{choice of operations} is new: we shun some traditionally provided operations, and provide some uncommon ones.
 \item Our type classes can be defined independently \textit{or} on top of |Typeable| and |Data| \citep{lammel:syb}, making \textit{optional use of built-in compiler support}.
 \item We make use of \textit{list-comprehensions} \citep{wadler:list_comprehensions} for succinct queries.
 \item We \textit{compare the conciseness} of operations using our library, by counting lexemes, showing our approach leads to less boilerplate.
@@ -182,16 +182,16 @@ children :: Uniplate alpha => alpha -> [alpha]
 The function |children| takes a value and returns \textit{all maximal proper substructures of the same type}. For example:
 
 \begin{code}
-children (Add (Neg (Val 1)) (Var "x")) =
-    [Neg (Val 1), Var "x"]
+children (Add (Neg (Var "x")) (Val 12)) =
+    [Neg (Var "x"), Val 12]
 \end{code}
 
-The |children| function is occasionally useful, but is used more commonly as an auxiliary in the definitions of other functions.
+The |children| function is occasionally useful, but is used more commonly as an auxiliary in the definition of other functions.
 
 
 \subsection{Queries}
 
-The Uniplate library provides a single method to support queries, the |universe| method.
+The Uniplate library provides a single method to support queries, the |universe| function.
 
 \begin{code}
 universe :: Uniplate alpha => alpha -> [alpha]
@@ -207,7 +207,7 @@ universe (Add (Neg (Var "x")) (Val 12)) =
     ,Val 12]
 \end{code}
 
-One use of this mechanism for querying was given in the introduction. Using the |universe| function, queries can be expressed very concisely -- using a list-comprehension to process the results of |universe| is common.
+One use of this mechanism for querying was given in the introduction. Using the |universe| function, queries can be expressed very concisely. Using a list-comprehension to process the results of |universe| is common.
 
 \begin{example}
 \label{ex:zerocount}
@@ -233,7 +233,7 @@ transform :: Uniplate alpha => (alpha -> alpha) -> alpha -> alpha
 
 \begin{example}
 \label{ex:simplify}
-Suppose we wish to remove the |Sub| constructor assuming the equivalence: |x - y == x + (- y)|. To apply this equivalence as a rewriting rule at all possible places in an expression we define:
+Suppose we wish to remove the |Sub| constructor assuming the equivalence: |x - y == x + (- y)|. To apply this equivalence as a rewriting rule, at all possible places in an expression, we define:
 
 \begin{code}
 simplify x = transform f x
@@ -281,7 +281,7 @@ reciprocal x          = x
 This transformation removes arbitrary division, converting it to divisions where the numerator is always 1. If applied once to each subtree, this computation would terminate successfully. Unfortunately, top-down transformation treats the generated |Mul| as  being transformed, but cannot tell that the generated |Div| is the result of a transformation, not a fragment of the original input. This leads to a non-termination error.
 \end{example}
 
-As these examples show, when defining top-down transformations using |everywhere'| it is easy to slip up. The problem is that the program cannot tell the difference between freshly created nodes, and values that come originally from the input.
+As these examples show, when defining top-down transformations using |everywhere'| it is easy to slip up. The problem is that the program cannot tell the difference between freshly created constructors, and values that come originally from the input.
 
 So we do support top-down transformations, but require the programmer to make the transformation more explicit. We introduce the |descend| function, inspired by the Compos paper \cite{bringert:compos}.
 
@@ -298,14 +298,13 @@ data Expr = Var String | Let String Expr Expr | Add Expr Expr
 \end{comment}
 
 \begin{example}
-Consider the addition of a constructor \ignore|Let String Expr Expr|. Now let us define a function |subst| to replace free variables with given expressions. In order to determine which variables are free, we need to ``remember'' variables that are bound as we descend. We can define |subst| using a descend transformation like this:
+Consider the addition of a constructor \ignore|Let String Expr Expr|. Now let us define a function |subst| to replace free variables with given expressions. In order to determine which variables are free, we need to ``remember'' variables that are bound as we descend. We can define |subst| using a descend transformation:
 
 \begin{code}
 subst :: [(String,Expr)] -> Expr -> Expr
 subst rep x =
     case  x of
-          Let name bind x -> Let name
-              (subst rep bind)
+          Let name bind x -> Let name (subst rep bind)
               (subst (filter ((/= name) . fst) rep) x)
           Var x -> fromMaybe (Var x) (lookup x rep)
           _ -> descend (subst rep) x
@@ -484,7 +483,7 @@ We consider top-down transformations to be more complex and less useful than bot
 
 \subsection{Action Transformations}
 
-Rewrite transformations apply a set of rules \textit{repeatedly} until a normal form is found. The alternative is an action transformation, where each node is visited and transformed \textit{once}, and state is maintained and updated as the operation proceeds. The standard technique is to thread a monad through the operation, which we do using |transformM|.
+Rewrite transformations apply a set of rules \textit{repeatedly} until a normal form is found. One alternative is an action transformation, where each node is visited and transformed \textit{once}, and state is maintained and updated as the operation proceeds. The standard technique is to thread a monad through the operation, which we do using |transformM|.
 
 \begin{example}
 Suppose we wish to rename each variable to be unique:
@@ -636,7 +635,7 @@ instance Uniplate Expr where
 
 We define a |Uniplate| instance for the |Expr| type in Figure \ref{fig:play_expr}.
 
-The distinguishing feature of our library is that the children are defined in terms of their type. While this feature keeps the traversals simple, it does mean that rules for \textit{deriving} instance definitions are not purely syntactic, but depend on the types of the constructors. We now describe the derivation rules, followed by information on the \derive{} tool that performs this task automatically. (If we are willing to make use of Multi-Parameter Type Classes simpler derivation rules can be used: see \S\ref{sec:implement_playex}.)
+The distinguishing feature of our library is that the children are defined in terms of their type. While this feature keeps the traversals simple, it does mean that rules for \textit{deriving} instance definitions are not purely syntactic, but depend on the types of the constructors. We now describe the derivation rules, followed by information on the \derive{} tool that performs this task automatically. (If we are willing to make use of Multi-Parameter Type Classes, simpler derivation rules can be used: see \S\ref{sec:implement_playex}.)
 
 
 \subsection{Derivation Rules}
@@ -644,14 +643,12 @@ The distinguishing feature of our library is that the children are defined in te
 To model the derivation of an instance, it is necessary to have a model of data types:
 
 \begin{code}
-data Data  = Data Name [Var] [Ctor]
-data Ctor  = Ctor Name [Type]
+data Data  = Data  Name [Var] [Ctor]
+data Ctor  = Ctor  Name [Type]
 data Type  = TyPrim | TyVar Var | TyApp Data [Type]
 
 type Name  = String
 type Var   = String
-
-dataName (Data x _ _) = x
 \end{code}
 
 \begin{comment}
@@ -675,11 +672,11 @@ _C (Ctor name typs) =
     separate "<>" (zipWith (:) vars (map _T typs))
     where vars = ['v':show i | i <- [1..length typs]]
 
-_T (TyPrim       ) = ["unit"]
-_T (TyVar  v     ) = [v]
-_T (TyApp  d ts  )
+_T (TyPrim                       ) = ["unit"]
+_T (TyVar  v                     ) = [v]
+_T (TyApp  d@(Data name _ _) ts  )
     | isTarget d  = ["target"]
-    | otherwise   = ['d':dataName d] ++ concatMap _T ts
+    | otherwise   = ['d':name] ++ concatMap _T ts
 
 separate sep xs = concat $ intersperse [sep] xs
 \end{code}
@@ -723,7 +720,7 @@ From these definitions we can do some reasoning. For example, |dList == concatMa
 We define |setChildren| as:
 
 \begin{code}
-setChildren x = value (dExpr x)
+setChildren x ns = fst (dExpr x ns)
 
 type Cont t alpha = [alpha] -> (t,[alpha])
 
@@ -732,9 +729,6 @@ unit x ns = (x,ns)
 
 target :: alpha -> Cont alpha alpha
 target x (n:ns) = (n,ns)
-
-value :: Cont t alpha -> [alpha] -> t
-value c ns = fst $ c ns
 
 (<>) :: Cont (a->b) alpha -> Cont a alpha -> Cont b alpha
 (<>) a b ns1 =  let  (a'  ,ns2  ) = a  ns1
@@ -745,7 +739,7 @@ value c ns = fst $ c ns
 We improve the simplification opportunities and runtime speed if we use a continuation function to encode the pair.
 
 \begin{code}
-setChildren x = value (dExpr x)
+setChildren x ns = dExpr x ns const
 
 type Cont t alpha r = [alpha] -> (t -> [alpha] -> r) -> r
 
@@ -754,9 +748,6 @@ unit    x  ns      c  = c x ns
 
 target :: alpha -> Cont alpha alpha r
 target  x  (n:ns)  c  = c n ns
-
-value :: Cont r alpha r -> [alpha] -> r
-value   c  ns         = c ns const
 
 (<>) :: Cont (a->b) alpha r -> Cont a alpha r -> Cont b alpha r
 (<>) a b ns c =  a  ns $ \a'  ns ->
@@ -777,7 +768,7 @@ Alternatively, it is possible to define one single function which generates both
 
 \subsection{Automated Derivation of |uniplate|}
 
-Applying these derivation rules is a form of boilerplate coding! The DrIFT tool \citep{drift} derives instances automatically given rules depending only on the information contained in type definition. However DrIFT is unable to operate with certain Haskell extensions ({\TeX} style literate Haskell, C pre processor), and requires a separate pre-processing stage.
+Applying these derivation rules is a form of boilerplate coding! The DrIFT tool \citep{drift} derives instances automatically given rules depending only on the information contained in a type definition. However DrIFT is unable to operate with certain Haskell extensions ({\TeX} style literate Haskell, C pre processor), and requires a separate pre-processing stage.
 
 In collaboration with Stefan O'Rear we have developed the \derive{} tool \citep{derive}. \derive{} is based on Template Haskell \citep{template_haskell} and has predefined rules for derivation of |Uniplate| instances. It has special rules to remove redundant patterns to produce simpler and more efficient instances.
 
@@ -792,12 +783,9 @@ Running the \derive{} tool over this file, the generated code is:
 
 \begin{code}
 instance Uniplate Term where
-    uniplate (Name x1) =
-        ([], \_ -> Name x1)
-
-    uniplate (Apply x1 x2) =
-        (x1:x2, \(n:ns) -> Apply n ns)
-\end{code}\codeexample
+    uniplate (Name  x1     ) = ([]     , \_       -> Name x1     )
+    uniplate (Apply x1 x2  ) = (x1:x2  , \(n:ns)  -> Apply n ns  )
+\end{code}
 \end{example}
 
 
@@ -878,7 +866,7 @@ data CoreExpr  =  CoreVar   String
                   -- other constructors
 \end{code}
 
-Most queries and transformations are performed on the |CoreExpr| type. However it is often convenient to start from one of the other types. For example, |coreSimplify :: CoreExpr -> CoreExpr| may be applied not just to an individual expression, but to all expressions in a function definition, or a complete program. If we are willing to freeze the type of the second argument to |biplate| as |CoreExpr| we can write a class:
+Most traversals are performed on the |CoreExpr| type. However, it is often convenient to start from one of the other types. For example, |coreSimplify :: CoreExpr -> CoreExpr| may be applied not just to an individual expression, but to all expressions in a function definition, or a complete program. If we are willing to freeze the type of the second argument to |biplate| as |CoreExpr| we can write a class:
 
 \begin{code}
 class  UniplateExpr beta where
@@ -910,14 +898,14 @@ class  Uniplate alpha => Biplate beta alpha where
 We can now implement |universeBi| and |transformBi| in terms of their |On| counterparts:
 
 \begin{code}
-universeBi   :: Biplate beta alpha => beta -> [alpha]
-universeBi   = universeOn   biplate
+universeBi :: Biplate beta alpha => beta -> [alpha]
+universeBi = universeOn biplate
 
-transformBi  :: Biplate beta alpha => (alpha -> alpha) -> beta -> beta
-transformBi  = transformOn  biplate
+transformBi :: Biplate beta alpha => (alpha -> alpha) -> beta -> beta
+transformBi = transformOn biplate
 \end{code}
 
-In general the move to |Biplate| requires few code changes, merely the use of the new set of |Bi| functions. To illustrate we give generalisations of two examples from \S\ref{sec:use_play}, implemented using |Biplate|. We extend the |variables| and |simplify| functions to work on |Expr|, |Stmt| or many other types.
+In general the move to |Biplate| requires few code changes, merely the use of the new set of |Bi| functions. To illustrate we give generalisations of two examples from previous sections, implemented using |Biplate|. We extend the |variables| and |simplify| functions to work on |Expr|, |Stmt| or many other types.
 
 \subsubsection*{Example from \S1 (revisited)}
 \begin{code}
@@ -975,28 +963,24 @@ plate :: from -> Type from to
 
 \begin{code}
 instance PlateOne Expr where
-    plateOne x =
-        case x of
-            Neg  a    -> plate Neg  |* a
-            Add  a b  -> plate Add  |* a |* b
-            Sub  a b  -> plate Sub  |* a |* b
-            Mul  a b  -> plate Mul  |* a |* b
-            Div  a b  -> plate Div  |* a |* b
-            _         -> plate x
+    plateOne (Neg  a    )  = plate Neg  |* a
+    plateOne (Add  a b  )  = plate Add  |* a |* b
+    plateOne (Sub  a b  )  = plate Sub  |* a |* b
+    plateOne (Mul  a b  )  = plate Mul  |* a |* b
+    plateOne (Div  a b  )  = plate Div  |* a |* b
+    plateOne _             = plate x
 \end{code}
 
-Five infix combinators (| ||*|, | ||+|, | ||-|, | ||||*| and | ||||+|) indicate the structure of the field to the right. The | ||*| combinator says that the value on the right is of the target type, | ||+| says that a value of the target type \textit{may occur in} the right operand, | ||-| says that values of the target type \textit{cannot occur} in the right operand. | ||||*| and | ||||+| are versions of | ||*| and | ||+| used when the value to the right is a \textit{list} either of the target type, or of a type that may contain target values. The law |plate f ||- x == plate (f x)| justifies the definition presented above.
+Five infix combinators (| ||*|, | ||+|, | ||-|, | ||||*| and | ||||+|) indicate the structure of the field to the right. The | ||*| combinator says that the value on the right is of the target type, | ||+| says that a value of the target type \textit{may occur} in the right operand, | ||-| says that values of the target type \textit{cannot occur} in the right operand. | ||||*| and | ||||+| are versions of | ||*| and | ||+| used when the value to the right is a \textit{list} either of the target type, or of a type that may contain target values. The law |plate f ||- x == plate (f x)| justifies the definition presented above.
 
 This style of definition naturally expands to the multi-type traversal. For example:
 
 \begin{code}
 instance PlateAll Stmt Expr where
-    plateAll x =
-        case x of
-            Assign    a b    -> plate Assign    |-   a |*  b
-            Sequence  a      -> plate Sequence  ||+  a
-            If        a b c  -> plate If        |*   a |+  b |+ c
-            While     a b    -> plate While     |*   a |+  b
+    plateAll (Assign    a b    ) = plate Assign    |-   a |*  b
+    plateAll (Sequence  a      ) = plate Sequence  ||+  a
+    plateAll (If        a b c  ) = plate If        |*   a |+  b |+ c
+    plateAll (While     a b    ) = plate While     |*   a |+  b
 \end{code}
 
 From the definitions of |PlateOne| and |PlateAll| the library can define |Uniplate| and |Biplate| instances. The information provided by uses of | ||-| and | ||+| avoids redundant exploration down branches that do not have the target type. The use of | ||||*| is an optimisation which allows a list of the target type to be directly manipulated with |biplate| instead of producing and consuming this list twice. The use of | ||||+| avoids the definition of additional instances.
@@ -1025,28 +1009,24 @@ instance (PlateAll from to, Typeable from, Typeable to, Uniplate to) => PlateAll
 \end{comment}
 
 \begin{code}
-instance (Typeable a, Uniplate a) => PlateAll Expr a where
-    plateAll x =
-        case x of
-            Neg a    ->  plate Neg  |+ a
-            Add a b  ->  plate Add  |+ a |+ b
-            Sub a b  ->  plate Sub  |+ a |+ b
-            Mul a b  ->  plate Mul  |+ a |+ b
-            Div a b  ->  plate Div  |+ a |+ b
-            _        ->  plate x
+instance (Typeable alpha, Uniplate alpha) => PlateAll Expr alpha where
+    plateAll (Neg a    )  = plate Neg  |+ a
+    plateAll (Add a b  )  = plate Add  |+ a |+ b
+    plateAll (Sub a b  )  = plate Sub  |+ a |+ b
+    plateAll (Mul a b  )  = plate Mul  |+ a |+ b
+    plateAll (Div a b  )  = plate Div  |+ a |+ b
+    plateAll _            = plate x
 
-instance (Typeable a, Uniplate a) => PlateAll Stmt a where
-    plateAll x =
-        case x of
-            Assign    a b    -> plate Assign    |-  a |+ b
-            Sequence  a      -> plate Sequence  |+  a
-            If        a b c  -> plate If        |+  a |+ b |+ c
-            While     a b    -> plate While     |+  a |+ b
+instance (Typeable alpha, Uniplate alpha) => PlateAll Stmt alpha where
+    plateAll (Assign    a b    ) = plate Assign    |-  a |+ b
+    plateAll (Sequence  a      ) = plate Sequence  |+  a
+    plateAll (If        a b c  ) = plate If        |+  a |+ b |+ c
+    plateAll (While     a b    ) = plate While     |+  a |+ b
 \end{code}
 
 The | ||+| combinator is the most common, denoting that the value on the right may be of the target type, or may contain values of the target type. However, if we were to use | ||+| when the right-hand value was an |Int|, or other primitive type we did not wish to examine, we would require a |PlateAll| definition for |Int|. To omit these unnecessary instances, we can use | ||-| to indicate that the type is not of interest.
 
-The |Data.Generics.PlateTypeable| module is able to automatically infer |Biplate| instances given a |PlateAll|. Alas this is not the case for |Uniplate|. Instead we must explicitly declare:
+The |Data.Generics.PlateTypeable| module is able to automatically infer |Biplate| instances given a |PlateAll| instance. Alas this is not the case for |Uniplate|. Instead we must explicitly declare:
 
 \begin{code}
 instance Uniplate Expr where
@@ -1102,7 +1082,7 @@ repChildren x = (children_, context)
 
 How do we implement the Uniplate class instances? The fundamental operation is given in Figure \ref{fig:playdata}. The \ignore|repChildren| function descends to each of the child nodes, and is guarded by a |Typeable| cast to ensure that \ignore|alpha /= beta|. The operation to get the children can be done using |gmapQ|. The operation to replace the children is more complex, requiring a state monad to keep track of the items to insert.
 
-The instance in Figure \ref{fig:playdata} is not optimised for speed. Uses of |splitAt| and |length| require the list of children to be traversed multiple times. We discuss improvements in \S\ref{sec:optimise_playdata}.
+The code in Figure \ref{fig:playdata} is not optimised for speed. Uses of |splitAt| and |length| require the list of children to be traversed multiple times. We discuss improvements in \S\ref{sec:optimise_playdata}.
 
 
 \section{Performance Improvements}
@@ -1147,7 +1127,7 @@ concatCont xs rest = foldr ($) rest xs
 \subsection{Optimising |PlateData|}
 \label{sec:optimise_playdata}
 
-Surprisingly, it is possible to layer |Uniplate| over the |Data| instances of SYB, with better performance than SYB itself. The first optimisation is to generate the two members of the |uniplate| with only one pass over the data value. We cannot use SYB's |gmapM| or |gmapQ| -- we must instead use |gfoldl| directly. We also make use of continuation passing style in some places.
+Surprisingly, it is possible to layer |Uniplate| over the |Data| instances of SYB, with better performance than SYB itself. The first optimisation is to generate the two members of the |uniplate| pair with only one pass over the data value. We cannot use SYB's |gmapM| or |gmapQ| -- we must instead use |gfoldl| directly. We also make use of continuation passing style in some places.
 
 With this first improvement in place we perform much the same operations as SYB. But the overhead of list creation in |uniplate| makes traversals about 15\% slower than SYB.
 
@@ -1172,7 +1152,7 @@ The \ignore|contains| function takes a \textit{phantom} argument |x| which is ne
 \item The set of other types which \textit{do not} contain the target type.
 \end{enumerate}
 
-We compute these sets for each type only once, by using a CAF inside the class to store it. The cost of computing them is small. When examining a value, if its type is a member of set 3 we can prune the search. This trick is surprisingly effective. Take for example an operation over |Bool| on the value |(True,"Haskell")|. The SYB approach finds 16 subcomponents, Uniplate touches 3 only subcomponents.
+We compute these sets for each type only once, by using a CAF inside the class to store it. The cost of computing them is small. When examining a value, if its type is a member of set 3 we can prune the search. This trick is surprisingly effective. Take for example an operation over |Bool| on the value |(True,"Haskell")|. The SYB approach finds 16 subcomponents, Uniplate touches only 3 subcomponents.
 
 With all these optimisations we can usually perform both queries and transformations faster than SYB. In the benchmarks we range from 4\% worse to 127\% better, with an average of 56\% faster. Full details are presented in \S\ref{sec:results_speed}.
 
@@ -1185,7 +1165,7 @@ We evaluate our boilerplate reduction scheme in two ways: firstly by the \textit
 \subsection{Boilerplate Reduction}
 \label{sec:results_boilerplate}
 
-As test applications we have taken the first three examples from this paper, three from the Compos paper \citep{bringert:compos}, and the three given in the SYB paper \citep{lammel:syb} termed the ``Paradise Benchmark''. In all cases the Compos, SYB and Uniplate functions are given an appropriately prefixed name. In some instances, a function can be defined in the same way in both SYB and Uniplate; where this is possible we have done so. Type signatures are omitted where the compiler is capable of the inferring them.
+As test operations we have taken the first three examples from this paper, three from the Compos paper \citep{bringert:compos}, and the three given in the SYB paper \citep{lammel:syb} termed the ``Paradise Benchmark''. In all cases the Compos, SYB and Uniplate functions are given an appropriately prefixed name. In some cases, a helper function can be defined in the same way in both SYB and Uniplate; where this is possible we have done so. Type signatures are omitted where the compiler is capable of inferring them.
 
 \subsubsection{Examples from this Paper}
 
@@ -1359,7 +1339,7 @@ com_constFold e = case e of
     _ -> composOp com_constFold e
 \end{code}
 
-The constant-folding operation is a bottom-up transformation, requiring all subexpressions to have been transformed before an enclosing expression is examined. Compos only supports top-down transformations, requiring a small traversal in the middle. Uniplate and SYB both support bottom-up transformations.
+The constant-folding operation is a bottom-up transformation, requiring all subexpressions to have been transformed before an enclosing expression is examined. Compos only supports top-down transformations, requiring a small explicit traversal in the middle. Uniplate and SYB both support bottom-up transformations.
 \end{examplename}
 
 \subsubsection{The Paradise Benchmark from SYB}
@@ -1381,7 +1361,7 @@ data  Salary    = S Integer
 \figureend
 \end{figure}
 
-The Paradise benchmark was introduced in SYB \citep{lammel:syb}. The data type is shown in Figure \ref{fig:paradise}. The idea is that this data type represents an XML file, and a Haskell program is being written to perform various operations over it. The Compos paper includes an encoding into a GADT, with tag types for each of the different types.
+The Paradise benchmark was introduced in the SYB paper \citep{lammel:syb}. The data type is shown in Figure \ref{fig:paradise}. The idea is that this data type represents an XML file, and a Haskell program is being written to perform various operations over it. The Compos paper includes an encoding into a GADT, with tag types for each of the different types.
 
 We have made one alteration to the data type: |Salary| is no longer of type |Float| but of type |Integer|. In various experiments we found that the rounding errors for floating point numbers made different definitions return different results.\footnote{Storing your salary in a non-exact manner is probably not a great idea!} This change is of no consequence to the boilerplate code.
 
@@ -1452,7 +1432,7 @@ Here the Uniplate solution wins by being able to use a list comprehension to sel
 
 In order to measure conciseness of expression, we have taken the code for all solutions and counted the number of lexemes -- using the |lex| function provided by Haskell. A table of results is given in Table \ref{fig:lexemes}. The definitions of functions shared between SYB and Uniplate are included in both measurements. For the |incrOne| function we have not included the code for |increase| as well.
 
-The Compos approach requires much more residual boilerplate than Uniplate, particularly for queries, bottom-up transformations and type signatures. The Compos approach also requires a GADT representation.
+The Compos approach requires much more residual boilerplate than Uniplate, particularly for queries, bottom-up transformations and in type signatures. The Compos approach also requires a GADT representation.
 
 Compared with SYB, Uniplate seems much more similar. For queries, Uniplate is able to make use of list comprehensions, which produces shorter code and does not require encoding a manual fold over the items of interest. For transformations, typically both are able to use the same underlying operation, and the difference often boils down to the |mkT| wrappers in SYB.
 
@@ -1465,7 +1445,7 @@ This section compares the speed of solutions for the nine examples given in the 
 \begin{description}
 \item[Manual:] These are |Uniplate| and |Biplate| instances written by hand. We have chosen not to use continuation-passing to implement these instances, as it quickly becomes complex!
 \item[Direct:] These instances use the direct combinators from \S\ref{sec:implement_playdirect}.
-\item[Typeable:] These instances use the standard |Typeable| combinators from \S\ref{sec:implement_playtypeable}.
+\item[Typeable:] These instances use the |Typeable| combinators from \S\ref{sec:implement_playtypeable}.
 \item[Data:] These instances use the SYB |Data| instances directly, as described in \S\ref{sec:implement_playdata}.
 \end{description}
 
@@ -1480,17 +1460,17 @@ For all data types we generate 100 values at random using QuickCheck \citep{quic
 \end{figure}
 \end{comment}
 
-The results are presented in Table \ref{fig:results}. Using hand coded or Direct instances, Uniplate is roughly the same speed as Compos -- but about 50\% slower than hand-tuned operations. Using the Data instances provided by SYB, we are able to outperform SYB itself! See \S\ref{sec:performance} for details of some of the optimisations used.
+The results are presented in Table \ref{fig:results}. Using Manual or Direct instances, Uniplate is roughly the same speed as Compos -- but about 50\% slower than hand-optimised versions. Using the Data instances provided by SYB, we are able to outperform SYB itself! See \S\ref{sec:performance} for details of some of the optimisations used.
 
 
 \section{Related Work}
 \label{sec:related}
 
-The Uniplate library is intended to be a way to remove the boilerplate of recursive traversals from Haskell programs. It is far from the first library to attempt boilerplate removal.
+The Uniplate library is intended to be a way to remove the boilerplate of traversals from Haskell programs. It is far from the first library to attempt boilerplate removal.
 
 \paragraph{The SYB library} \citep{lammel:syb} is perhaps the most popular boilerplate removal system in Haskell. One of the reasons for its success is tight integration with the GHC compiler, lowering the barrier to use. We have compared directly against traversals written in SYB in \S\ref{sec:results_boilerplate}, and have also covered how to implement Uniplate in terms of SYB in \S\ref{sec:implement_playdata}. In our experience most operations are shorter and simpler than the equivalents in SYB, and we are able to operate without the extension of rank-2 types. Most of these benefits stem directly from our definition of children as being the children of the same uniform type, contrasting with the SYB approach of all direct children.
 
-The SYB library is, however, more powerful than Uniplate. If you wish to visit nodes of different type in a single traversal, Uniplate is unsuitable. The |Data| and |Typeable| methods have also been pushed further in successive papers \citep{lammel:syb2,lammel:syb3} -- in directions Uniplate may be unable to go.
+The SYB library is, however, more powerful than Uniplate. If you wish to visit values of different type in a single traversal, Uniplate is unsuitable. The |Data| and |Typeable| methods have also been pushed further in successive papers \citep{lammel:syb2,lammel:syb3} -- in directions Uniplate may be unable to go.
 
 \paragraph{The Compos library} \citep{bringert:compos} is another approach to the removal of boilerplate, requiring GADTs \citep{spj:gadt} along with rank-2 types. The Compos library requires an existing data type to be rewritten as a GADT. The conversion from standard Haskell data structures to GADTs currently presents several problems: they are GHC specific, deriving is not supported on GADTs, and GADTs require explicit type signatures. The Compos approach is also harder to write instances for, having no simple instance generation framework, and no automatic derivation tool (although one could be written). The inner |composOp| operator is very powerful, and indeed we have chosen to replicate it in our library as |descend|. But the Compos library is unable to replicate either |universe| or |transform| from our library.
 
@@ -1514,15 +1494,13 @@ There is scope for further speed improvements: for example, use of continuation 
 
 The use of boilerplate reduction strategies in Haskell is not yet ubiquitous, as we feel it should be. We have focused on simplicity throughout our design, working within the natural typed design of Haskell, rather than trying to extend it. Hopefully the removal of complicated language features (particularly `scary' types) will allow a wider base of users to enjoy the benefits of boilerplate-free programming.
 
-\paragraph{Acknowledgements}
+\acks
 
 The first author is a supported by an EPSRC PhD studentship. Thanks to Bj\"{o}rn Bringert and Jules Bean for feedback on an earlier drafts of this paper; Eric Mertens for helpful ideas; and Stefan O'Rear for work on \derive{}.
 
-\vspace{-2mm}
-
 \bibliographystyle{plainnat}
 
-\small
+%\small
 \bibliography{play}
 
 
