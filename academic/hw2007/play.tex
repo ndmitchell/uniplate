@@ -114,12 +114,9 @@ Generic traversals over recursive data structures are often referred to as \text
 Take a simple example of a recursive data type:
 
 \begin{code}
-data Expr  =  Val  Int
-           |  Var  String
-           |  Neg  Expr
-           |  Add  Expr  Expr
-           |  Sub  Expr  Expr
-           |  Mul  Expr  Expr
+data Expr  =  Add  Expr  Expr  |  Val  Int          
+           |  Sub  Expr  Expr  |  Var  String
+           |  Mul  Expr  Expr  |  Neg  Expr
            |  Div  Expr  Expr
 \end{code}
 
@@ -162,7 +159,7 @@ Ours is far from the first technique for `scrapping boilerplate'. The area has b
 
 We have implemented all the techniques reported here. We encourage readers to download the Uniplate library and try it out. It can be obtained from the website at \url{http://www.cs.york.ac.uk/~ndm/uniplate/}. A copy of the library has also been released, and is available on Hackage\footnote{\url{http://hackage.haskell.org/}}.
 
-The ideas behind the Uniplate library have been used extensively, in projects including the Yhc compiler \citep{yhc}, the Catch tool \citep{me:catch_tfp} and the Reach tool \cite{naylor:reach}. In Catch there are over 100 Uniplate traversals.
+The ideas behind the Uniplate library have been used extensively, in projects including the Yhc compiler \citep{me:yhc_core}, the Catch tool \citep{me:catch_tfp} and the Reach tool \cite{naylor:reach}. In Catch there are over 100 Uniplate traversals.
 
 \subsection{Road map}
 
@@ -244,7 +241,7 @@ simplify x = transform f x
            f x          = x
 \end{code}
 
-This code can be read: apply the subtraction rule where you can, and where you cannot, do nothing. Adding additional rules is easy. Take for example: |x + y = 2 * x where x == y|. Now we can add this new rule into our existing transformation:
+This code can be read: apply the subtraction rule where you can, and where you cannot, do nothing. Adding additional rules is easy. Take for example: \ignore|x + y = 2 * x where x == y|. Now we can add this new rule into our existing transformation:
 
 \begin{code}
 simplify x = transform f x
@@ -897,7 +894,7 @@ instance UniplateExpr CoreExpr
 instance UniplateExpr beta => UniplateExpr [beta]
 \end{code}\codeexample
 \end{example}
-\smallskip
+\bigskip
 
 This technique has been used in the Yhc compiler. The Yhc compiler is written in Haskell 98 to allow for bootstrapping, so only the standard single-parameter type classes are available.
 
@@ -1287,23 +1284,17 @@ Uniplate Data      &  2.30 &  4.64 & 12.70 &  1.84 &  1.89 &  3.60 & 10.70 &  2.
 SYB            &  2.21 &  5.88 & 16.62 &  2.30 &  2.13 &  5.56 & 24.29 &  3.12 &  2.35 & 13.09 &  2.42 &  7.16 \\
 \hline
 \end{tabular*}
+\figureend
 \end{table*}
 
 \begin{figure}
 \ignore\begin{code}
-data Stm  =  SDecl    Typ Var
-          |  SAss     Var Exp
-          |  SBlock   [Stm]
-          |  SReturn  Exp
-
-data Exp  =  EStm  Stm
-          |  EAdd  Exp Exp
-          |  EVar  Var
-          |  EInt  Int
-
+data Stm  =  SDecl    Typ Var   | SAss     Var Exp
+          |  SBlock   [Stm]     | SReturn  Exp
+data Exp  =  EStm  Stm          |  EAdd  Exp Exp
+          |  EVar  Var          |  EInt  Int
 data Var  =  V String
-
-data Typ  =  T_int | T_float
+data Typ  =  T_int              | T_float
 \end{code}
 \caption{Data type from Compos.}
 \label{fig:compos}
@@ -1375,16 +1366,15 @@ The constant-folding operation is a bottom-up transformation, requiring all sube
 
 \begin{figure}
 \begin{code}
-type Manager   = Employee
-type Name      = String
-type Address   = String
-
-data Company   = C [Dept]
-data Dept      = D Name Manager [Unit]
-data Unit      = PU Employee | DU Dept
-data Employee  = E Person Salary
-data Person    = P Name Address
-data Salary    = S Integer
+type  Manager   = Employee
+type  Name      = String
+type  Address   = String
+data  Company   = C [Dept]
+data  Dept      = D Name Manager [Unit]
+data  Unit      = PU Employee | DU Dept
+data  Employee  = E Person Salary
+data  Person    = P Name Address
+data  Salary    = S Integer
 \end{code}
 \caption{Paradise Benchmark data structure.}
 \label{fig:paradise}
@@ -1436,7 +1426,7 @@ com_incrOne d k x = case x of
     _ -> composOp (com_incrOne d k) x
 \end{code}
 
-The SYB solution has grown substantially more complex, requiring two different utility functions. In addition the rank-2 types of SYB now require an explicit type signature for |syb_incrOne|. Compos retains the same structure as before, requiring a case to distinguish between the types of constructor. For Uniplate we use |descend| rather than |transform|, to ensure no salaries are incremented twice.
+The SYB solution has grown substantially more complex, requiring two different utility functions. In addition |syb_incrOne| now \textit{requires} a type signature. Compos retains the same structure as before, requiring a case to distinguish between the types of constructor. For Uniplate we use |descend| rather than |transform|, to ensure no salaries are incremented twice.
 \end{examplename}
 
 \begin{examplename}{salaryBill}
@@ -1524,10 +1514,11 @@ There is scope for further speed improvements: for example, use of continuation 
 
 The use of boilerplate reduction strategies in Haskell is not yet ubiquitous, as we feel it should be. We have focused on simplicity throughout our design, working within the natural typed design of Haskell, rather than trying to extend it. Hopefully the removal of complicated language features (particularly `scary' types) will allow a wider base of users to enjoy the benefits of boilerplate-free programming.
 
+\paragraph{Acknowledgements}
 
-\acks
+The first author is a supported by an EPSRC PhD studentship. Thanks to Bj\"{o}rn Bringert and Jules Bean for feedback on an earlier drafts of this paper; Eric Mertens for helpful ideas; and Stefan O'Rear for work on \derive{}.
 
-The first author is a PhD student supported by a studentship from the Engineering and Physical Sciences Research Council of the UK. Thanks to Bj\"{o}rn Bringert and Jules Bean for feedback on an earlier drafts of this paper. Thanks to Eric Mertens for various ideas and code snippets and Stefan O'Rear for work on the \derive{} tool.
+\vspace{-2mm}
 
 \bibliographystyle{plainnat}
 
