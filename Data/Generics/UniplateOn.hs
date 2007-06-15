@@ -83,3 +83,18 @@ contextsOn biplate x =
         
         f pre x post = [(cur, \new -> generate (pre ++ [new] ++ post))
                        | (cur,gen) <- contexts x]
+
+
+-- * Helper for writing instances
+
+
+-- | Used for defining instances @UniplateFoo a => UniplateFoo [a]@
+uniplateOnList :: BiplateType a b -> BiplateType [a] b
+uniplateOnList f [] = ([], \[] -> [])
+uniplateOnList f (x:xs) =
+        (a ++ as,
+        \ns -> let (n1,n2) = splitAt (length a) ns in b n1 : bs n2)
+    where
+        (a , b ) = f x
+        (as, bs) = uniplateOnList f xs
+
