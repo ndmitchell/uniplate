@@ -48,6 +48,7 @@
 %format x1  = "\Varid{x_1}"
 %format x2  = "\Varid{x_2}"
 %format xn  = "\Varid{x_n}"
+%format x_i = "\Varid{x_i}"
 %format ns1 = "\Varid{ns_1}"
 %format ns2 = "\Varid{ns_2}"
 %format ns3 = "\Varid{ns_3}"

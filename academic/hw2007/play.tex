@@ -157,9 +157,9 @@ Ours is far from the first technique for `scrapping boilerplate'. The area has b
 \item We \textit{compare the performance} of traversal mechanisms, something that has been neglected in previous papers.
 \end{itemize}
 
-We have implemented all the techniques reported here. We encourage readers to download the Uniplate library and try it out. It can be obtained from the website at \url{http://www.cs.york.ac.uk/~ndm/uniplate/}. A copy of the library has also been released, and is available on Hackage\footnote{\url{http://hackage.haskell.org/}}.
-
 The ideas behind the Uniplate library have been used extensively, in projects including the Yhc compiler \citep{me:yhc_core}, the Catch tool \citep{me:catch_tfp} and the Reach tool \cite{naylor:reach}. In Catch there are over 100 Uniplate traversals.
+
+We have implemented all the techniques reported here. We encourage readers to download the Uniplate library and try it out. It can be obtained from the website at \url{http://www.cs.york.ac.uk/~ndm/uniplate/}. A copy of the library has also been released, and is available on Hackage\footnote{\url{http://hackage.haskell.org/}}.
 
 \subsection{Road map}
 
@@ -229,7 +229,7 @@ Another common operation provided by many boilerplate removal systems \citep{lam
 transform :: Uniplate alpha => (alpha -> alpha) -> alpha -> alpha
 \end{code}
 
-\todo{Sentance a mess!} The |transform f x| traversal recursively applies |transform f| to all the children of |x|, and applies |f| to the value |x| whose children have been replaced.
+The result of |transform f x| is |f x'| where |x'| is obtained by replacing each |alpha|-child |x_i| in |x| by |transform f x_i|.
 
 \begin{example}
 \label{ex:simplify}
@@ -289,7 +289,7 @@ So we do support top-down transformations, but require the programmer to make th
 descend :: Uniplate alpha => (alpha -> alpha) -> alpha -> alpha
 \end{code}
 
-\todo{Still vague} The |descend f x| computation applies |f| to all the children of |x|. Unlike |everywhere'|, there is \textit{no recursion} within |descend|.
+The result of |descend f x| is obtained by replacing each |alpha|-child |x_i| in |x| by |f x_i|. Unlike |everywhere'|, there is \textit{no recursion} within |descend|.
 
 \begin{comment}
 \begin{code}
@@ -1251,7 +1251,7 @@ Compos     & 71 & 30 & 32 & 54 & 27 & 36 & 25 & 33 & 40 & 123 & 225 & 348 \\
 \end{table*}
 
 \begin{table*}
-\caption{Table of timing results, expressed as multiples of the run-time for a hand-optimised version.}
+\caption{Table of timing results, expressed as multiples of the run-time for a hand-optimised version not using any traversal library.}
 \label{fig:results}
 \vspace{3mm}
 \begin{tabular*}{\textwidth}{lrrrrrrrrrrrr}
