@@ -304,7 +304,7 @@ class Uniplate with => Biplate on with where
     biplate :: on -> ([with], [with] -> on)
 </pre>
 <p>
-    The <tt>biplate</tt> method operates much like the <tt>biplate</tt>, except for the different types.  When the types of <tt>on</tt> and <tt>with</tt> are different, <tt>biplate</tt> returns the closest children of the requested type. When the types are the same, this function returns the root element, not it's children.
+    The <tt>biplate</tt> method operates much like <tt>uniplate</tt>, except for the different types.  When the types of <tt>on</tt> and <tt>with</tt> are different, <tt>biplate</tt> returns the closest children of the requested type. When the types are the same, this function returns the root element, not it's children.
 </p>
 <p>
     There are several mechanisms for writing <tt>Biplate</tt> instances, discussed in the Uniplate paper.
