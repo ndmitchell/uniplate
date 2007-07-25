@@ -120,7 +120,7 @@ data Expr  =  Add  Expr  Expr  |  Val  Int
            |  Div  Expr  Expr
 \end{code}
 
-The |Expr| type represents a small language for integer expressions, which permits free variables. Suppose we need to extract a list of all the variables in an expression:
+The |Expr| type represents a small language for integer expressions, which permits free variables. Suppose we need to extract a list of all the variable occurrences in an expression:
 
 \begin{code}
 variables :: Expr -> [String]
@@ -140,7 +140,7 @@ variables :: Expr -> [String]
 variables x = [y | Var y <- universe x]
 \end{code}
 
-The type signature is optional, and would be inferred automatically if left absent. This example requires only Haskell 98. For more advanced examples we require multi-parameter type classes -- but no rank-2 types, functional dependencies or GADTs.
+The type signature is optional, and would be inferred automatically if left absent. This example makes use of a |Uniplate| instance for the |Expr| data type, given in \S\ref{sec:play_instances}. This example requires only Haskell 98. For more advanced examples we require multi-parameter type classes -- but no functional dependencies, rank-2 types or GADTs.
 
 The central idea is to exploit a common property of many traversals: they only require value-specific behaviour for a \textit{single uniform type}. In the |variables| example, the only type of interest is |Expr|. In practical applications, this pattern is common\footnote{Most examples in boilerplate removal papers meet this restriction, even though the systems being discussed do not depend on it.}. By focusing only on uniform type traversals, we are able to exploit well-developed techniques in list processing.
 
@@ -255,7 +255,7 @@ Each equation corresponds to the natural Haskell translation of the rule. The |t
 
 \subsection{Top-Down Transformation}
 
-The Scrap Your Boilerplate approach \cite{lammel:syb} (known as SYB) provides a top-down transformation named |everywhere'|. We describe this traversal, and our reasons for \textit{not} providing it, even though it could easily be defined. We instead provide |descend|, based on the |compos| operator \cite{bringert:compos}.
+The Scrap Your Boilerplate approach \cite{lammel:syb} (known as SYB) provides a top-down transformation named |everywhere'|. We describe this traversal, and our reasons for \textit{not} providing it, even though it could easily be defined. We instead provide |descend|, based on the |composOp| operator \cite{bringert:compos}.
 
 The |everywhere' f| transformation applies |f| to a value, then recursively applies the transformation on all the children of the freshly generated value. Typically, the intention in a transformation is to apply |f| to \textit{every node exactly once}. Unfortunately, |everywhere' f| does not necessarily have this effect.
 
@@ -298,7 +298,7 @@ data Expr = Var String | Let String Expr Expr | Add Expr Expr
 \end{comment}
 
 \begin{example}
-Consider the addition of a constructor \ignore|Let String Expr Expr|. Now let us define a function |subst| to replace free variables with given expressions. In order to determine which variables are free, we need to ``remember'' variables that are bound as we descend. We can define |subst| using a descend transformation:
+Consider the addition of a constructor \ignore|Let String Expr Expr|. Now let us define a function |subst| to replace free variables with given expressions. In order to determine which variables are free, we need to ``remember'' variables that are bound as we descend\footnote{For simplicity, we ignore issues of hygienic substitution that may arise if substituted expressions themselves contain free variables.}. We can define |subst| using a descend transformation:
 
 \begin{code}
 subst :: [(String,Expr)] -> Expr -> Expr
@@ -349,7 +349,7 @@ always :: (alpha -> Maybe alpha) -> (alpha -> alpha)
 always r x = fromMaybe x (r x)
 \end{code}
 
-What are the preconditions on |r| such that \ignore|forall x `o` rewrite r x == transform (always r) x|? The answer is that the constructors on the right-hand side of |r| must not overlap with the constructors on the left-hand side.
+What restrictions on |r| ensure that the property \ignore|rewrite r x == transform (always r) x| holds? It is sufficient that the constructors on the right-hand side of |r| do not overlap with the constructors on the left-hand side.
 
 \begin{revisit}{\ref{ex:simplify}}
 
@@ -370,15 +370,13 @@ rewrite    r           x == Mul (Val 2) (Var "q")
 transform  (always r)  x == Add (Var "q") (Neg (Var "q"))
 \end{code}
 
-To remedy this situation whenever the right-hand side introduces a new constructor, |f| must be reapplied:
+To remedy this situation in the original |simplify| transformation, whenever the right-hand side introduces a new constructor, |f| may need to be reapplied. Here only one additional |f| application is necessary, the one attached to the construction of an |Add| value.
 
 \begin{code}
-f (Sub x y)           = f $ Add x (f $ Neg y)
-f (Add x y) | x == y  = f $ Mul (f $ Val 2) x
+f (Sub x y)           = f $ Add x (Neg y)
+f (Add x y) | x == y  = Mul (Val 2) x
 f x                   = x
-\end{code}
-
-This approach guarantees that no rewrite is possible as the result of the transformation. In fact, only one additional |f| application is necessary, the one attached to the construction of an |Add| value.
+\end{code}\codeexample
 \end{revisit}
 
 \begin{comment}
@@ -500,7 +498,7 @@ uniqueVars x = evalState (transformM f x) vars
         f x        = return x
 \end{code}
 
-Here a \textit{state monad} is used to keep track of the list of names not yet used.
+The function |transformM| is a monadic variant of |transform|. Here a \textit{state monad} is used to keep track of the list of names not yet used, with |evalState| computing the result of the monadic action, given an initial state |vars|.
 \end{example}
 
 \subsection{Folds}
@@ -530,13 +528,8 @@ The final operation in the library seems to be a novelty -- we have not seen it 
 contexts :: Uniplate alpha => alpha -> [(alpha, alpha -> alpha)]
 \end{code}
 
-This function returns lists of pairs |(x,f)| where |x| is an element of the data structure which would have been returned by |universe|, and |f| replaces the hole which |x| was removed from. It has the following properties:
-
-\begin{code}
-propUniverse  x = universe x == map fst (contexts x)
-propId        x = all (== x) [b a | (a,b) <- contexts x]
-\end{code}
-
+This function returns lists of pairs |(x,f)| where |x| is an element of the data structure which would have been returned by |universe|, and |f| replaces the hole which |x| was removed from.
+ 
 \begin{example}
 Suppose that mutation testing requires all expressions obtained by incrementing or decrementing \textit{any single} literal in an original expression.
 
@@ -544,8 +537,16 @@ Suppose that mutation testing requires all expressions obtained by incrementing 
 mutants :: Expr -> [Expr]
 mutants x =  [c (Val j)  |  (Val i, c) <- contexts x
                          ,  j <- [i-1, i+1]]
-\end{code}\codeexample
+\end{code}
 \end{example}
+
+In general, |contexts| has the following properties:
+
+\begin{code}
+propUniverse  x = universe x == map fst (contexts x)
+propId        x = all (== x) [b a | (a,b) <- contexts x]
+\end{code}
+
 
 
 \subsection{Summary}
@@ -554,18 +555,19 @@ mutants x =  [c (Val j)  |  (Val i, c) <- contexts x
 \begin{code}
 module Data.Generics.Uniplate where
 
-class Uniplate alpha where
-    children    :: alpha -> [alpha]
-    contexts    :: alpha -> [(alpha, alpha -> alpha)]
-    descend     :: (alpha -> alpha) -> alpha -> alpha
-    descendM    :: Monad m => (alpha -> m alpha) -> alpha -> m alpha
-    fold        :: (alpha -> [r] -> r) -> alpha -> r
-    rewrite     :: (alpha -> Maybe alpha) -> alpha -> alpha
-    rewriteM    :: Monad m  => (alpha -> m (Maybe alpha))
-                                   -> alpha -> m alpha
-    transform   :: (alpha -> alpha) -> alpha -> alpha
-    transformM  :: Monad m => (alpha -> m alpha) -> alpha -> m alpha
-    universe    :: alpha -> [alpha]
+children    :: Uniplate alpha => alpha -> [alpha]
+contexts    :: Uniplate alpha => alpha -> [(alpha, alpha -> alpha)]
+descend     :: Uniplate alpha => (alpha -> alpha) -> alpha -> alpha
+descendM    :: (Uniplate alpha, Monad m) =>
+                  (alpha -> m alpha) -> alpha -> m alpha
+fold        :: Uniplate alpha => (alpha -> [r] -> r) -> alpha -> r
+rewrite     :: Uniplate alpha => (alpha -> Maybe alpha) -> alpha -> alpha
+rewriteM    :: (Uniplate alpha, Monad m)  =>
+                  (alpha -> m (Maybe alpha)) -> alpha -> m alpha
+transform   :: Uniplate alpha => (alpha -> alpha) -> alpha -> alpha
+transformM  :: (Uniplate alpha, Monad m) =>
+                  (alpha -> m alpha) -> alpha -> m alpha
+universe    :: Uniplate alpha => alpha -> [alpha]
 \end{code}
 \caption{All |Uniplate| methods.}
 \label{fig:play}
@@ -578,7 +580,7 @@ We present signatures for all our methods in Figure \ref{fig:play}, including se
 \section{Implementing the |Uniplate| class}
 \label{sec:implement_play}
 
-Requiring each instance of the |Uniplate| class to implement ten separate methods would be an undue imposition. Instead, given a type specific instance for a \textit{single} auxiliary method, we can define \textit{all ten} operations generically, at the class level. The auxiliary is:
+Requiring each instance of the |Uniplate| class to implement ten separate methods would be an undue imposition. Instead, given a type specific instance for a \textit{single} auxiliary method with a pair as result, we can define \textit{all ten} operations generically, at the class level. The auxiliary is:
 
 \begin{code}
 uniplate :: Uniplate alpha => alpha -> ([alpha], [alpha] -> alpha)
@@ -620,6 +622,9 @@ The common pattern is to call |uniplate|, then operate on the current children, 
 
 \begin{figure}
 \begin{code}
+class Uniplate alpha where
+    uniplate :: alpha -> ([alpha], [alpha] -> alpha)
+
 instance Uniplate Expr where
     uniplate (Neg  a    )  = ([a]    , \[a']     -> Neg  a'     )
     uniplate (Add  a b  )  = ([a,b]  , \[a',b']  -> Add  a' b'  )
@@ -628,7 +633,7 @@ instance Uniplate Expr where
     uniplate (Div  a b  )  = ([a,b]  , \[a',b']  -> Div  a' b'  )
     uniplate _             = ([]     , \[]       -> x           )
 \end{code}
-\caption{Instance of |Uniplate| for |Expr|.}
+\caption{The |Uniplate| class and an instance for |Expr|.}
 \label{fig:play_expr}
 \figureend
 \end{figure}
@@ -639,6 +644,33 @@ The distinguishing feature of our library is that the children are defined in te
 
 
 \subsection{Derivation Rules}
+
+We model the derivation of an instance by describing a derivation from a data type, to a set of declarations. The resultant declarations refer to the functions |(<>)|, |unit| and |target| -- by instantiating these functions we can obtain |Uniplate| instances.
+
+\begin{figure}
+\begin{code}
+_D (data n v_ = c_) =
+        _N(n) v_ x = case  x of _C_ c_
+    where x {-" \mbox{ is fresh} "-}
+
+_C (n t_) =
+        n x_ -> unit n <> _T t_1 x_1 <> ... <> _T t_n x_n
+    where x_ {-" \mbox{ are fresh, and } "-} length t_ == length x_
+
+_T TargetType     = target
+_T PrimitiveType  = unit
+_T (n t_)         = _N(n) (_T_ t_)
+_T v              = v
+
+_N {-" \mbox{ is an injection to fresh variables} "-}
+\end{code}
+\label{fig:derive}
+\caption{Derivation rules for Uniplate instances.}
+\end{figure}
+
+The derivation rules are given in Figure \ref{fig:derive}. The |_D| function takes a data type declaration, and generates a function over that data type. The |_C| function generates an alternative for each constructor. The |_T| function applies type specific behaviour: either a type is the target type on which an instance is being defined; or a primitive such as |Int|; or a concrete type; or a free type variable.
+
+\begin{comment}
 
 To model the derivation of an instance, it is necessary to have a model of data types:
 
@@ -651,16 +683,16 @@ type Name  = String
 type Var   = String
 \end{code}
 
-\begin{comment}
 \begin{code}
 isTarget :: a -> Bool
 \end{code}
-\end{comment}
 
 When writing a |Uniplate| instance for a particular data type, |isTarget| returns True for that data type. We define how to produce a function for a given |Data| type using the |_D| function:
 
 \begin{code}
-_D (Data name vars ctors) = unwords $
+
+
+unwords $
     ['d':name] ++ vars ++ ["x ="] ++
     ["case x of {"] ++
         separate ";" (map _C ctors) ++
@@ -680,6 +712,8 @@ _T (TyApp  d@(Data name _ _) ts  )
 
 separate sep xs = concat $ intersperse [sep] xs
 \end{code}
+
+\end{comment}
 
 Applying |_D| to the |Expr| type, the result is:
 
@@ -888,7 +922,7 @@ This technique has been used in the Yhc compiler. The Yhc compiler is written in
 
 \subsection{The |Biplate| class}
 
-If we are willing to make use of \textit{multi-parameter type classes} \cite{jones:mptc} we can define a class |Biplate| with |biplate| as its sole method.
+If we are willing to make use of \textit{multi-parameter type classes} \cite{jones:mptc} we can define a class |Biplate| with |biplate| as its sole method. We do not require functional dependencies.
 
 \begin{code}
 class  Uniplate alpha => Biplate beta alpha where
@@ -1480,7 +1514,7 @@ The SYB library is, however, more powerful than Uniplate. If you wish to visit v
 
 \paragraph{The Applicative library} \citep{mcbride:applicative} works by threading an Applicative operation through a data structure, in a similar way to threading a Monad through the structure. There is additionally a notion of |Traversable| functor, which can be used to provide generic programming. While the Applicative library can be used for generic programming, this task was not its original purpose, and the authors note they have ``barely begun to explore'' its power as a generic toolkit.
 
-\paragraph{Generic Programming} There are a number of other libraries which deal with generic programming, aimed more at writing \textit{type generic} (or \textit{polytipic}) functions, but which can be used for boilerplate removal. The \textit{Haskell generics suite}\footnote{\url{http://darcs.haskell.org/generics/}} showcases several approaches \citep{weirich:replib,hinze:generics_masses,oleg:smash,hinze:generic_haskell}.
+\paragraph{Generic Programming} There are a number of other libraries which deal with generic programming, aimed more at writing \textit{type generic} (or \textit{polytypic}) functions, but which can be used for boilerplate removal. The \textit{Haskell generics suite}\footnote{\url{http://darcs.haskell.org/generics/}} showcases several approaches \citep{weirich:replib,hinze:generics_masses,oleg:smash,hinze:generic_haskell}.
 
 
 \section{Conclusions and Future Work}

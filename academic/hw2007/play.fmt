@@ -44,6 +44,20 @@
 %format _T = "\mathcal{T}"
 %format _C = "\mathcal{C}"
 %format _D = "\mathcal{D}"
+%format _N = "\mathcal{N}"
+
+%format _T_ = "\mathcal{\overline{T}}"
+%format _C_ = "\mathcal{\overline{C}}"
+
+%format x_  = "\Varid{\overline{x}}"
+%format v_  = "\Varid{\overline{v}}"
+%format c_  = "\Varid{\overline{c}}"
+%format t_  = "\Varid{\overline{t}}"
+
+%format t_1  = "\Varid{t_1}"
+%format t_n  = "\Varid{t_n}"
+%format x_1  = "\Varid{x_1}"
+%format x_n  = "\Varid{x_n}"
 
 %format x1  = "\Varid{x_1}"
 %format x2  = "\Varid{x_2}"
