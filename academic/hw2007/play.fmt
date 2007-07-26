@@ -55,6 +55,9 @@
 %format t_  = "\Varid{\overline{t}}"
 
 %format t_1  = "\Varid{t_1}"
+%format y_1  = "\Varid{y_1}"
+%format y_2  = "\Varid{y_2}"
+%format v_1  = "\Varid{v_1}"
 %format t_n  = "\Varid{t_n}"
 %format x_1  = "\Varid{x_1}"
 %format x_n  = "\Varid{x_n}"

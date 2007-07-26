@@ -191,7 +191,7 @@ The |children| function is occasionally useful, but is used more commonly as an 
 
 \subsection{Queries}
 
-The Uniplate library provides a single method to support queries, the |universe| function.
+The Uniplate library provides a the |universe| function to support queries.
 
 \begin{code}
 universe :: Uniplate alpha => alpha -> [alpha]
@@ -501,22 +501,26 @@ uniqueVars x = evalState (transformM f x) vars
 The function |transformM| is a monadic variant of |transform|. Here a \textit{state monad} is used to keep track of the list of names not yet used, with |evalState| computing the result of the monadic action, given an initial state |vars|.
 \end{example}
 
-\subsection{Folds}
+\subsection{Paramorphisms}
 
-A fold is a homomorphism that replaces each constructor with a function \cite{sheard:fold}. To define a complete fold on a data type, each constructor must be represented -- giving boilerplate problems once more. We define a fold which allows many constructors to be processed with the same operation:
+A paramorphism is a fold, where you can also use the recursive argument (and not just the result of folding the recursive argument) in the recursive step \cite{meertens:paramorphisms}. We define such a paramorphism in our library:
+
+\begin{comment}
+To define a fold on a data type, each constructor must be represented -- giving boilerplate problems once more.
+\end{comment}
 
 \begin{code}
-fold :: Uniplate alpha => (alpha -> [r] -> r) -> alpha -> r
+para :: Uniplate alpha => (alpha -> [r] -> r) -> alpha -> r
 \end{code}
 
-The |fold| function uses the functional argument to combine a value, and the results of |fold| on its children, into a new result.
+The |para| function uses the functional argument to combine a value, and the results of |para| on its children, into a new result.
 
 \begin{example}
 Compiler writers might wish to compute the \textit{depth of expressions}:
 
 \begin{code}
 depth :: Expr -> Int
-depth = fold (\_ cs -> 1 + maximum (0:cs))
+depth = para (\_ cs -> 1 + maximum (0:cs))
 \end{code}\codeexample
 \end{example}
 
@@ -529,7 +533,7 @@ contexts :: Uniplate alpha => alpha -> [(alpha, alpha -> alpha)]
 \end{code}
 
 This function returns lists of pairs |(x,f)| where |x| is an element of the data structure which would have been returned by |universe|, and |f| replaces the hole which |x| was removed from.
- 
+
 \begin{example}
 Suppose that mutation testing requires all expressions obtained by incrementing or decrementing \textit{any single} literal in an original expression.
 
@@ -560,7 +564,7 @@ contexts    :: Uniplate alpha => alpha -> [(alpha, alpha -> alpha)]
 descend     :: Uniplate alpha => (alpha -> alpha) -> alpha -> alpha
 descendM    :: (Uniplate alpha, Monad m) =>
                   (alpha -> m alpha) -> alpha -> m alpha
-fold        :: Uniplate alpha => (alpha -> [r] -> r) -> alpha -> r
+para        :: Uniplate alpha => (alpha -> [r] -> r) -> alpha -> r
 rewrite     :: Uniplate alpha => (alpha -> Maybe alpha) -> alpha -> alpha
 rewriteM    :: (Uniplate alpha, Monad m)  =>
                   (alpha -> m (Maybe alpha)) -> alpha -> m alpha
@@ -631,7 +635,7 @@ instance Uniplate Expr where
     uniplate (Sub  a b  )  = ([a,b]  , \[a',b']  -> Sub  a' b'  )
     uniplate (Mul  a b  )  = ([a,b]  , \[a',b']  -> Mul  a' b'  )
     uniplate (Div  a b  )  = ([a,b]  , \[a',b']  -> Div  a' b'  )
-    uniplate _             = ([]     , \[]       -> x           )
+    uniplate x             = ([]     , \[]       -> x           )
 \end{code}
 \caption{The |Uniplate| class and an instance for |Expr|.}
 \label{fig:play_expr}
@@ -645,17 +649,26 @@ The distinguishing feature of our library is that the children are defined in te
 
 \subsection{Derivation Rules}
 
+We can define derivation rules for the |Uniplate| class in terms of |children_| and |context|:
+
+\ignore\begin{code}
+instance Uniplate Expr where
+    uniplate x = (children_ x, context x)
+\end{code}
+
+Alternatively, it is possible to define one single function which generates both elements of the pair at once, avoiding the need to examine each value twice (see \S\ref{sec:optimise_playdata} for an example).
+
 We model the derivation of an instance by describing a derivation from a data type, to a set of declarations. The resultant declarations refer to the functions |(<>)|, |unit| and |target| -- by instantiating these functions we can obtain |Uniplate| instances.
 
 \begin{figure}
-\begin{code}
+\ignore\begin{code}
 _D (data n v_ = c_) =
         _N(n) v_ x = case  x of _C_ c_
     where x {-" \mbox{ is fresh} "-}
 
 _C (n t_) =
-        n x_ -> unit n <> _T t_1 x_1 <> ... <> _T t_n x_n
-    where x_ {-" \mbox{ are fresh, and } "-} length t_ == length x_
+        n y_ -> unit n <> _T t_1 y_1 <> ... <> _T t_n y_n
+    where y_ {-" \mbox{ are fresh, and } "-} length t_ == length y_
 
 _T TargetType     = target
 _T PrimitiveType  = unit
@@ -664,11 +677,11 @@ _T v              = v
 
 _N {-" \mbox{ is an injection to fresh variables} "-}
 \end{code}
-\label{fig:derive}
 \caption{Derivation rules for Uniplate instances.}
+\label{fig:derive}
 \end{figure}
 
-The derivation rules are given in Figure \ref{fig:derive}. The |_D| function takes a data type declaration, and generates a function over that data type. The |_C| function generates an alternative for each constructor. The |_T| function applies type specific behaviour: either a type is the target type on which an instance is being defined; or a primitive such as |Int|; or a concrete type; or a free type variable.
+The derivation rules are given in Figure \ref{fig:derive}. The |_D| function takes a data type declaration, and generates a function over that data type. The |_C| function generates a case alternative for each constructor. The |_T| function applies type specific behaviour: a type is the target type on which an instance is being defined; or a primitive such as |Int|; or a concrete type; or a free type variable.
 
 \begin{comment}
 
@@ -718,43 +731,46 @@ separate sep xs = concat $ intersperse [sep] xs
 Applying |_D| to the |Expr| type, the result is:
 
 \begin{code}
-dExpr x = case x of
-    Val  v1     -> unit Val  <> unit v1
-    Var  v1     -> unit Var  <> dList unit v1
-    Neg  v1     -> unit Neg  <> target v1
-    Add  v1 v2  -> unit Add  <> target v1 <> target v2
-    Sub  v1 v2  -> unit Sub  <> target v1 <> target v2
-    Mul  v1 v2  -> unit Mul  <> target v1 <> target v2
-    Div  v1 v2  -> unit Div  <> target v1 <> target v2
+expr x = case x of
+    Val  y_1      -> unit Val  <> unit y_1
+    Var  y_1      -> unit Var  <> list unit y_1
+    Neg  y_1      -> unit Neg  <> target y_1
+    Add  y_1 y_2  -> unit Add  <> target y_1 <> target y_2
+    Sub  y_1 y_2  -> unit Sub  <> target y_1 <> target y_2
+    Mul  y_1 y_2  -> unit Mul  <> target y_1 <> target y_2
+    Div  y_1 y_2  -> unit Div  <> target y_1 <> target y_2
 
-dList a x = case x of
-    []          -> unit []
-    (:)  v1 v2  -> unit (:) <> a v1 <> dList a v2
+list v_1 x = case x of
+    []            -> unit []
+    (:)  y_1 y_2  -> unit (:) <> v_1 y_1 <> list v_1 y_2
 \end{code}
 
+\begin{comment}
 To generate a particular operation we can replace the |unit|, |target| and |<>| functions with versions specific to that operation. We do this replacement using multiple copies of the template, introducing |where| clauses with local definitions of the three functions.
+\end{comment}
 
-\subsubsection{Defining |getChildren|}
+\subsubsection{Defining |children_|}
 
-The |dExpr| and |dList| functions can be used to define the operation of getting the children:
+The |expr| and |list| functions can be used to define the operation of getting the children:
 
 \begin{code}
-getChildren x = dExpr x
+children_ x = expr x
 
 unit    = const []
 target  = (:[])
 (<>)    = (++)
 \end{code}
 
-From these definitions we can do some reasoning. For example, |dList == concatMap|, and |concatMap (const []) == const []|. This information can be used to simplify some instances.
+The generated |expr| function is a traversal which visits every value in the data type. A list is created of all the target types by placing the targets into lists, combining lists using |(++)|, and skipping uninteresting values.
 
+From these definitions we can do some reasoning. For example, |list == concatMap|, and |concatMap (const []) == const []|. This information can be used to simplify some instances.
 
-\subsubsection{Defining |setChildren|}
+\subsubsection{Defining |context|}
 
-We define |setChildren| as:
+We define |context| as:
 
 \begin{code}
-setChildren x ns = fst (dExpr x ns)
+context x ns = fst (expr x ns)
 
 type Cont t alpha = [alpha] -> (t,[alpha])
 
@@ -770,7 +786,11 @@ target x (n:ns) = (n,ns)
                 in   (a' b',ns3)
 \end{code}
 
-We improve the simplification opportunities and runtime speed if we use a continuation function to encode the pair.
+The central |Cont| type is an extension to the type of |context| which takes a list of children to substitute into a value, and returns both the new value, and the children which were not used. By returning the unused children the |(<>)| operation is able to determine both the new value for |a| (namely |a'|), and the remaining list of children (namely |ns2|), sequencing the use of the children. The |target| function consumes a child, and the |unit| function returns the children unmodified.
+
+\begin{comment}
+It is possible to improve the simplification opportunities and runtime speed by moving to continuation passing.
+, by redefining if we use a continuation function to encode the pair.
 
 \begin{code}
 setChildren x ns = dExpr x ns const
@@ -788,17 +808,7 @@ target  x  (n:ns)  c  = c n ns
                  b  ns $ \b'  ns ->
                  c (a' b') ns
 \end{code}
-
-\subsection{Defining |uniplate|}
-
-We define |uniplate| in terms of |getChildren| and |setChildren|:
-
-\ignore\begin{code}
-instance Uniplate Expr where
-    uniplate x = (getChildren x, setChildren x)
-\end{code}
-
-Alternatively, it is possible to define one single function which generates both elements of the pair at once, avoiding the need to examine each value twice (see \S\ref{sec:optimise_playdata} for an example).
+\end{comment}
 
 \subsection{Automated Derivation of |uniplate|}
 
@@ -972,7 +982,8 @@ The complicating feature of |biplate| is that when defining |Biplate| where \ign
 \item The |Data| class can be used, providing fully automatic instances with GHC, but requiring the use of rank-2 types, and giving the worst performance.
 \end{enumerate}
 
-All three methods can be fully automated using \derive{}, and all provide a simplified method for writing |Uniplate| instances. The |Biplate| class definition itself is independent of the method used to implement its instances. This abstraction allows the user to start with the simplest instance scheme available to them, then move to alternative schemes to gain increased performance or compatibility.
+All three methods can be fully automated using \derive{}, and all provide a simplified method for writing |Uniplate| instances. The first two methods require the user to define auxiliary instances (|PlateAll| and |PlateOne|), from which the library implements the |Uniplate| and |Biplate| classes. The |Biplate| class definition itself is independent of the method used to implement its instances. This abstraction allows the user to start with the simplest instance scheme available to them, then move to alternative schemes to gain increased performance or compatibility.
+
 
 \subsection{Direct instances}
 \label{sec:implement_playdirect}
@@ -1002,7 +1013,7 @@ instance PlateOne Expr where
     plateOne (Sub  a b  )  = plate Sub  |* a |* b
     plateOne (Mul  a b  )  = plate Mul  |* a |* b
     plateOne (Div  a b  )  = plate Div  |* a |* b
-    plateOne _             = plate x
+    plateOne x             = plate x
 \end{code}
 
 Five infix combinators (| ||*|, | ||+|, | ||-|, | ||||*| and | ||||+|) indicate the structure of the field to the right. The | ||*| combinator says that the value on the right is of the target type, | ||+| says that a value of the target type \textit{may occur} in the right operand, | ||-| says that values of the target type \textit{cannot occur} in the right operand. | ||||*| and | ||||+| are versions of | ||*| and | ||+| used when the value to the right is a \textit{list} either of the target type, or of a type that may contain target values. The law |plate f ||- x == plate (f x)| justifies the definition presented above.
@@ -1194,12 +1205,12 @@ With all these optimisations we can usually perform both queries and transformat
 \section{Results and Evaluation}
 \label{sec:results}
 
-We evaluate our boilerplate reduction scheme in two ways: firstly by the \textit{conciseness of traversals} using it (i.e. the amount of boilerplate it removes), and secondly by its \textit{runtime performance}. We measure conciseness by counting lexemes -- although we concede that some aspects of concise expression may still be down to personal preference. We give a set of nine example programs, written using Uniplate, SYB and Compos operations. We then compare both the conciseness and the performance of these programs.
+We evaluate our boilerplate reduction scheme in two ways: firstly by the \textit{conciseness of traversals} using it (i.e. the amount of boilerplate it removes), and secondly by its \textit{runtime performance}. We measure conciseness by counting lexemes -- although we concede that some aspects of concise expression may still be down to personal preference. We give a set of nine example programs, written using Uniplate, SYB and Compos operations. We then compare both the conciseness and the performance of these programs. Other aspects, such as the clarity of expression, are not so easily measured. Readers can make their own assessment based on the full sources we give.
 
 \subsection{Boilerplate Reduction}
 \label{sec:results_boilerplate}
 
-As test operations we have taken the first three examples from this paper, three from the Compos paper \citep{bringert:compos}, and the three given in the SYB paper \citep{lammel:syb} termed the ``Paradise Benchmark''. In all cases the Compos, SYB and Uniplate functions are given an appropriately prefixed name. In some cases, a helper function can be defined in the same way in both SYB and Uniplate; where this is possible we have done so. Type signatures are omitted where the compiler is capable of inferring them.
+As test operations we have taken the first three examples from this paper, three from the Compos paper \citep{bringert:compos}, and the three given in the SYB paper \citep{lammel:syb} termed the ``Paradise Benchmark''. In all cases the Compos, SYB and Uniplate functions are given an appropriately prefixed name. In some cases, a helper function can be defined in the same way in both SYB and Uniplate; where this is possible we have done so. Type signatures are omitted where the compiler is capable of inferring them. For SYB and Compos we have used definitions from the original authors where available, otherwise we have followed the guidelines and style presented in the corresponding paper.
 
 \subsubsection{Examples from this Paper}
 
@@ -1530,7 +1541,7 @@ The use of boilerplate reduction strategies in Haskell is not yet ubiquitous, as
 
 \acks
 
-The first author is a supported by an EPSRC PhD studentship. Thanks to Bj\"{o}rn Bringert and Jules Bean for feedback on an earlier drafts of this paper; Eric Mertens for helpful ideas; and Stefan O'Rear for work on \derive{}.
+The first author is a supported by an EPSRC PhD studentship. Thanks to Bj\"{o}rn Bringert, Jules Bean and the anonymous reviewers for feedback on an earlier drafts of this paper; Eric Mertens for helpful ideas; and Stefan O'Rear for work on \derive{}.
 
 \bibliographystyle{plainnat}
 
