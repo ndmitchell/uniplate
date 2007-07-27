@@ -46,6 +46,9 @@
 %format _D = "\mathcal{D}"
 %format _N = "\mathcal{N}"
 
+%format target = "\textsc{target}"
+%format unit = "\textsc{unit}"
+
 %format _T_ = "\mathcal{\overline{T}}"
 %format _C_ = "\mathcal{\overline{C}}"
 
@@ -57,7 +60,11 @@
 %format t_1  = "\Varid{t_1}"
 %format y_1  = "\Varid{y_1}"
 %format y_2  = "\Varid{y_2}"
+%format y_n  = "\Varid{y_n}"
 %format v_1  = "\Varid{v_1}"
+%format v_n  = "\Varid{v_n}"
+%format a_1  = "\Varid{a_1}"
+%format a_m  = "\Varid{a_m}"
 %format t_n  = "\Varid{t_n}"
 %format x_1  = "\Varid{x_1}"
 %format x_n  = "\Varid{x_n}"

@@ -649,30 +649,30 @@ The distinguishing feature of our library is that the children are defined in te
 
 \subsection{Derivation Rules}
 
-We can define derivation rules for the |Uniplate| class in terms of |children_| and |context|:
+We can define derivation rules for the |children_| and |context| functions, allowing the generic definition:
 
 \ignore\begin{code}
-instance Uniplate Expr where
+instance Uniplate typename where
     uniplate x = (children_ x, context x)
 \end{code}
 
 Alternatively, it is possible to define one single function which generates both elements of the pair at once, avoiding the need to examine each value twice (see \S\ref{sec:optimise_playdata} for an example).
 
-We model the derivation of an instance by describing a derivation from a data type, to a set of declarations. The resultant declarations refer to the functions |(<>)|, |unit| and |target| -- by instantiating these functions we can obtain |Uniplate| instances.
+We model the derivation of an instance by describing a derivation from a data type, to a set of declarations. The declaration rules have three functional parameters: |(<>)|, |unit| and |target| -- by varying these parameters we derive either |children_| or |context| functions.
 
 \begin{figure}
 \ignore\begin{code}
-_D (data n v_ = c_) =
-        _N(n) v_ x = case  x of _C_ c_
+_D (data d v_1...v_n = a_1...a_m) =
+        (_N d) v_1...v_n x = case  x of (_C a_1) \? ... \? (_C a_m)
     where x {-" \mbox{ is fresh} "-}
 
-_C (n t_) =
-        n y_ -> unit n <> _T t_1 y_1 <> ... <> _T t_n y_n
-    where y_ {-" \mbox{ are fresh, and } "-} length t_ == length y_
+_C (c t_1...t_n) =
+        c y_1...y_n -> unit c <> _T t_1 y_1 <> ... <> _T t_n y_n
+    where y_1...y_n {-" \mbox{ are fresh} "-}
 
 _T TargetType     = target
 _T PrimitiveType  = unit
-_T (n t_)         = _N(n) (_T_ t_)
+_T (d t_1...t_n)  = (_N d) (_T t_1) \? ... \? (_T t_n)
 _T v              = v
 
 _N {-" \mbox{ is an injection to fresh variables} "-}
@@ -681,7 +681,7 @@ _N {-" \mbox{ is an injection to fresh variables} "-}
 \label{fig:derive}
 \end{figure}
 
-The derivation rules are given in Figure \ref{fig:derive}. The |_D| function takes a data type declaration, and generates a function over that data type. The |_C| function generates a case alternative for each constructor. The |_T| function applies type specific behaviour: a type is the target type on which an instance is being defined; or a primitive such as |Int|; or a concrete type; or a free type variable.
+The derivation rules are given in Figure \ref{fig:derive}. The |_D| rule takes a data type declaration, and defines a function over that data type. The |_C| rule defines a case alternative for each constructor. The |_T| rule defines type specific behaviour: a type is either the target type on which an instance is being defined, or a primitive such as |Char|, or an algebraic data type, or a free type variable.
 
 \begin{comment}
 
@@ -728,21 +728,21 @@ separate sep xs = concat $ intersperse [sep] xs
 
 \end{comment}
 
-Applying |_D| to the |Expr| type, the result is:
+Applying |_D| to |Expr|, the result is:
 
 \begin{code}
-expr x = case x of
+(_N Expr) x = case x of
     Val  y_1      -> unit Val  <> unit y_1
-    Var  y_1      -> unit Var  <> list unit y_1
+    Var  y_1      -> unit Var  <> (_N List) unit y_1
     Neg  y_1      -> unit Neg  <> target y_1
     Add  y_1 y_2  -> unit Add  <> target y_1 <> target y_2
     Sub  y_1 y_2  -> unit Sub  <> target y_1 <> target y_2
     Mul  y_1 y_2  -> unit Mul  <> target y_1 <> target y_2
     Div  y_1 y_2  -> unit Div  <> target y_1 <> target y_2
 
-list v_1 x = case x of
+(_N List) v_1 x = case x of
     []            -> unit []
-    (:)  y_1 y_2  -> unit (:) <> v_1 y_1 <> list v_1 y_2
+    (:)  y_1 y_2  -> unit (:) <> v_1 y_1 <> (_N List) v_1 y_2
 \end{code}
 
 \begin{comment}
@@ -751,27 +751,25 @@ To generate a particular operation we can replace the |unit|, |target| and |<>| 
 
 \subsubsection{Defining |children_|}
 
-The |expr| and |list| functions can be used to define the operation of getting the children:
+To derive the |children_| function, the derivations are applied with the following parameter values.
 
 \begin{code}
-children_ x = expr x
-
 unit    = const []
 target  = (:[])
 (<>)    = (++)
+
+children_ x = (_N typename) x
 \end{code}
 
-The generated |expr| function is a traversal which visits every value in the data type. A list is created of all the target types by placing the targets into lists, combining lists using |(++)|, and skipping uninteresting values.
+The generated function is a traversal which visits every value in the data type. A list is created of all the target types by placing the targets into lists, combining lists using |(++)|, and skipping uninteresting values.
 
 From these definitions we can do some reasoning. For example, |list == concatMap|, and |concatMap (const []) == const []|. This information can be used to simplify some instances.
 
 \subsubsection{Defining |context|}
 
-We define |context| as:
+For |context| functions we apply the derivation rules with the following parameter values.
 
 \begin{code}
-context x ns = fst (expr x ns)
-
 type Cont t alpha = [alpha] -> (t,[alpha])
 
 unit :: t -> Cont t alpha
@@ -784,6 +782,8 @@ target x (n:ns) = (n,ns)
 (<>) a b ns1 =  let  (a'  ,ns2  ) = a  ns1
                      (b'  ,ns3  ) = b  ns2
                 in   (a' b',ns3)
+
+context x ns = fst ((_N typename) x ns)
 \end{code}
 
 The central |Cont| type is an extension to the type of |context| which takes a list of children to substitute into a value, and returns both the new value, and the children which were not used. By returning the unused children the |(<>)| operation is able to determine both the new value for |a| (namely |a'|), and the remaining list of children (namely |ns2|), sequencing the use of the children. The |target| function consumes a child, and the |unit| function returns the children unmodified.
@@ -982,7 +982,7 @@ The complicating feature of |biplate| is that when defining |Biplate| where \ign
 \item The |Data| class can be used, providing fully automatic instances with GHC, but requiring the use of rank-2 types, and giving the worst performance.
 \end{enumerate}
 
-All three methods can be fully automated using \derive{}, and all provide a simplified method for writing |Uniplate| instances. The first two methods require the user to define auxiliary instances (|PlateAll| and |PlateOne|), from which the library implements the |Uniplate| and |Biplate| classes. The |Biplate| class definition itself is independent of the method used to implement its instances. This abstraction allows the user to start with the simplest instance scheme available to them, then move to alternative schemes to gain increased performance or compatibility.
+All three methods can be fully automated using \derive{}, and all provide a simplified method for writing |Uniplate| instances. The first two methods require the user to define instances of auxiliary classes, |PlateAll| and |PlateOne|, on top of which the library defines the |Uniplate| and |Biplate| classes. The |Biplate| class definition itself is independent of the method used to implement its instances. This abstraction allows the user to start with the simplest instance scheme available to them, then move to alternative schemes to gain increased performance or compatibility.
 
 
 \subsection{Direct instances}
