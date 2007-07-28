@@ -140,7 +140,7 @@ variables :: Expr -> [String]
 variables x = [y | Var y <- universe x]
 \end{code}
 
-The type signature is optional, and would be inferred automatically if left absent. This example makes use of a |Uniplate| instance for the |Expr| data type, given in \S\ref{sec:play_instances}. This example requires only Haskell 98. For more advanced examples we require multi-parameter type classes -- but no functional dependencies, rank-2 types or GADTs.
+The type signature is optional, and would be inferred automatically if left absent. This example assumes a |Uniplate| instance for the |Expr| data type, given in \S\ref{sec:play_instances}. This example requires only Haskell 98. For more advanced examples we require multi-parameter type classes -- but no functional dependencies, rank-2 types or GADTs.
 
 The central idea is to exploit a common property of many traversals: they only require value-specific behaviour for a \textit{single uniform type}. In the |variables| example, the only type of interest is |Expr|. In practical applications, this pattern is common\footnote{Most examples in boilerplate removal papers meet this restriction, even though the systems being discussed do not depend on it.}. By focusing only on uniform type traversals, we are able to exploit well-developed techniques in list processing.
 
@@ -503,11 +503,7 @@ The function |transformM| is a monadic variant of |transform|. Here a \textit{st
 
 \subsection{Paramorphisms}
 
-A paramorphism is a fold, where you can also use the recursive argument (and not just the result of folding the recursive argument) in the recursive step \cite{meertens:paramorphisms}. We define such a paramorphism in our library:
-
-\begin{comment}
-To define a fold on a data type, each constructor must be represented -- giving boilerplate problems once more.
-\end{comment}
+A paramorphism is a fold in which the recursive step may refer to the recursive component of a value, not just the results of folding over them \cite{meertens:paramorphisms}. We define a similar recursion scheme in our library.
 
 \begin{code}
 para :: Uniplate alpha => (alpha -> [r] -> r) -> alpha -> r
@@ -658,22 +654,22 @@ instance Uniplate typename where
 
 Alternatively, it is possible to define one single function which generates both elements of the pair at once, avoiding the need to examine each value twice (see \S\ref{sec:optimise_playdata} for an example).
 
-We model the derivation of an instance by describing a derivation from a data type, to a set of declarations. The declaration rules have three functional parameters: |(<>)|, |unit| and |target| -- by varying these parameters we derive either |children_| or |context| functions.
+We model the derivation of an instance by describing a derivation from a data type to a set of declarations. The derivation rules have three functional parameters: |(<>)|, |unit| and |target|. By varying these parameters we derive either |children_| or |context| functions.
 
 \begin{figure}
 \ignore\begin{code}
-_D (data d v_1...v_n = a_1...a_m) =
-        (_N d) v_1...v_n x = case  x of (_C a_1) \? ... \? (_C a_m)
+_D \< data d v_1...v_n = a_1...a_m \> =
+        _N \< d \> \? v_1...v_n x = case  x of _C \< a_1 \> \? ... \? _C \< a_m \>
     where x {-" \mbox{ is fresh} "-}
 
-_C (c t_1...t_n) =
-        c y_1...y_n -> unit c <> _T t_1 y_1 <> ... <> _T t_n y_n
+_C \< c t_1...t_n \> =
+        c y_1...y_n -> unit c <> _T \< t_1 \> \? y_1 <> ... <> _T \< t_n \> \? y_n
     where y_1...y_n {-" \mbox{ are fresh} "-}
 
-_T TargetType     = target
-_T PrimitiveType  = unit
-_T (d t_1...t_n)  = (_N d) (_T t_1) \? ... \? (_T t_n)
-_T v              = v
+_T \< TargetType     \> = target
+_T \< PrimitiveType  \> = unit
+_T \< d t_1...t_n    \> = _N \< d \> \? _T \< t_1 \> \? ... \? _T \< t_n \>
+_T \< v              \> = v
 
 _N {-" \mbox{ is an injection to fresh variables} "-}
 \end{code}
@@ -731,18 +727,18 @@ separate sep xs = concat $ intersperse [sep] xs
 Applying |_D| to |Expr|, the result is:
 
 \begin{code}
-(_N Expr) x = case x of
+_N \< Expr \> \? x = case x of
     Val  y_1      -> unit Val  <> unit y_1
-    Var  y_1      -> unit Var  <> (_N List) unit y_1
+    Var  y_1      -> unit Var  <> _N \< List \> \? unit y_1
     Neg  y_1      -> unit Neg  <> target y_1
     Add  y_1 y_2  -> unit Add  <> target y_1 <> target y_2
     Sub  y_1 y_2  -> unit Sub  <> target y_1 <> target y_2
     Mul  y_1 y_2  -> unit Mul  <> target y_1 <> target y_2
     Div  y_1 y_2  -> unit Div  <> target y_1 <> target y_2
 
-(_N List) v_1 x = case x of
+_N \< List \> \? v_1 x = case x of
     []            -> unit []
-    (:)  y_1 y_2  -> unit (:) <> v_1 y_1 <> (_N List) v_1 y_2
+    (:)  y_1 y_2  -> unit (:) <> v_1 y_1 <> _N \< List \> \? v_1 y_2
 \end{code}
 
 \begin{comment}
@@ -758,7 +754,7 @@ unit    = const []
 target  = (:[])
 (<>)    = (++)
 
-children_ x = (_N typename) x
+children_ x = _N \< typename \> \? x
 \end{code}
 
 The generated function is a traversal which visits every value in the data type. A list is created of all the target types by placing the targets into lists, combining lists using |(++)|, and skipping uninteresting values.
@@ -783,7 +779,7 @@ target x (n:ns) = (n,ns)
                      (b'  ,ns3  ) = b  ns2
                 in   (a' b',ns3)
 
-context x ns = fst ((_N typename) x ns)
+context x ns = fst (_N \< typename \> \? x ns)
 \end{code}
 
 The central |Cont| type is an extension to the type of |context| which takes a list of children to substitute into a value, and returns both the new value, and the children which were not used. By returning the unused children the |(<>)| operation is able to determine both the new value for |a| (namely |a'|), and the remaining list of children (namely |ns2|), sequencing the use of the children. The |target| function consumes a child, and the |unit| function returns the children unmodified.

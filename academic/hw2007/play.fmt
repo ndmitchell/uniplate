@@ -41,6 +41,9 @@
 %format ||* = "\mathsf{\hspace{1mm}||\hspace{-0.65mm}*\;}"
 %format ||+ = "\mathsf{\hspace{1mm}||\hspace{-0.5mm}\hbox{\small{+}}\;}"
 
+%format \< = "[\!["
+%format \> = "]\!]"
+
 %format _T = "\mathcal{T}"
 %format _C = "\mathcal{C}"
 %format _D = "\mathcal{D}"
