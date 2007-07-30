@@ -1,4 +1,4 @@
-\documentclass[preprint]{sigplanconf}
+\documentclass{sigplanconf}
 
 \usepackage{amsmath}
 \usepackage{amssymb}
@@ -67,9 +67,9 @@
 
 \begin{document}
 
-\conferenceinfo{Haskell Workshop '07}{date, City.} %
-\copyrightyear{2007} %
-\copyrightdata{[to be supplied]}
+\conferenceinfo{Haskell'07,} {September 30, 2007, Freiburg, Germany.}
+\CopyrightYear{2007}
+\copyrightdata{978-1-59593-674-5/07/0009}
 
 \titlebanner{} % \today{} - \currenttime{}}        % These are ignored unless
 \preprintfooter{}   % 'preprint' option specified.
@@ -79,10 +79,10 @@
 
 \authorinfo{Neil Mitchell}
            {University of York, UK}
-           {\url{http://www.cs.york.ac.uk/~ndm/}}
+           {\verb"ndm@cs.york.ac.uk"}
 \authorinfo{Colin Runciman}
            {University of York, UK}
-           {\url{http://www.cs.york.ac.uk/~colin/}}
+           {\verb"colin@cs.york.ac.uk"}
 
 \maketitle
 
@@ -108,6 +108,11 @@ context = undefined
 \begin{abstract}
 Generic traversals over recursive data structures are often referred to as \textit{boilerplate} code. The definitions of functions involving such traversals may repeat very similar patterns, but with variations for different data types and different functionality. Libraries of operations abstracting away boilerplate code typically rely on elaborate types to make operations generic. The motivating observation for this paper is that \textit{most traversals have value-specific behaviour for just one type}. We present the design of a new library exploiting this assumption. Our library allows concise expression of traversals with competitive performance.
 \end{abstract}
+
+\category{D.3}{Software}{Programming Languages}
+
+\terms
+languages, performance
 
 \section{Introduction}
 
@@ -1348,7 +1353,8 @@ The Uniplate definition is the shortest, as there is only one constructor in typ
 
 \ignore\begin{code}
 uni_symbols x = [(v,t) | SDecl t v <- universeBi x]
-
+\end{code}
+\ignore\begin{code}
 syb_symbols = everything (++) ([] `mkQ` f)
     where  f (SDecl t v)  = [(v,t)]
            f _            = []
@@ -1434,7 +1440,8 @@ The |incrOne| function performs the same operation as |increase|, but only withi
 uni_incrOne d k = descendBi f
     where f x@(D n _ _)  | n == d     = uni_increase k x
                          | otherwise  = descend f x
-
+\end{code}
+\ignore\begin{code}
 syb_incrOne :: Data a => Name -> Integer -> a -> a
 syb_incrOne d k x  | isDept d x  = syb_increase k x
                    | otherwise   = gmapT (syb_incrOne d k) x
@@ -1521,7 +1528,7 @@ The SYB library is, however, more powerful than Uniplate. If you wish to visit v
 
 \paragraph{The Applicative library} \citep{mcbride:applicative} works by threading an Applicative operation through a data structure, in a similar way to threading a Monad through the structure. There is additionally a notion of |Traversable| functor, which can be used to provide generic programming. While the Applicative library can be used for generic programming, this task was not its original purpose, and the authors note they have ``barely begun to explore'' its power as a generic toolkit.
 
-\paragraph{Generic Programming} There are a number of other libraries which deal with generic programming, aimed more at writing \textit{type generic} (or \textit{polytypic}) functions, but which can be used for boilerplate removal. The \textit{Haskell generics suite}\footnote{\url{http://darcs.haskell.org/generics/}} showcases several approaches \citep{weirich:replib,hinze:generics_masses,oleg:smash,hinze:generic_haskell}.
+\paragraph{Generic Programming} There are a number of other libraries which deal with generic programming, aimed more at writing \textit{type generic} (or \textit{polytypic}) functions, but which can be used for boilerplate removal. The \textit{Haskell generics suite}\footnote{\url{http://darcs.haskell.org/generics/}} showcases several approaches \citep{weirich:replib,hinze:generics_masses,hinze:generic_haskell}.
 
 
 \section{Conclusions and Future Work}
@@ -1541,7 +1548,7 @@ The first author is a supported by an EPSRC PhD studentship. Thanks to Bj\"{o}rn
 
 \bibliographystyle{plainnat}
 
-%\small
+\small
 \bibliography{play}
 
 
