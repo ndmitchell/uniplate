@@ -130,7 +130,8 @@ contexts x = (x,id) : f current
            | (pre,b:post) <- zip (inits xs) (tails xs)
            , (y, context) <- contexts b]
 
--- | Perform a fold on each value
-fold :: Uniplate on => (on -> [r] -> r) -> on -> r
-fold op x = op x $ map (fold op) $ children x
+-- | Perform a fold-like computation on each value,
+--   technically a paramorphism
+para :: Uniplate on => (on -> [r] -> r) -> on -> r
+para op x = op x $ map (para op) $ children x
 
