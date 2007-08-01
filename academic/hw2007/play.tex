@@ -16,6 +16,7 @@
 \bibpunct();A{},
 \let\cite=\citep
 
+
 % general stuff
 \newcommand{\T}[1]{\texttt{#1}}
 \newcommand{\C}[1]{\textsf{#1}}
@@ -112,7 +113,7 @@ Generic traversals over recursive data structures are often referred to as \text
 \category{D.3}{Software}{Programming Languages}
 
 \terms
-languages, performance
+Languages, Performance
 
 \section{Introduction}
 
@@ -650,10 +651,10 @@ The distinguishing feature of our library is that the children are defined in te
 
 \subsection{Derivation Rules}
 
-We can define derivation rules for the |children_| and |context| functions, allowing the generic definition:
+We can define derivation rules for the |children_| and |context| functions, allowing the definition:
 
 \ignore\begin{code}
-instance Uniplate typename where
+instance Uniplate Type where
     uniplate x = (children_ x, context x)
 \end{code}
 
@@ -759,7 +760,7 @@ unit    = const []
 target  = (:[])
 (<>)    = (++)
 
-children_ x = _N \< typename \> \? x
+children_ x = _N \< Type \> \? x
 \end{code}
 
 The generated function is a traversal which visits every value in the data type. A list is created of all the target types by placing the targets into lists, combining lists using |(++)|, and skipping uninteresting values.
@@ -784,7 +785,7 @@ target x (n:ns) = (n,ns)
                      (b'  ,ns3  ) = b  ns2
                 in   (a' b',ns3)
 
-context x ns = fst (_N \< typename \> \? x ns)
+context x ns = fst (_N \< Type \> \? x ns)
 \end{code}
 
 The central |Cont| type is an extension to the type of |context| which takes a list of children to substitute into a value, and returns both the new value, and the children which were not used. By returning the unused children the |(<>)| operation is able to determine both the new value for |a| (namely |a'|), and the remaining list of children (namely |ns2|), sequencing the use of the children. The |target| function consumes a child, and the |unit| function returns the children unmodified.
