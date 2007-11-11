@@ -115,7 +115,7 @@ fromCC :: CC x a -> ([x], [x] -> a)
 fromCC (a, b) = (a [], \i -> fst (b i))
 
 
-collect_generate_self :: (Data on, Uniplate with, Typeable on, Typeable with) =>
+collect_generate_self :: (Data on, Data with, Typeable on, Typeable with) =>
                          (forall a . Typeable a => a -> Answer with) -> on -> CC with on
 collect_generate_self oracle x = res
         where
@@ -125,7 +125,7 @@ collect_generate_self oracle x = res
                        Miss -> (id, \res -> (x,res))
 
 
-collect_generate :: (Data on, Uniplate with, Typeable on, Typeable with) =>
+collect_generate :: (Data on, Data with, Typeable on, Typeable with) =>
                     (forall a . Typeable a => a -> Answer with) -> on -> CC with on
 collect_generate oracle item = fromC $ gfoldl combine create item
     where
