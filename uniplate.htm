@@ -56,10 +56,10 @@ h3 {
 </p>
 
 <p style="margin-left:10%;margin-right:10%;margin-bottom:25px;text-align:justify;">
-    Generic transformations and queries are often referred to as boilerplate code - they remain relatively similar as the action performed by the code changes, and can often outnumber the actual intent of the code in terms of lines. While other generic traversal schemes have shown how powerful new features can be added to compilers, and how the type system can be manipulated into accepting these operations, this document focuses on a conceptually simpler generic concept. The <i>Uniplate</i> class is introduced, which abstracts over common traversals and queries in a simple manner. A more complete document on the Uniplate class will be available from the <a href="http://www-users.cs.york.ac.uk/~ndm/uniplate/">project website</a> shortly.
+    Generic transformations and queries are often referred to as boilerplate code - they remain relatively similar as the action performed by the code changes, and can often outnumber the actual intent of the code in terms of lines. While other generic traversal schemes have shown how powerful new features can be added to compilers, and how the type system can be manipulated into accepting these operations, this document focuses on a conceptually simpler generic concept. The <i>Uniplate</i> class is introduced, which abstracts over common traversals and queries in a simple manner. A more complete document on the Uniplate class was published at the Haskell Workshop 2007, and is available from the <a href="http://www-users.cs.york.ac.uk/~ndm/uniplate/">project website</a>, along with a video presentation.
 </p>
 <p>
-    There have been several attempts at generic traversal/query methods in Haskell. One initial paper was <a href="http://doi.acm.org/10.1145/604174.604179">"Scrap your boilerplate: a practical design pattern for generic programming"</a> (<a href="http://www.cs.vu.nl/boilerplate/tldi03.pdf">free copy</a>) - which I will refer to as SYB. Another mechanism is <a href="http://doi.acm.org/10.1145/1159803.1159834">"A Pattern for Almost Compositional Functions"</a> (<a href="http://www.cs.chalmers.se/~bringert/publ/composOp/composOp.pdf">free copy</a>) - which I refer to as Compos (after the name of their class). A detailed comparison is given in the Uniplate paper (to be submitted).
+    There have been several attempts at generic traversal/query methods in Haskell. One initial paper was <a href="http://doi.acm.org/10.1145/604174.604179">"Scrap your boilerplate: a practical design pattern for generic programming"</a> (<a href="http://www.cs.vu.nl/boilerplate/tldi03.pdf">free copy</a>) - which I will refer to as SYB. Another mechanism is <a href="http://doi.acm.org/10.1145/1159803.1159834">"A Pattern for Almost Compositional Functions"</a> (<a href="http://www.cs.chalmers.se/~bringert/publ/composOp/composOp.pdf">free copy</a>) - which I refer to as Compos (after the name of their class). A detailed comparison is given in the Uniplate paper.
 </p>
 <p>
     The principle advantage of the Uniplate class over these two papers is that it requires no type system extensions, compared to rank-2 types for SYB and GADT's for Compos. The simplicity of the types required means that the user is free to concentrate on the operations within the class, without requiring thought as to the type trickery required. The Uniplate pattern has been implemented in <a href="http://haskell.org/haskellwiki/Yhc">Yhc</a> for the Core data type, and in <a href="http://www-users.cs.york.ac.uk/~ndm/catch/">Catch</a> on several data types within the program.
@@ -73,7 +73,7 @@ h3 {
     <li>Extensions to Biplate</li>
 </ol>
 <p>
-    The libraries is available through <a href="http://hackage.haskell.org/cgi-bin/hackage-scripts/package/uniplate-1.0">Hackage</a> or darcs:
+    The libraries is available through <a href="http://hackage.haskell.org/cgi-bin/hackage-scripts/package/uniplate">Hackage</a> or darcs:
 </p>
 <pre>
 darcs get --partial <a href="http://www.cs.york.ac.uk/fp/darcs/uniplate">http://www.cs.york.ac.uk/fp/darcs/uniplate</a>
@@ -184,17 +184,17 @@ optimise = transform $ \x -> case x of
 <h3>Depth of an expression</h3>
 
 <pre class="define">
-fold :: Uniplate on => (on -> [res] -> res) -> on -> res
+para :: Uniplate on => (on -> [res] -> res) -> on -> res
 </pre>
 <p>
     Now lets imagine that programmers in your language are paid by the depth of expression they produce, so lets write a function that computes the maximum depth of an expression.
 </p>
 <pre>
 depth :: Expr -> Int
-depth = fold (\_ cs -> 1 + maximum (0:cs))
+depth = para (\_ cs -> 1 + maximum (0:cs))
 </pre>
 <p>
-    This function performs a fold over the data structure. The function simply says that for each iteration, add one to the previous depth.  An evaluator for this expression language can also be modelled as a <tt>fold</tt>, see inside the example directory to see an implementation.
+    This function performs a paramorphism (a bit like a fold) over the data structure. The function simply says that for each iteration, add one to the previous depth.  An evaluator for this expression language can also be modelled as a <tt>para</tt>, see inside the example directory to see an implementation.
 </p>
 <p>
     <i>Exercise:</i> Write a function that counts the maximum depth of addition only.
