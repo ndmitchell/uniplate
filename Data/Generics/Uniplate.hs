@@ -134,7 +134,7 @@ contexts x = (x,id) : f current
 -- | The one depth version of 'contexts'
 holes :: Uniplate on => on -> [(on, on -> on)]
 holes x = [ (i, \i -> generate (pre ++ [i] ++ post))
-          | (pre,i:post) <- zip (inits xs) (tails xs) ]
+          | (pre,i:post) <- zip (inits current) (tails current) ]
     where (current,generate) = uniplate x
 
 
