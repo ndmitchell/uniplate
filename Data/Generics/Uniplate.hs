@@ -130,6 +130,14 @@ contexts x = (x,id) : f current
            | (pre,b:post) <- zip (inits xs) (tails xs)
            , (y, context) <- contexts b]
 
+
+-- | The one depth version of 'contexts'
+holes :: Uniplate on => on -> [(on, on -> on)]
+holes x = [ (i, \i -> generate (pre ++ [i] ++ post))
+          | (pre,i:post) <- zip (inits xs) (tails xs) ]
+    where (current,generate) = uniplate x
+
+
 -- | Perform a fold-like computation on each value,
 --   technically a paramorphism
 para :: Uniplate on => (on -> [r] -> r) -> on -> r
