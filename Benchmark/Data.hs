@@ -213,20 +213,24 @@ unwrapTypC x = case x of
     T_float -> CT_float
 
 
+rewrapStmC :: CTree CStm -> Stm
 rewrapStmC x = case x of
     CSDecl x y -> SDecl (rewrapTypC x) (rewrapVarC y)
     CSAss x y -> SAss (rewrapVarC x) (rewrapExpC y)
     CSBlock x -> SBlock (map rewrapStmC x)
     CSReturn x -> SReturn (rewrapExpC x)
 
+rewrapExpC :: CTree CExp -> Exp
 rewrapExpC x = case x of
     CEStm x -> EStm (rewrapStmC x)
     CEAdd x y -> EAdd (rewrapExpC x) (rewrapExpC y)
     CEVar x -> EVar (rewrapVarC x)
     CEInt x -> EInt x
 
+rewrapVarC :: CTree CVar -> Var
 rewrapVarC (CV x) = (V x)
 
+rewrapTypC :: CTree CTyp -> Typ
 rewrapTypC x = case x of
     CT_int -> T_int
     CT_float -> T_float
@@ -287,12 +291,23 @@ unwrapEC (E a b) = CE (unwrapPC a) (unwrapSC b)
 unwrapPC (P a b) = CP a b
 unwrapSC (S a) = CS a
 
+rewrapCC :: Paradise CCompany -> Company
 rewrapCC (CC xs) = C (map rewrapDC xs)
+
+rewrapDC :: Paradise CDept -> Dept
 rewrapDC (CD a b c) = D a (rewrapEC b) (map rewrapUC c)
+
+rewrapUC :: Paradise CUnit -> Unt
 rewrapUC (CPU a) = PU (rewrapEC a)
 rewrapUC (CDU a) = DU (rewrapDC a)
+
+rewrapEC :: Paradise CEmployee -> Employee
 rewrapEC (CE a b) = E (rewrapPC a) (rewrapSC b)
+
+rewrapPC :: Paradise CPerson -> Person
 rewrapPC (CP a b) = P a b
+
+rewrapSC :: Paradise CSalary -> Salary
 rewrapSC (CS a) = S a
 
 
