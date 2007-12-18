@@ -64,7 +64,7 @@ rewriteOnM biplate f x = liftM generate $ mapM (rewriteM f) current
 
 
 descendOn :: Uniplate to => BiplateType from to -> (to -> to) -> from -> from
-descendOn biplate f x = generate $ map (descend f) current
+descendOn biplate f x = generate $ map f current
     where (current, generate) = biplate x
 
 
