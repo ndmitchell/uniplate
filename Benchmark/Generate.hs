@@ -47,7 +47,7 @@ instance Arbitrary Char where
     coarbitrary = undefined
 
 instance Arbitrary Expr
-    where arbitrary = do x <- choose (0, 10)
+    where arbitrary = do x <- choose (0::Int, 10)
                          case x of
                              _ | x <= 2 -> do x1 <- arbitrary
                                               return (Val x1)
@@ -72,7 +72,7 @@ instance Arbitrary Expr
 
 
 instance Arbitrary Stm
-    where arbitrary = do x <- choose (0, 3)
+    where arbitrary = do x <- choose (0::Int, 3)
                          case x of
                              0 -> do x1 <- arbitrary
                                      x2 <- arbitrary
@@ -89,7 +89,7 @@ instance Arbitrary Stm
 
 
 instance Arbitrary Exp
-    where arbitrary = do x <- choose (0, 5)
+    where arbitrary = do x <- choose (0::Int, 5)
                          case x of
                              0 -> do x1 <- arbitrary
                                      return (EStm x1)
@@ -112,7 +112,7 @@ instance Arbitrary Var
 
 
 instance Arbitrary Typ
-    where arbitrary = do x <- choose (0, 1)
+    where arbitrary = do x <- choose (0::Int, 1)
                          case x of
                              0 -> return T_int
                              1 -> return T_float
@@ -137,7 +137,7 @@ instance Arbitrary Dept
 
 
 instance Arbitrary Unt
-    where arbitrary = do x <- choose (0, 15)
+    where arbitrary = do x <- choose (0::Int, 15)
                          case x of
                              0 -> do x1 <- arbitrary
                                      return (DU x1)
