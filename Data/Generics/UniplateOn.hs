@@ -69,7 +69,7 @@ descendOn biplate f x = generate $ map f current
 
 
 descendOnM :: (Monad m, Uniplate to) => BiplateType from to -> (to -> m to) -> from -> m from
-descendOnM biplate f x = liftM generate $ mapM (descendM f) current
+descendOnM biplate f x = liftM generate $ mapM f current
     where (current, generate) = biplate x
 
 
