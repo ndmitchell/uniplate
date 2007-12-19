@@ -72,8 +72,7 @@ children = fst . uniplate
 -- >    where f (Neg (Lit i)) = Lit (negate i)
 -- >          f x = x
 transform :: Uniplate on => (on -> on) -> on -> on
-transform f x = f $ generate $ map (transform f) current
-    where (current, generate) = uniplate x
+transform f = f . descend (transform f)
 
 
 -- | Monadic variant of 'transform'
