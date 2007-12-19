@@ -24,6 +24,11 @@ expr|stm|par|all - which section to run
 !n - which test to execute
 -}
 
+confidence = let (*) = (,) in
+             ["simplify" * 1000
+             ,"variables" * 1500
+             ]
+
 main = getArgs >>= main2
 
 main2 args = case head norm of
@@ -71,7 +76,9 @@ execTask count tsts name ops | ans == ans = do
         return results
     where
         ans = map (snd $ head ops) tests
-        tests = concat $ replicate count tsts
+        tests = concat $ replicate count2 tsts
+        count2 = if count /= 0 then count else
+                 fromMaybe (error $ "No number specified for: " ++ name) $ lookup name confidence
 
         f (name, action) = do
             start <- getCPUTime
