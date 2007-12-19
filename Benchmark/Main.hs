@@ -6,6 +6,7 @@ import System.CPUTime
 import Control.Monad
 import Data.List
 import Data.Char
+import Data.Maybe
 import System.IO
 import qualified Data.Map as Map
 
@@ -60,18 +61,15 @@ exec name count only tsts ops = do
         f xs = (fst3 (head xs), Map.toList $ Map.fromList [(b,c) | (a,b,c) <- xs])
 
 
-execTask :: Int -> [a] -> String -> [(String,a -> String)] -> IO ()
+execTask :: Int -> [a] -> String -> [(String,a -> String)] -> IO Result
 execTask count tsts name ops | ans == ans = do
         putStrLn $ "== " ++ name ++ " =="
         res <- mapM f ops
         hPutChar stderr '\n'
-        showTable $ sortBy (compare `on` snd) $ zip (map fst ops) res
+        let results = zip (map fst ops) res
+        putStr $ showResults results
+        return results
     where
-        showTable xs = mapM_ (putStrLn . g) xs
-            where
-                g (a,b) = a ++ replicate (20 - length a) ' ' ++ "\t" ++
-                          replicate (8 - length (show b)) ' ' ++ show b
-
         ans = map (snd $ head ops) tests
         tests = concat $ replicate count tsts
 
@@ -80,4 +78,34 @@ execTask count tsts name ops | ans == ans = do
             when (ans /= map action tests) $ putStrLn $ "FAILED TO MATCH in " ++ name
             end <- getCPUTime
             hPutChar stderr '.'
-            return $ (end - start) `div` 1000000000
+            return $ (end - start) `div` 1000000000 -- fake resolution
+
+
+
+-- a mapping from variants to times
+type Result = [(String,Integer)]
+
+showResults xs = unlines $ (++) rawS $ map f $ filter ((/=) "raw" . fst) $
+                 sortBy (compare `on` snd) xs
+        where
+            raw = fromMaybe 1 $ lookup "raw" xs
+            rawS = ["Low confidence: raw = " ++ show raw | raw < 250]
+
+            f (name,val) = name ++ pad 10 name ++ "\t" ++ pad 8 v ++ v
+                where
+                    pad n x = replicate (n - length x) ' '
+                    v = dp2 $ (val * 100) `div` raw 
+
+
+dp2 :: Integer -> String
+dp2 x | x < 0 = error "dp2 on negative number"
+      | x < 100 = "0." ++ tail (show $ 100+x)
+      | otherwise = reverse b ++ "." ++ reverse a
+            where (a,b) = splitAt 2 $ reverse $ show x
+
+
+sumResults :: [Result] -> Result
+sumResults xs@(x:_) = concatMap (f . fst) x
+    where
+        f name = [(name, sum $ map fromJust found) | all isJust found]
+            where found = map (lookup name) xs
