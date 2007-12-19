@@ -27,6 +27,13 @@ expr|stm|par|all - which section to run
 confidence = let (*) = (,) in
              ["simplify" * 1000
              ,"variables" * 1500
+             ,"zeros" * 5000
+             ,"constFold" * 100
+             ,"rename" * 100
+             ,"symbols" * 300
+             ,"bill" * 1100
+             ,"increase" * 70
+             ,"incrone" * 70
              ]
 
 main = getArgs >>= main2
@@ -58,8 +65,10 @@ fst3 (a,b,c) = a
 exec :: String -> Int -> Int -> [a] -> [(String,String,a -> String)] -> IO ()
 exec name count only tsts ops = do
         putStrLn $ "= " ++ map toUpper name ++ " ="
-        mapM_ (uncurry $ execTask count tsts) (map f task2)
+        res <- mapM (uncurry $ execTask count tsts) (map f task2)
         putStrLn ""
+        putStrLn "== SUMMARY =="
+        putStr $ showResult $ sumResults res
     where
         task2 = if only == -1 then tasks else [tasks !! only]
         tasks = groupOn fst3 ops
@@ -71,8 +80,8 @@ execTask count tsts name ops | ans == ans = do
         putStrLn $ "== " ++ name ++ " =="
         res <- mapM f ops
         hPutChar stderr '\n'
-        let results = zip (map fst ops) res
-        putStr $ showResults results
+        let results = normResult $ zip (map fst ops) res
+        putStr $ showResult results
         return results
     where
         ans = map (snd $ head ops) tests
@@ -92,16 +101,25 @@ execTask count tsts name ops | ans == ans = do
 -- a mapping from variants to times
 type Result = [(String,Integer)]
 
-showResults xs = unlines $ (++) rawS $ map f $ filter ((/=) "raw" . fst) $
-                 sortBy (compare `on` snd) xs
+normResult :: Result -> Result
+normResult xs = [("raw",raw) | raw < 250] ++ map f (filter ((/=) "raw" . fst) xs)
+    where
+        raw = fromMaybe 1 $ lookup "raw" xs
+        f (name,val) = (name, (val * 100) `div` raw)
+
+
+showResult :: Result -> String
+showResult xs = unlines $ (++) raw $ map f $ filter ((/=) "raw" . fst) $
+                sortBy (compare `on` snd) xs
         where
-            raw = fromMaybe 1 $ lookup "raw" xs
-            rawS = ["Low confidence: raw = " ++ show raw | raw < 250]
+            raw = case lookup "raw" xs of
+                      Nothing -> []
+                      Just x -> ["Low confidence: raw = " ++ show x]
 
             f (name,val) = name ++ pad 10 name ++ "\t" ++ pad 8 v ++ v
-                where
-                    pad n x = replicate (n - length x) ' '
-                    v = dp2 $ (val * 100) `div` raw 
+                where v = dp2 val
+
+            pad n x = replicate (n - length x) ' '
 
 
 dp2 :: Integer -> String
@@ -114,5 +132,6 @@ dp2 x | x < 0 = error "dp2 on negative number"
 sumResults :: [Result] -> Result
 sumResults xs@(x:_) = concatMap (f . fst) x
     where
-        f name = [(name, sum $ map fromJust found) | all isJust found]
+        n = toInteger $ length xs
+        f name = [(name, sum (map fromJust found) `div` n) | all isJust found]
             where found = map (lookup name) xs
