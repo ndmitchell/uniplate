@@ -35,20 +35,15 @@ import Data.Maybe
 
 
 instance (Typeable a, Typeable b, Uniplate b, PlateAll a b) => Biplate a b where
-    biplate x = liftType $ plateMore x
+    biplate = plateMore
 
 
 -- | This function is used to write a 'Uniplate' instance from a 'PlateAll' one
 uniplateAll :: PlateAll a b => a -> (Str b, Str b -> a)
-uniplateAll a = liftType $ plateAll a
-
+uniplateAll = plateAll
 
 
 type Type from to = (Str to, Str to -> from)
-
-
-liftType :: Type from to -> (Str to, Str to -> from)
-liftType = id
 
 
 plateMore :: (Typeable from, Typeable to, PlateAll from to) => from -> Type from to
