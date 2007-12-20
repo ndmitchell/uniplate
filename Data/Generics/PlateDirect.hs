@@ -67,7 +67,7 @@ plate f = (Zero, \_ -> f)
 -- | The field to the right may contain the target.
 (|+) :: Biplate item to => Type (item -> from) to -> item -> Type from to
 (|+) (xs,x_) y = case biplate y of
-                    (ys,y_) -> (Two xs ys, \(Two xs ys) -> x_ xs (y_ ys))
+                      (ys,y_) -> (Two xs ys, \(Two xs ys) -> x_ xs (y_ ys))
 
 
 -- | The field to the right /does not/ contain the target.
@@ -83,7 +83,7 @@ plate f = (Zero, \_ -> f)
 -- | The field to the right is a list of types which may contain the target
 (||+) :: Biplate item to => Type ([item] -> from) to -> [item] -> Type from to
 (||+) (xs,x_) y = case plateListDiff y of
-                        (ys,y_) -> (Two xs ys, \(Two xs ys) -> x_ xs (y_ ys))
+                       (ys,y_) -> (Two xs ys, \(Two xs ys) -> x_ xs (y_ ys))
     where
         plateListDiff [] = plate []
         plateListDiff (x:xs) = plate (:) |+ x ||+ xs
