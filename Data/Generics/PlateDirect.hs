@@ -1,4 +1,4 @@
-{-# LANGUAGE MultiParamTypeClasses, UndecidableInstances, FlexibleInstances #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 
 {- |
     This module supplies a method for writing 'Biplate' instances more easily.
