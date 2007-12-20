@@ -77,8 +77,9 @@ plate f = (Zero, \_ -> f)
 
 -- | the field to the right may contain the target.
 (|+) :: (Typeable item, Typeable to, PlateAll item to) => Type (item -> from) to -> item -> Type from to
-(|+) (a,b) item = (Two a c,\(Two a' c') -> b a' (d c'))
-    where (c,d) = plateMore item
+(|+) (a,b) item = case plateMore item of
+                        (c,d) -> (Two a c,\(Two a' c') -> b a' (d c'))
+--    where (c,d) = plateMore item
 
 -- | The field to the right /does not/ contain the target.
 -- This can be used as either an optimisation, or more commonly for excluding
