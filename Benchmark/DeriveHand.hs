@@ -4,6 +4,7 @@ module DeriveHand where
 
 import Data
 import Data.Generics.Biplate
+import Data.Generics.Str
 
 
 instance Uniplate NExpr where

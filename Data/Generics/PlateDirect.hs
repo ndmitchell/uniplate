@@ -45,6 +45,7 @@ module Data.Generics.PlateDirect(
 
 import Data.Generics.Biplate
 import Data.Generics.PlateInternal
+import Data.Generics.Str
 import Data.Maybe
 
 

@@ -14,10 +14,12 @@ module Data.Generics.UniplateOn(
     module Data.Generics.UniplateOn
     ) where
 
-import Data.Generics.Uniplate
 import Control.Monad(liftM)
 import Data.List(inits,tails)
+
 import Data.Generics.PlateInternal
+import Data.Generics.Str
+import Data.Generics.Uniplate
 
 -- * Types
 
