@@ -60,31 +60,31 @@ plate f = (Zero, \_ -> f)
 
 -- | The field to the right is the target.
 (|*) :: Type (to -> from) to -> to -> Type from to
-(|*) (a,b) item = (Two a (One item),\(Two a' (One item')) -> b a' item')
+(|*) (xs,x_) y = (Two xs (One y),\(Two xs (One y)) -> x_ xs y)
 
 
 
 -- | The field to the right may contain the target.
 (|+) :: Biplate item to => Type (item -> from) to -> item -> Type from to
-(|+) (a,b) item = (Two a c, \(Two a' c') -> b a' (d c'))
-    where (c,d) = biplate item
+(|+) (xs,x_) y = (Two xs ys, \(Two xs ys) -> x_ xs (y_ ys))
+    where (ys,y_) = biplate y
 
 
 -- | The field to the right /does not/ contain the target.
 (|-) :: Type (item -> from) to -> item -> Type from to
-(|-) (a,b) item = (a,\xs -> b xs item)
+(|-) (xs,x_) y = (xs,\xs -> x_ xs y)
 
 
 -- | The field to the right is a list of the type of the target
 (||*) :: Type ([to] -> from) to -> [to] -> Type from to
-(||*) (a,b) item = (Two a (listStr item), \(Two a' c') -> b a' (strList c'))
+(||*) (xs,x_) y = (Two xs (listStr y), \(Two xs ys) -> x_ xs (strList ys))
 
 
 -- | The field to the right is a list of types which may contain the target
 (||+) :: Biplate item to => Type ([item] -> from) to -> [item] -> Type from to
-(||+) (a,b) item = (Two a c,\(Two a' c') -> b a' (d c'))
+(||+) (xs,x_) y = (Two xs ys, \(Two xs ys) -> x_ xs (y_ ys))
     where
-        (c,d) = plateListDiff item
+        (ys,y_) = plateListDiff y
 
         plateListDiff [] = plate []
         plateListDiff (x:xs) = plate (:) |+ x ||+ xs
