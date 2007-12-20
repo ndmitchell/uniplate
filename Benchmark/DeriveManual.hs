@@ -6,8 +6,8 @@ import Data
 import Data.Generics.PlateDirect
 
 
-instance PlateOne NExpr where
-    plateOne x =
+instance Uniplate NExpr where
+    uniplate x =
         case x of
             NNeg  a    -> plate NNeg |* a
             NAdd  a b  -> plate NAdd |* a |* b
@@ -17,53 +17,53 @@ instance PlateOne NExpr where
             _          -> plate x
 
 
-instance PlateAll NStm NVar where
-    plateAll x =
+instance Biplate NStm NVar where
+    biplate x =
         case x of
             NSDecl a b -> plate (NSDecl a) |* b
             NSAss a b -> plate NSAss |* a |+ b
             NSBlock x -> plate NSBlock ||+ x
             NSReturn x -> plate NSReturn |+ x
 
-instance PlateAll NStm NStm where
-    plateAll = plateSelf
+instance Biplate NStm NStm where
+    biplate = plateSelf
 
-instance PlateOne NVar where
-    plateOne x = plate x
+instance Uniplate NVar where
+    uniplate x = plate x
 
-instance PlateAll NExp NVar where
-    plateAll x =
+instance Biplate NExp NVar where
+    biplate x =
         case x of
             NEStm x -> plate NEStm |+ x
             NEAdd x y -> plate NEAdd |+ x |+ y
             NEVar x -> plate NEVar |* x
             _ -> plate x
 
-instance PlateOne NStm where
-    plateOne x =
+instance Uniplate NStm where
+    uniplate x =
         case x of
             NSAss x y -> plate (NSAss x) |+ y
             NSBlock x -> plate NSBlock ||* x
             NSReturn x -> plate NSReturn |+ x
             _ -> plate x
 
-instance PlateAll NStm NExp where
-    plateAll x =
+instance Biplate NStm NExp where
+    biplate x =
         case x of
             NSAss x y -> plate (NSAss x) |* y
             NSBlock x -> plate NSBlock ||+ x
             NSReturn x -> plate NSReturn |* x
             _ -> plate x
 
-instance PlateAll NExp NStm where
-    plateAll x =
+instance Biplate NExp NStm where
+    biplate x =
         case x of
             NEStm x -> plate NEStm |* x
             NEAdd x y -> plate NEAdd |+ x |+ y
             _ -> plate x
 
-instance PlateOne NExp where
-    plateOne x =
+instance Uniplate NExp where
+    uniplate x =
         case x of
             NEStm x -> plate NEStm |+ x
             NEAdd x y -> plate NEAdd |* x |* y
@@ -79,28 +79,28 @@ data NPerson = NP String String deriving (Data,Typeable)
 data NSalary = NS Integer deriving (Data,Typeable)
 -}
 
-instance PlateAll NCompany NSalary where
-    plateAll (NC x) = plate NC ||+ x
+instance Biplate NCompany NSalary where
+    biplate (NC x) = plate NC ||+ x
 
-instance PlateAll NDept NSalary where
-    plateAll (ND a b c) = plate (ND a) |+ b ||+ c
+instance Biplate NDept NSalary where
+    biplate (ND a b c) = plate (ND a) |+ b ||+ c
 
-instance PlateAll NUnt NSalary where
-    plateAll (NPU a) = plate NPU |+ a
-    plateAll (NDU a) = plate NDU |+ a
+instance Biplate NUnt NSalary where
+    biplate (NPU a) = plate NPU |+ a
+    biplate (NDU a) = plate NDU |+ a
 
-instance PlateAll NUnt NDept where
-    plateAll (NDU a) = plate NDU |* a
-    plateAll x = plate x
+instance Biplate NUnt NDept where
+    biplate (NDU a) = plate NDU |* a
+    biplate x = plate x
 
-instance PlateAll NEmployee NSalary where
-    plateAll (NE a b) = plate (NE a) |* b
+instance Biplate NEmployee NSalary where
+    biplate (NE a b) = plate (NE a) |* b
 
-instance PlateOne NSalary where
-    plateOne x = plate x
+instance Uniplate NSalary where
+    uniplate x = plate x
 
-instance PlateOne NDept where
-    plateOne (ND a b c) = plate (ND a b) ||+ c
+instance Uniplate NDept where
+    uniplate (ND a b c) = plate (ND a b) ||+ c
 
-instance PlateAll NCompany NDept where
-    plateAll (NC x) = plate NC ||* x
+instance Biplate NCompany NDept where
+    biplate (NC x) = plate NC ||* x
