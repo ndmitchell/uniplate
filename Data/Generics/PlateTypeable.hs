@@ -67,20 +67,19 @@ class PlateAll from to where
 --
 -- > plate Ctor |- x == plate (Ctor x)
 plate :: from -> Type from to
-plate f = (Zero, \_ -> f)
+plate x = (Zero, \_ -> x)
 
 
 -- | the field to the right may contain the target.
 (|+) :: (Typeable item, Typeable to, PlateAll item to) => Type (item -> from) to -> item -> Type from to
-(|+) (a,b) item = case plateMore item of
-                        (c,d) -> (Two a c,\(Two a' c') -> b a' (d c'))
---    where (c,d) = plateMore item
+(|+) (xs,x_) y = case plateMore y of
+                      (ys,y_) -> (Two xs ys,\(Two xs ys) -> x_ xs (y_ ys))
 
 -- | The field to the right /does not/ contain the target.
 -- This can be used as either an optimisation, or more commonly for excluding
 -- primitives such as Int.
 (|-) :: Type (item -> from) to -> item -> Type from to
-(|-) (collect,generate) item = (collect,\xs -> generate xs item)
+(|-) (xs,x_) y = (xs,\xs -> x_ xs y)
 
 
 -- * Instances
