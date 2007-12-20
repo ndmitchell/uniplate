@@ -113,7 +113,7 @@ type Result = [(String,Integer)]
 normResult :: Result -> Result
 normResult xs = [("raw",raw) | raw < 250] ++ map f (filter ((/=) "raw" . fst) xs)
     where
-        raw = fromMaybe 1 $ lookup "raw" xs
+        raw = max (fromMaybe 1 $ lookup "raw" xs) 1
         f (name,val) = (name, (val * 100) `div` raw)
 
 
