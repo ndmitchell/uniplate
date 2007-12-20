@@ -95,7 +95,12 @@ execTask count tsts name ops | ans == ans = do
 
         f (name, action) = do
             start <- getCPUTime
-            when (ans /= map action tests) $ putStrLn $ "FAILED TO MATCH in " ++ name
+            when (ans /= map action tests) $ do
+                let (skip,(want,got):_) = span (\(a,b) -> a == b) $ zip ans (map action tests)
+                putStrLn $ "FAILED TO MATCH in " ++ name ++ "\n" ++
+                           "After: " ++ show (length skip) ++ "\n" ++
+                           "Wanted: " ++ want ++ "\n" ++
+                           "Got:    " ++ got ++ "\n"
             end <- getCPUTime
             hPutChar stderr '.'
             return $ (end - start) `div` 1000000000 -- fake resolution
