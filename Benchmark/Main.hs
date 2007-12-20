@@ -42,10 +42,10 @@ main2 args = case head norm of
     "gen" -> do generateExpr 100 >>= print
                 generateStm  100 >>= print
                 generatePar  100 >>= print
-    "expr" -> expr
-    "stm" -> stm
-    "par" -> par
-    "all" -> expr >> stm >> par
+    "expr" -> go [expr]
+    "stm" -> go [stm]
+    "par" -> go [par]
+    "all" -> go [expr,stm,par]
     where
         norm = filter (isAlpha . head) args
         count = head $ [read n | '#':n <- args] ++ [1]
@@ -55,6 +55,11 @@ main2 args = case head norm of
         stm  = exec "stm"  count pick testsStm  tasksStm
         par  = exec "par"  count pick testsPar  tasksPar
 
+        go xs = do
+            res <- sequence xs
+            putStrLn "== SUMMARY =="
+            putStr $ showResult $ sumResults $ concat res
+
 
 groupOn f xs = groupBy ((==) `on` f) $ sortBy (compare `on` f) xs
 
@@ -62,13 +67,12 @@ on g f x y = g (f x) (f y)
 
 fst3 (a,b,c) = a
 
-exec :: String -> Int -> Int -> [a] -> [(String,String,a -> String)] -> IO ()
+exec :: String -> Int -> Int -> [a] -> [(String,String,a -> String)] -> IO [Result]
 exec name count only tsts ops = do
         putStrLn $ "= " ++ map toUpper name ++ " ="
         res <- mapM (uncurry $ execTask count tsts) (map f task2)
         putStrLn ""
-        putStrLn "== SUMMARY =="
-        putStr $ showResult $ sumResults res
+        return res
     where
         task2 = if only == -1 then tasks else [tasks !! only]
         tasks = groupOn fst3 ops
