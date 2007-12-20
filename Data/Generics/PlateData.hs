@@ -136,26 +136,3 @@ collect_generate oracle item = fromC $ gfoldl combine create item
 
         -- forall g . g -> C with g
         create x = C (Zero, \_ -> x)
-
-
-
-
-
-{-
-OLD VERSION USING TWO SEPARATE TRAVERSALS
-
-collect_generate :: (Data on, Uniplate with, Typeable on, Typeable with) => on -> ([with],[with] -> on)
-collect_generate item = (collect, generate)
-    where
-        collect = concat $ gmapQ getChildrenEx item
-
-        generate xs = evalState (gmapM f item) xs
-            where
-                f x = do
-                        ys <- get
-                        let (as,bs) = splitAt (length col) ys
-                        put bs
-                        return $ gen as
-                    where
-                        (col,gen) = replaceChildrenEx x
--}
