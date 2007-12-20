@@ -38,24 +38,24 @@ instance (Typeable a, Typeable b, Uniplate b, PlateAll a b) => Biplate a b where
 
 
 -- | This function is used to write a 'Uniplate' instance from a 'PlateAll' one
-uniplateAll :: PlateAll a b => a -> ([b],[b] -> a)
+uniplateAll :: PlateAll a b => a -> (Str b, Str b -> a)
 uniplateAll a = liftType $ plateAll a
 
 
 
-type Type from to = ([to] -> [to], [to] -> (from,[to]))
+type Type from to = (Str to, Str to -> from)
 
 
-liftType :: Type from to -> ([to], [to] -> from)
-liftType (a,b) = (a [], fst . b)
+liftType :: Type from to -> (Str to, Str to -> from)
+liftType = id
 
 
 plateMore :: (Typeable from, Typeable to, PlateAll from to) => from -> Type from to
 plateMore x = res
     where
-        res = case asTypeOf (cast x) (Just $ head $ fst res []) of
+        res = case asTypeOf (cast x) (Just $ strType $ fst res) of
                   Nothing -> plateAll x
-                  Just y -> ((y:), \(y:ys) -> (unsafeCast y, ys))
+                  Just y -> (One y, \(One y) -> unsafeCast y)
 
 
 -- | This class represents going from the container type to the target.
@@ -71,25 +71,19 @@ class PlateAll from to where
 --
 -- > plate Ctor |- x == plate (Ctor x)
 plate :: from -> Type from to
-plate f = (id, \xs -> (f,xs))
+plate f = (Zero, \_ -> f)
 
 
 -- | the field to the right may contain the target.
 (|+) :: (Typeable item, Typeable to, PlateAll item to) => Type (item -> from) to -> item -> Type from to
-(|+) f item = (collect2,generate2)
-    where
-        (collectL,generateL) = f
-        (collectR,generateR) = plateMore item
-        collect2 = collectL . collectR
-        generate2 xs = case generateL xs of
-                        (a,xs) -> case generateR xs of
-                         (b,xs) -> (a b, xs)
+(|+) (a,b) item = (Two a c,\(Two a' c') -> b a' (d c'))
+    where (c,d) = plateMore item
 
 -- | The field to the right /does not/ contain the target.
 -- This can be used as either an optimisation, or more commonly for excluding
 -- primitives such as Int.
 (|-) :: Type (item -> from) to -> item -> Type from to
-(|-) (collect,generate) item = (collect,\xs -> case generate xs of (r,xs) -> (r item, xs))
+(|-) (collect,generate) item = (collect,\xs -> generate xs item)
 
 
 -- * Instances

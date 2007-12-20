@@ -17,6 +17,7 @@ module Data.Generics.UniplateOn(
 import Data.Generics.Uniplate
 import Control.Monad(liftM)
 import Data.List(inits,tails)
+import Data.Generics.PlateInternal
 
 -- * Types
 
@@ -24,7 +25,7 @@ import Data.List(inits,tails)
 --
 -- If @from == to@ then this function should return the root as the single
 -- child.
-type BiplateType from to = from -> ([to], [to] -> from)
+type BiplateType from to = from -> (Str to, Str to -> from)
 
 
 -- * Operations
@@ -32,47 +33,58 @@ type BiplateType from to = from -> ([to], [to] -> from)
 -- ** Queries
 
 universeOn :: Uniplate to => BiplateType from to -> from -> [to]
-universeOn biplate x = concatMap universe $ fst $ biplate x
+universeOn biplate x = builder f
+    where
+        f cons nil = g cons nil (fst $ biplate x) nil
+        g cons nil Zero res = res
+        g cons nil (One x) res = x `cons` g cons nil (fst $ uniplate x) res
+        g cons nil (Two x y) res = g cons nil x (g cons nil y res)
 
 
 -- | Return the children of a type. If @to == from@ then it returns the
 -- original element (in constract to 'children'
 childrenOn :: Uniplate to => BiplateType from to -> from -> [to]
-childrenOn biplate x = fst $ biplate x
+childrenOn biplate x = builder f
+    where
+        f cons nil = g cons nil (fst $ biplate x) nil
+        g cons nil Zero res = res
+        g cons nil (One x) res = x `cons` res
+        g cons nil (Two x y) res = g cons nil x (g cons nil y res)
 
 
 -- ** Transformations
 
 transformOn :: Uniplate to => BiplateType from to -> (to -> to) -> from -> from
-transformOn biplate f x = generate $ map (transform f) current
+transformOn biplate f x = generate $ pam (transform f) current
     where (current, generate) = biplate x
 
 
 transformOnM :: (Monad m, Uniplate to) => BiplateType from to -> (to -> m to) -> from -> m from
-transformOnM biplate f x = liftM generate $ mapM (transformM f) current
+transformOnM biplate f x = liftM generate $ pamM (transformM f) current
     where (current, generate) = biplate x
 
 
 rewriteOn :: Uniplate to => BiplateType from to -> (to -> Maybe to) -> from -> from
-rewriteOn biplate f x = generate $ map (rewrite f) current
+rewriteOn biplate f x = generate $ pam (rewrite f) current
     where (current, generate) = biplate x
 
 
 rewriteOnM :: (Monad m, Uniplate to) => BiplateType from to -> (to -> m (Maybe to)) -> from -> m from
-rewriteOnM biplate f x = liftM generate $ mapM (rewriteM f) current
+rewriteOnM biplate f x = liftM generate $ pamM (rewriteM f) current
     where (current, generate) = biplate x
 
 
 descendOn :: Uniplate to => BiplateType from to -> (to -> to) -> from -> from
-descendOn biplate f x = generate $ map f current
+descendOn biplate f x = generate $ pam f current
     where (current, generate) = biplate x
 
 
 descendOnM :: (Monad m, Uniplate to) => BiplateType from to -> (to -> m to) -> from -> m from
-descendOnM biplate f x = liftM generate $ mapM f current
+descendOnM biplate f x = liftM generate $ pamM f current
     where (current, generate) = biplate x
 
 
+{-
 -- ** Other
 
 contextsOn :: Uniplate to => BiplateType from to -> from -> [(to, to -> from)]
@@ -98,3 +110,4 @@ uniplateOnList f (x:xs) =
         (a , b ) = f x
         (as, bs) = uniplateOnList f xs
 
+-}

@@ -18,13 +18,41 @@ import Data.List(inits,tails)
 import Data.Generics.PlateInternal
 
 
+-- * The Data Type
+
+data Str a = Zero | One a | Two (Str a) (Str a)
+             deriving Show
+
+
+strType :: Str a -> a
+strType = undefined
+
+strList x = builder (f x)
+    where
+        f (Two (One x) xs) cons nil = x `cons` f xs cons nil
+        f Zero cons nil = nil
+
+listStr (x:xs) = Two (One x) (listStr xs)
+listStr [] = Zero
+
+
+
+pam f Zero = Zero
+pam f (One x) = One (f x)
+pam f (Two x y) = Two (pam f x) (pam f y)
+
+pamM f Zero = return Zero
+pamM f (One x) = do x <- f x; return (One x)
+pamM f (Two x y) = do x <- pamM f x; y <- pamM f y; return (Two x y)
+
+
 -- * The Class
 
 -- | The type of replacing all the children of a node
 --
 --   Taking a value, the function should return all the immediate children
 --   of the same type, and a function to replace them.
-type UniplateType on = on -> ([on], [on] -> on)
+type UniplateType on = on -> (Str on, Str on -> on)
 
 -- | The standard Uniplate class, all operations require this
 class Uniplate on where
@@ -33,7 +61,7 @@ class Uniplate on where
     -- > uniplate (Add (Val 1) (Neg (Val 2))) = ([Val 1, Neg (Val 2)], \[a,b] -> Add a b)
     -- > uniplate (Val 1)                     = ([]                  , \[]    -> Val 1  )
     uniplate :: UniplateType on
-    
+
 -- * The Operations
 
 -- ** Queries
@@ -47,18 +75,25 @@ class Uniplate on where
 --
 -- > vals x = [Val i | i <- universe x]
 universe :: Uniplate on => on -> [on]
-universe x = builder (f x)
+universe x = builder f
     where
-        f :: Uniplate on => on -> (on -> res -> res) -> res -> res
-        f x cons nil = x `cons` concatCont (map (\x -> f x cons) $ children x) nil
+        f cons nil = g cons nil (One x) nil
+        g cons nil Zero res = res
+        g cons nil (One x) res = x `cons` g cons nil (fst $ uniplate x) res
+        g cons nil (Two x y) res = g cons nil x (g cons nil y res)
+
 
 
 -- | Get the direct children of a node. Usually using 'universe' is more appropriate.
 --
 -- @children = fst . 'uniplate'@
 children :: Uniplate on => on -> [on]
-children = fst . uniplate
-
+children x = builder f
+    where
+        f cons nil = g cons nil (fst $ uniplate x) nil
+        g cons nil Zero res = res
+        g cons nil (One x) res = x `cons` res
+        g cons nil (Two x y) res = g cons nil x (g cons nil y res)
 
 
 -- ** Transformations
@@ -103,15 +138,16 @@ rewriteM f = transformM g
 -- This operation allows additional information to be passed downwards, and can be
 -- used to provide a top-down transformation.
 descend :: Uniplate on => (on -> on) -> on -> on
-descend f x = generate $ map f current
+descend f x = generate $ pam f current
     where (current, generate) = uniplate x
 
 
 -- | Monadic variant of 'descend'    
 descendM :: (Monad m, Uniplate on) => (on -> m on) -> on -> m on
-descendM f x = liftM generate $ mapM f current
+descendM f x = liftM generate $ pamM f current
     where (current, generate) = uniplate x
 
+{-
 
 
 -- ** Others
@@ -141,3 +177,4 @@ holes x = [ (i, \i -> generate (pre ++ [i] ++ post))
 para :: Uniplate on => (on -> [r] -> r) -> on -> r
 para op x = op x $ map (para op) $ children x
 
+-}

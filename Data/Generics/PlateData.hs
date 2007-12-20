@@ -108,11 +108,11 @@ instance (Data a, Data b, Uniplate b, Typeable a, Typeable b) => Biplate a b whe
 
 newtype C x a = C {fromC :: CC x a}
 
-type CC x a = ([x] -> [x], [x] -> (a, [x]))
+type CC x a = (Str x, Str x -> a)
 
 
-fromCC :: CC x a -> ([x], [x] -> a)
-fromCC (a, b) = (a [], \i -> fst (b i))
+fromCC :: CC x a -> (Str x, Str x -> a)
+fromCC = id
 
 
 collect_generate_self :: (Data on, Data with, Typeable on, Typeable with) =>
@@ -120,9 +120,9 @@ collect_generate_self :: (Data on, Data with, Typeable on, Typeable with) =>
 collect_generate_self oracle x = res
         where
             res = case oracle x of
-                       Hit y -> ((y:), \(x:xs) -> (unsafeCast x, xs))
+                       Hit y -> (One y, \(One x) -> unsafeCast x)
                        Follow -> collect_generate oracle x
-                       Miss -> (id, \res -> (x,res))
+                       Miss -> (Zero, \_ -> x)
 
 
 collect_generate :: (Data on, Data with, Typeable on, Typeable with) =>
@@ -131,14 +131,10 @@ collect_generate oracle item = fromC $ gfoldl combine create item
     where
         -- forall a b . Data a => C with (a -> b) -> a -> C with b
         combine (C (c,g)) x = case collect_generate_self oracle x of
-                                  (c2, g2) -> C (c . c2, regen g2)
-            where
-                regen g2 i = case g i of
-                            (x2,i2) -> case g2 i2 of
-                                (y2,i3) -> (x2 y2, i3)
-        
+                                  (c2, g2) -> C (Two c c2, \(Two c' c2') -> g c' (g2 c2'))
+
         -- forall g . g -> C with g
-        create x = C (id, \res -> (x, res))
+        create x = C (Zero, \_ -> x)
 
 
 

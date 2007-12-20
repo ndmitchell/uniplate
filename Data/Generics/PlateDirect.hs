@@ -55,11 +55,11 @@ instance PlateOne a => Uniplate a where
     uniplate x = liftType $ plateOne x
 
 
-type Type from to = ([to] -> [to], [to] -> (from,[to]))
+type Type from to = (Str to, Str to -> from)
 
 
-liftType :: Type from to -> ([to], [to] -> from)
-liftType (a,b) = (a [], fst . b)
+liftType :: Type from to -> (Str to, Str to -> from)
+liftType = id
 
 
 -- | This class represents going from the container type to the target.
@@ -80,57 +80,39 @@ class PlateOne to where
 --
 -- > plate Ctor |- x == plate (Ctor x)
 plate :: from -> Type from to
-plate f = (id, \xs -> (f,xs))
+plate f = (Zero, \_ -> f)
 
 
 -- | The field to the right is the target.
 (|*) :: Type (to -> from) to -> to -> Type from to
-(|*) f item = (collect2,generate2)
-    where
-        (collectL,generateL) = f
-        collect2 = collectL . (item:)
-        generate2 xs = case generateL xs of
-                        (a,(b:xs)) -> (a b, xs)
+(|*) f item = (Two a (One item),\(Two a' (One item')) -> b a' item')
+    where (a,b) = f
+
 
 
 -- | The field to the right may contain the target.
 (|+) :: PlateAll item to => Type (item -> from) to -> item -> Type from to
-(|+) f item = (collect2,generate2)
+(|+) f item = (Two a c, \(Two a' c') -> b a' (d c'))
     where
-        (collectL,generateL) = f
-        (collectR,generateR) = plateAll item
-        collect2 = collectL . collectR
-        generate2 xs = case generateL xs of
-                        (a,xs) -> case generateR xs of
-                         (b,xs) -> (a b, xs)
+        (a,b) = f
+        (c,d) = plateAll item
 
 
 -- | The field to the right /does not/ contain the target.
 (|-) :: Type (item -> from) to -> item -> Type from to
-(|-) (collect,generate) item = (collect,\xs -> case generate xs of (r,xs) -> (r item, xs))
+(|-) (a,b) item = (a,\xs -> b xs item)
 
 
 -- | The field to the right is a list of the type of the target
 (||*) :: Type ([to] -> from) to -> [to] -> Type from to
-(||*) f item = (collect2,generate2)
-    where
-        (collectL,generateL) = f
-        collect2 = collectL . (item++)
-        generate2 xs = case generateL xs of
-                        (a,xs) -> let (x1,x2) = splitAt (length item) xs
-                                  in (a x1,x2)
+(||*) (a,b) item = (Two a (listStr item), \(Two a' c') -> b a' (strList c'))
 
 
 -- | The field to the right is a list of types which may contain the target
 (||+) :: PlateAll item to => Type ([item] -> from) to -> [item] -> Type from to
-(||+) f item = (collect2,generate2)
+(||+) (a,b) item = (Two a c,\(Two a' c') -> b a' (d c'))
     where
-        (collectL,generateL) = f
-        (collectR,generateR) = plateListDiff item
-        collect2 = collectL . collectR
-        generate2 xs = case generateL xs of
-                        (a,xs) -> case generateR xs of
-                         (b,xs) -> (a b, xs)
+        (c,d) = plateListDiff item
 
         plateListDiff [] = plate []
         plateListDiff (x:xs) = plate (:) |+ x ||+ xs
@@ -138,4 +120,4 @@ plate f = (id, \xs -> (f,xs))
 
 -- | Used for 'PlayAll' definitions where both types are the same.
 plateSelf :: to -> Type to to
-plateSelf x = ((x:), \(x:xs) -> (x,xs))
+plateSelf x = (One x, \(One x) -> x)

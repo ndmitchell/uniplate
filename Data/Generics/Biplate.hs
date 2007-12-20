@@ -71,8 +71,9 @@ descendBi = descendOn biplate
 descendBiM :: (Monad m, Biplate from to) => (to -> m to) -> from -> m from
 descendBiM = descendOnM biplate
 
-
+{-
 -- ** Others
 
 contextsBi:: Biplate from to => from -> [(to, to -> from)]
 contextsBi = contextsOn biplate
+-}
