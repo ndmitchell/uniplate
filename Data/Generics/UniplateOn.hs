@@ -16,6 +16,8 @@ module Data.Generics.UniplateOn(
 
 import Control.Monad(liftM)
 import Data.List(inits,tails)
+import Data.Traversable
+import Prelude hiding (mapM)
 
 import Data.Generics.PlateInternal
 import Data.Generics.Str
@@ -57,32 +59,32 @@ childrenOn biplate x = builder f
 -- ** Transformations
 
 transformOn :: Uniplate to => BiplateType from to -> (to -> to) -> from -> from
-transformOn biplate f x = generate $ pam (transform f) current
+transformOn biplate f x = generate $ fmap (transform f) current
     where (current, generate) = biplate x
 
 
 transformOnM :: (Monad m, Uniplate to) => BiplateType from to -> (to -> m to) -> from -> m from
-transformOnM biplate f x = liftM generate $ pamM (transformM f) current
+transformOnM biplate f x = liftM generate $ mapM  (transformM f) current
     where (current, generate) = biplate x
 
 
 rewriteOn :: Uniplate to => BiplateType from to -> (to -> Maybe to) -> from -> from
-rewriteOn biplate f x = generate $ pam (rewrite f) current
+rewriteOn biplate f x = generate $ fmap (rewrite f) current
     where (current, generate) = biplate x
 
 
 rewriteOnM :: (Monad m, Uniplate to) => BiplateType from to -> (to -> m (Maybe to)) -> from -> m from
-rewriteOnM biplate f x = liftM generate $ pamM (rewriteM f) current
+rewriteOnM biplate f x = liftM generate $ mapM (rewriteM f) current
     where (current, generate) = biplate x
 
 
 descendOn :: Uniplate to => BiplateType from to -> (to -> to) -> from -> from
-descendOn biplate f x = generate $ pam f current
+descendOn biplate f x = generate $ fmap f current
     where (current, generate) = biplate x
 
 
 descendOnM :: (Monad m, Uniplate to) => BiplateType from to -> (to -> m to) -> from -> m from
-descendOnM biplate f x = liftM generate $ pamM f current
+descendOnM biplate f x = liftM generate $ mapM f current
     where (current, generate) = biplate x
 
 

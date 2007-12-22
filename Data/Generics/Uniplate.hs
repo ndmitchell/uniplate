@@ -13,11 +13,13 @@ To illustate, I have used the @Expr@ type as below:
 
 module Data.Generics.Uniplate where
 
-import Control.Monad
+import Control.Monad hiding (mapM)
 import Data.List(inits,tails)
+import Data.Traversable
+import Prelude hiding (mapM)
+
 import Data.Generics.PlateInternal
 import Data.Generics.Str
-
 
 -- * The Class
 
@@ -111,13 +113,13 @@ rewriteM f = transformM g
 -- This operation allows additional information to be passed downwards, and can be
 -- used to provide a top-down transformation.
 descend :: Uniplate on => (on -> on) -> on -> on
-descend f x = generate $ pam f current
+descend f x = generate $ fmap f current
     where (current, generate) = uniplate x
 
 
 -- | Monadic variant of 'descend'    
 descendM :: (Monad m, Uniplate on) => (on -> m on) -> on -> m on
-descendM f x = liftM generate $ pamM f current
+descendM f x = liftM generate $ mapM f current
     where (current, generate) = uniplate x
 
 -- ** Others
