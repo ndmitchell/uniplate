@@ -120,9 +120,6 @@ descendM :: (Monad m, Uniplate on) => (on -> m on) -> on -> m on
 descendM f x = liftM generate $ pamM f current
     where (current, generate) = uniplate x
 
-{-
-
-
 -- ** Others
 
 -- | Return all the contexts and holes. This operation is only occasionally useful.
@@ -130,24 +127,21 @@ descendM f x = liftM generate $ pamM f current
 -- > propUniverse x = universe x == map fst (contexts x)
 -- > propId x = all (== x) [b a | (a,b) <- contexts x]
 contexts :: Uniplate on => on -> [(on, on -> on)]
-contexts x = (x,id) : f current
+contexts x = (x,id) : f (holes x)
   where
-    (current, generate) = uniplate x
-    f xs = [ (y, \i -> generate (pre ++ [context i] ++ post))
-           | (pre,b:post) <- zip (inits xs) (tails xs)
-           , (y, context) <- contexts b]
-
+    f xs = [ (y, ctx . context)
+           | (child, ctx) <- xs
+           , (y, context) <- contexts child]
 
 -- | The one depth version of 'contexts'
 holes :: Uniplate on => on -> [(on, on -> on)]
-holes x = [ (i, \i -> generate (pre ++ [i] ++ post))
-          | (pre,i:post) <- zip (inits current) (tails current) ]
-    where (current,generate) = uniplate x
-
+holes x = uncurry f (uniplate x)
+  where f Zero _ = []
+        f (One i) generate = [(i, generate . One)]
+        f (Two l r) gen = f l (gen . (\i -> Two i r))
+                       ++ f r (gen . (\i -> Two l i))
 
 -- | Perform a fold-like computation on each value,
 --   technically a paramorphism
 para :: Uniplate on => (on -> [r] -> r) -> on -> r
 para op x = op x $ map (para op) $ children x
-
--}

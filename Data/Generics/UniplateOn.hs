@@ -86,30 +86,29 @@ descendOnM biplate f x = liftM generate $ pamM f current
     where (current, generate) = biplate x
 
 
-{-
 -- ** Other
+holesOn :: Uniplate to => BiplateType from to -> from -> [(to, to -> from)]
+holesOn biplate x = uncurry f (biplate x)
+  where f Zero _ = []
+        f (One i) generate = [(i, generate . One)]
+        f (Two l r) gen = f l (gen . (\i -> Two i r))
+                       ++ f r (gen . (\i -> Two l i))
 
 contextsOn :: Uniplate to => BiplateType from to -> from -> [(to, to -> from)]
-contextsOn biplate x =
-        concat [f pre b post | (pre,b:post) <- zip (inits current) (tails current)]
+contextsOn biplate x = f (holesOn biplate x)
     where
-        (current, generate) = biplate x
-        
-        f pre x post = [(cur, \new -> generate (pre ++ [new] ++ post))
-                       | (cur,gen) <- contexts x]
-
+       f xs = [ (y, ctx . context)
+              | (child, ctx) <- xs
+              , (y, context) <- contexts child]
 
 -- * Helper for writing instances
 
-
 -- | Used for defining instances @UniplateFoo a => UniplateFoo [a]@
 uniplateOnList :: BiplateType a b -> BiplateType [a] b
-uniplateOnList f [] = ([], \[] -> [])
+uniplateOnList f [] = (Zero, \_ -> [])
 uniplateOnList f (x:xs) =
-        (a ++ as,
-        \ns -> let (n1,n2) = splitAt (length a) ns in b n1 : bs n2)
+        (Two a as,
+        \(Two n ns) -> b n : bs ns)
     where
         (a , b ) = f x
         (as, bs) = uniplateOnList f xs
-
--}
