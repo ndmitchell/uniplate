@@ -6,12 +6,15 @@ module Data.Generics.Str where
 
 import Data.Generics.PlateInternal
 
-
 -- * The Data Type
 
 data Str a = Zero | One a | Two (Str a) (Str a)
              deriving Show
 
+instance Functor Str where
+  fmap f Zero = Zero
+  fmap f (One x) = One (f x)
+  fmap f (Two x y) = Two (fmap f x) (fmap f y)
 
 strType :: Str a -> a
 strType = undefined
