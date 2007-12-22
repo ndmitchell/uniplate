@@ -33,5 +33,6 @@ Library
         Data.Generics.PlateTypeable
         Data.Generics.PlateData
         Data.Generics.PlateInternal
+        Data.Generics.Str
 
     Extensions:     CPP, FlexibleInstances
