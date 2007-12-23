@@ -41,7 +41,7 @@ universeOn biplate x = builder f
     where
         f cons nil = g cons nil (fst $ biplate x) nil
         g cons nil Zero res = res
-        g cons nil (One x) res = x `cons` g cons nil (fst $ uniplate x) res
+        g cons nil (One x) res = x `cons` g cons nil (fst $ uniplateStr x) res
         g cons nil (Two x y) res = g cons nil x (g cons nil y res)
 
 
