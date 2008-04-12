@@ -41,7 +41,7 @@ class Uniplate on where
     -- > uniplateStr (Val 1)
     -- >    = (Zero                                  , \Zero                  -> Val 1  )
     uniplateStr :: UniplateType on
-    uniplateStr x = (strList spine, gen . listStr)
+    uniplateStr x = (listStr spine, gen . strList)
       where (spine, gen) = uniplate x
 
     -- | The list version of the method
