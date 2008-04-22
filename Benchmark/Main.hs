@@ -26,14 +26,14 @@ expr|stm|par|all - which section to run
 
 confidence = let (*) = (,) in
              ["simplify" * 1000
-             ,"variables" * 1500
+             ,"variables" * 2000
              ,"zeros" * 5000
-             ,"constFold" * 100
-             ,"rename" * 100
-             ,"symbols" * 300
-             ,"bill" * 1100
-             ,"increase" * 70
-             ,"incrone" * 70
+             ,"constFold" * 150
+             ,"rename" * 150
+             ,"symbols" * 800
+             ,"bill" * 1800
+             ,"increase" * 100
+             ,"incrone" * 100
              ]
 
 main = getArgs >>= main2
