@@ -19,7 +19,7 @@
 -}
 
 module Data.Generics.Biplate(
-    module Data.Generics.UniplateOn,
+    module Data.Generics.UniplateStrOn,
     module Data.Generics.Biplate
     ) where
 
