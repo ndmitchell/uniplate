@@ -87,25 +87,25 @@ plate x = (Zero, \_ -> x)
 -- ** Primitive Types
 
 instance PlateAll Int to where plateAll x = plate x
-instance Uniplate Int where uniplateStr = uniplateAll
+instance Uniplate Int where uniplate = uniplateAll
 
 instance PlateAll Bool to where plateAll x = plate x
-instance Uniplate Bool where uniplateStr = uniplateAll
+instance Uniplate Bool where uniplate = uniplateAll
 
 instance PlateAll Char to where plateAll x = plate x
-instance Uniplate Char where uniplateStr = uniplateAll
+instance Uniplate Char where uniplate = uniplateAll
 
 instance PlateAll Integer to where plateAll x = plate x
-instance Uniplate Integer where uniplateStr = uniplateAll
+instance Uniplate Integer where uniplate = uniplateAll
 
 instance PlateAll Double to where plateAll x = plate x
-instance Uniplate Double where uniplateStr = uniplateAll
+instance Uniplate Double where uniplate = uniplateAll
 
 instance PlateAll Float to where plateAll x = plate x
-instance Uniplate Float where uniplateStr = uniplateAll
+instance Uniplate Float where uniplate = uniplateAll
 
 instance PlateAll () to where plateAll x = plate x
-instance Uniplate () where uniplateStr = uniplateAll
+instance Uniplate () where uniplate = uniplateAll
 
 -- ** Container Types
 

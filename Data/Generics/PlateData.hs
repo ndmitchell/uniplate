@@ -94,7 +94,7 @@ contains x = if isAlgType dtyp then concatMap f ctrs else []
 
 
 instance (Data a, Typeable a) => Uniplate a where
-    uniplateStr = collect_generate (fromBox answer)
+    uniplate = collect_generate (fromBox answer)
         where
             answer :: Box a
             answer = containsMatch (undefined :: a) (undefined :: a)
