@@ -29,6 +29,8 @@ Library
     Exposed-modules:
         Data.Generics.Uniplate
         Data.Generics.UniplateOn
+        Data.Generics.UniplateStr
+        Data.Generics.UniplateStrOn
         Data.Generics.Biplate
         Data.Generics.PlateDirect
         Data.Generics.PlateTypeable
