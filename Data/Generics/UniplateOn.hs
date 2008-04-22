@@ -14,14 +14,9 @@ module Data.Generics.UniplateOn(
     module Data.Generics.UniplateOn
     ) where
 
+import Data.Generics.Uniplate
 import Control.Monad(liftM)
 import Data.List(inits,tails)
-import Data.Traversable
-import Prelude hiding (mapM)
-
-import Data.Generics.PlateInternal
-import Data.Generics.Str
-import Data.Generics.Uniplate
 
 -- * Types
 
@@ -29,7 +24,7 @@ import Data.Generics.Uniplate
 --
 -- If @from == to@ then this function should return the root as the single
 -- child.
-type BiplateType from to = from -> (Str to, Str to -> from)
+type BiplateType from to = from -> ([to], [to] -> from)
 
 
 -- * Operations
@@ -37,39 +32,29 @@ type BiplateType from to = from -> (Str to, Str to -> from)
 -- ** Queries
 
 universeOn :: Uniplate to => BiplateType from to -> from -> [to]
-universeOn biplate x = builder f
-    where
-        f cons nil = g cons nil (fst $ biplate x) nil
-        g cons nil Zero res = res
-        g cons nil (One x) res = x `cons` g cons nil (fst $ uniplateStr x) res
-        g cons nil (Two x y) res = g cons nil x (g cons nil y res)
+universeOn biplate x = concatMap universe $ fst $ biplate x
 
 
 -- | Return the children of a type. If @to == from@ then it returns the
 -- original element (in constract to 'children'
 childrenOn :: Uniplate to => BiplateType from to -> from -> [to]
-childrenOn biplate x = builder f
-    where
-        f cons nil = g cons nil (fst $ biplate x) nil
-        g cons nil Zero res = res
-        g cons nil (One x) res = x `cons` res
-        g cons nil (Two x y) res = g cons nil x (g cons nil y res)
+childrenOn biplate x = fst $ biplate x
 
 
 -- ** Transformations
 
 transformOn :: Uniplate to => BiplateType from to -> (to -> to) -> from -> from
-transformOn biplate f x = generate $ fmap (transform f) current
+transformOn biplate f x = generate $ map (transform f) current
     where (current, generate) = biplate x
 
 
 transformOnM :: (Monad m, Uniplate to) => BiplateType from to -> (to -> m to) -> from -> m from
-transformOnM biplate f x = liftM generate $ mapM  (transformM f) current
+transformOnM biplate f x = liftM generate $ mapM (transformM f) current
     where (current, generate) = biplate x
 
 
 rewriteOn :: Uniplate to => BiplateType from to -> (to -> Maybe to) -> from -> from
-rewriteOn biplate f x = generate $ fmap (rewrite f) current
+rewriteOn biplate f x = generate $ map (rewrite f) current
     where (current, generate) = biplate x
 
 
@@ -79,7 +64,7 @@ rewriteOnM biplate f x = liftM generate $ mapM (rewriteM f) current
 
 
 descendOn :: Uniplate to => BiplateType from to -> (to -> to) -> from -> from
-descendOn biplate f x = generate $ fmap f current
+descendOn biplate f x = generate $ map f current
     where (current, generate) = biplate x
 
 
@@ -89,28 +74,27 @@ descendOnM biplate f x = liftM generate $ mapM f current
 
 
 -- ** Other
-holesOn :: Uniplate to => BiplateType from to -> from -> [(to, to -> from)]
-holesOn biplate x = uncurry f (biplate x)
-  where f Zero _ = []
-        f (One i) generate = [(i, generate . One)]
-        f (Two l r) gen = f l (gen . (\i -> Two i r))
-                       ++ f r (gen . (\i -> Two l i))
 
 contextsOn :: Uniplate to => BiplateType from to -> from -> [(to, to -> from)]
-contextsOn biplate x = f (holesOn biplate x)
+contextsOn biplate x =
+        concat [f pre b post | (pre,b:post) <- zip (inits current) (tails current)]
     where
-       f xs = [ (y, ctx . context)
-              | (child, ctx) <- xs
-              , (y, context) <- contexts child]
+        (current, generate) = biplate x
+
+        f pre x post = [(cur, \new -> generate (pre ++ [new] ++ post))
+                       | (cur,gen) <- contexts x]
+
 
 -- * Helper for writing instances
 
+
 -- | Used for defining instances @UniplateFoo a => UniplateFoo [a]@
 uniplateOnList :: BiplateType a b -> BiplateType [a] b
-uniplateOnList f [] = (Zero, \_ -> [])
+uniplateOnList f [] = ([], \[] -> [])
 uniplateOnList f (x:xs) =
-        (Two a as,
-        \(Two n ns) -> b n : bs ns)
+        (a ++ as,
+        \ns -> let (n1,n2) = splitAt (length a) ns in b n1 : bs n2)
     where
         (a , b ) = f x
         (as, bs) = uniplateOnList f xs
+

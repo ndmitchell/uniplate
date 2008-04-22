@@ -13,14 +13,9 @@ To illustate, I have used the @Expr@ type as below:
 
 module Data.Generics.Uniplate where
 
-import Control.Monad hiding (mapM)
+import Control.Monad
 import Data.List(inits,tails)
-import Control.Monad.State hiding (mapM)
-import Data.Traversable
-import Prelude hiding (mapM)
-
 import Data.Generics.PlateInternal
-import Data.Generics.Str
 
 
 -- * The Class
@@ -29,33 +24,16 @@ import Data.Generics.Str
 --
 --   Taking a value, the function should return all the immediate children
 --   of the same type, and a function to replace them.
-type UniplateType on = on -> (Str on, Str on -> on)
+type UniplateType on = on -> ([on], [on] -> on)
 
--- | The standard Uniplate class, all operations require this.
---   Must define one of 'uniplate' or 'uniplateStr', 'uniplateStr' is recommended
+-- | The standard Uniplate class, all operations require this
 class Uniplate on where
     -- | The underlying method in the class
     --
-    -- > uniplateStr (Add (Val 1) (Neg (Val 2)))
-    -- >    = (Two (One (Val 1)) (One (Neg (Val 2)))], \(Two (One a) (One b)) -> Add a b)
-    -- > uniplateStr (Val 1)
-    -- >    = (Zero                                  , \Zero                  -> Val 1  )
-    uniplateStr :: UniplateType on
-    uniplateStr x = (listStr spine, gen . strList)
-      where (spine, gen) = uniplate x
-
-    -- | The list version of the method
-    --
     -- > uniplate (Add (Val 1) (Neg (Val 2))) = ([Val 1, Neg (Val 2)], \[a,b] -> Add a b)
     -- > uniplate (Val 1)                     = ([]                  , \[]    -> Val 1  )
-    uniplate :: on -> ([on], [on] -> on)
-    uniplate x = (g spine [], \children -> gen (evalState (mapM fill spine) children))
-      where (spine, gen) = uniplateStr x
-            g Zero rest = rest
-            g (One x) rest = x:rest
-            g (Two l r) rest = g l (g r rest)
-            fill _ = do (x:rest) <- get; put rest; return x
-
+    uniplate :: UniplateType on
+    
 -- * The Operations
 
 -- ** Queries
@@ -69,25 +47,18 @@ class Uniplate on where
 --
 -- > vals x = [Val i | i <- universe x]
 universe :: Uniplate on => on -> [on]
-universe x = builder f
+universe x = builder (f x)
     where
-        f cons nil = g cons nil (One x) nil
-        g cons nil Zero res = res
-        g cons nil (One x) res = x `cons` g cons nil (fst $ uniplateStr x) res
-        g cons nil (Two x y) res = g cons nil x (g cons nil y res)
-
+        f :: Uniplate on => on -> (on -> res -> res) -> res -> res
+        f x cons nil = x `cons` concatCont (map (\x -> f x cons) $ children x) nil
 
 
 -- | Get the direct children of a node. Usually using 'universe' is more appropriate.
 --
 -- @children = fst . 'uniplate'@
 children :: Uniplate on => on -> [on]
-children x = builder f
-    where
-        f cons nil = g cons nil (fst $ uniplateStr x) nil
-        g cons nil Zero res = res
-        g cons nil (One x) res = x `cons` res
-        g cons nil (Two x y) res = g cons nil x (g cons nil y res)
+children = fst . uniplate
+
 
 
 -- ** Transformations
@@ -101,12 +72,14 @@ children x = builder f
 -- >    where f (Neg (Lit i)) = Lit (negate i)
 -- >          f x = x
 transform :: Uniplate on => (on -> on) -> on -> on
-transform f = f . descend (transform f)
+transform f x = f $ generate $ map (transform f) current
+    where (current, generate) = uniplate x
 
 
 -- | Monadic variant of 'transform'
 transformM :: (Monad m, Uniplate on) => (on -> m on) -> on -> m on
-transformM f x = f =<< descendM (transformM f) x
+transformM f x = mapM (transformM f) current >>= f . generate
+    where (current, generate) = uniplate x
 
 
 -- | Rewrite by applying a rule everywhere you can. Ensures that the rule cannot
@@ -132,14 +105,16 @@ rewriteM f = transformM g
 -- This operation allows additional information to be passed downwards, and can be
 -- used to provide a top-down transformation.
 descend :: Uniplate on => (on -> on) -> on -> on
-descend f x = generate $ fmap f current
-    where (current, generate) = uniplateStr x
+descend f x = generate $ map f current
+    where (current, generate) = uniplate x
 
 
 -- | Monadic variant of 'descend'    
 descendM :: (Monad m, Uniplate on) => (on -> m on) -> on -> m on
 descendM f x = liftM generate $ mapM f current
-    where (current, generate) = uniplateStr x
+    where (current, generate) = uniplate x
+
+
 
 -- ** Others
 
@@ -148,21 +123,15 @@ descendM f x = liftM generate $ mapM f current
 -- > propUniverse x = universe x == map fst (contexts x)
 -- > propId x = all (== x) [b a | (a,b) <- contexts x]
 contexts :: Uniplate on => on -> [(on, on -> on)]
-contexts x = (x,id) : f (holes x)
+contexts x = (x,id) : f current
   where
-    f xs = [ (y, ctx . context)
-           | (child, ctx) <- xs
-           , (y, context) <- contexts child]
-
--- | The one depth version of 'contexts'
-holes :: Uniplate on => on -> [(on, on -> on)]
-holes x = uncurry f (uniplateStr x)
-  where f Zero _ = []
-        f (One i) generate = [(i, generate . One)]
-        f (Two l r) gen = f l (gen . (\i -> Two i r))
-                       ++ f r (gen . (\i -> Two l i))
+    (current, generate) = uniplate x
+    f xs = [ (y, \i -> generate (pre ++ [context i] ++ post))
+           | (pre,b:post) <- zip (inits xs) (tails xs)
+           , (y, context) <- contexts b]
 
 -- | Perform a fold-like computation on each value,
 --   technically a paramorphism
 para :: Uniplate on => (on -> [r] -> r) -> on -> r
 para op x = op x $ map (para op) $ children x
+
