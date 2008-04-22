@@ -23,7 +23,7 @@ module Data.Generics.Biplate(
     module Data.Generics.Biplate
     ) where
 
-import Data.Generics.UniplateOn
+import Data.Generics.UniplateStrOn
 
 
 -- * The Class
