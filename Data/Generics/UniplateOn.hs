@@ -1,3 +1,4 @@
+{-# OPTIONS_GHC -fno-warn-deprecations #-}
 {- |
 /DEPRECATED/ Use "Data.Generics.UniplateStrOn" instead.
 
