@@ -1,4 +1,6 @@
 {- |
+/DEPRECATED/ Use "Data.Generics.UniplateStrOn" instead.
+
 This module retained Haskell 98 compatability, but users who are happy with
 multi-parameter type classes should look towards "Data.Generics.Biplate".
 
@@ -9,7 +11,9 @@ All operations, apart from 'childrenOn' should perform identically to their non 
 counterparts.
 -}
 
-module Data.Generics.UniplateOn(
+module Data.Generics.UniplateOn
+    {-# DEPRECATED "Use Data.Generics.UniplateStrOn instead" #-}
+    (
     module Data.Generics.Uniplate,
     module Data.Generics.UniplateOn
     ) where
