@@ -88,19 +88,20 @@ execTask count tsts name ops | ans == ans = do
         putStr $ showResult results
         return results
     where
-        ans = map (snd $ head ops) tests
-        tests = concat $ replicate count2 tsts
+        ans = map (snd $ head ops) tsts
         count2 = if count /= 0 then count else
                  fromMaybe (error $ "No number specified for: " ++ name) $ lookup name confidence
 
         f (name, action) = do
             start <- getCPUTime
-            when (ans /= map action tests) $ do
-                let (skip,(want,got):_) = span (\(a,b) -> a == b) $ zip ans (map action tests)
-                putStrLn $ "FAILED TO MATCH in " ++ name ++ "\n" ++
-                           "After: " ++ show (length skip) ++ "\n" ++
-                           "Wanted: " ++ want ++ "\n" ++
-                           "Got:    " ++ got ++ "\n"
+            replicateM_ count2 $ do
+                res <- return $ map action tsts
+                when (ans /= res) $ do
+                    let (skip,(want,got):_) = span (\(a,b) -> a == b) $ zip ans res
+                    putStrLn $ "FAILED TO MATCH in " ++ name ++ "\n" ++
+                               "After: " ++ show (length skip) ++ "\n" ++
+                               "Wanted: " ++ want ++ "\n" ++
+                               "Got:    " ++ got ++ "\n"
             end <- getCPUTime
             hPutChar stderr '.'
             return $ (end - start) `div` 1000000000 -- fake resolution
