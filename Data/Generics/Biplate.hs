@@ -79,4 +79,4 @@ contextsBi = contextsOn biplate
 
 
 holesBi:: Biplate from to => from -> [(to, to -> from)]
-holesBi = holesBi biplate
+holesBi = holesOn biplate
