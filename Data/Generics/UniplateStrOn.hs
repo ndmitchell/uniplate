@@ -5,13 +5,13 @@ multi-parameter type classes should look towards "Data.Generics.Biplate".
 The only function missing from "Data.Generics.Uniplate" is 'fold', as it can be
 constructed from 'children' and has little meaning in a multi-typed setting.
 
-All operations, apart from 'childrenOn' should perform identically to their non @On@
-counterparts.
+All operations, apart from 'childrenOn', 'descendOn' and 'holesOn' should perform
+identically to their non @On@ counterparts.
 -}
 
-module Data.Generics.UniplateOn(
-    module Data.Generics.Uniplate,
-    module Data.Generics.UniplateOn
+module Data.Generics.UniplateStrOn(
+    module Data.Generics.UniplateStr,
+    module Data.Generics.UniplateStrOn
     ) where
 
 import Control.Monad(liftM)
@@ -21,7 +21,7 @@ import Prelude hiding (mapM)
 
 import Data.Generics.PlateInternal
 import Data.Generics.Str
-import Data.Generics.Uniplate
+import Data.Generics.UniplateStr
 
 -- * Types
 
@@ -64,7 +64,7 @@ transformOn biplate f x = generate $ fmap (transform f) current
 
 
 transformOnM :: (Monad m, Uniplate to) => BiplateType from to -> (to -> m to) -> from -> m from
-transformOnM biplate f x = liftM generate $ mapM  (transformM f) current
+transformOnM biplate f x = liftM generate $ mapM (transformM f) current
     where (current, generate) = biplate x
 
 
