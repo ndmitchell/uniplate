@@ -43,6 +43,14 @@ class Uniplate on where
     uniplate :: UniplateType on
 
 
+-- | Compatibility method, for direct users of the 'uniplate' function
+uniplateList :: Uniplate on => on -> ([on], [on] -> on)
+uniplateList x = (c, b . d)
+    where
+        (a,b) = uniplate x
+        (c,d) = strStructure a
+
+
 -- * The Operations
 
 -- ** Queries

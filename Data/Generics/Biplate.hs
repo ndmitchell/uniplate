@@ -24,6 +24,7 @@ module Data.Generics.Biplate(
     ) where
 
 import Data.Generics.UniplateStrOn
+import Data.Generics.Str
 
 
 -- * The Class
@@ -32,6 +33,15 @@ import Data.Generics.UniplateStrOn
 --   /starting at the root/.
 class Uniplate to => Biplate from to where
     biplate :: BiplateType from to
+
+
+-- | Compatibility method, for direct users of the 'biplate' function
+biplateList :: Biplate from to => from -> ([to], [to] -> from)
+biplateList x = (c, b . d)
+    where
+        (a,b) = biplate x
+        (c,d) = strStructure a
+
 
 
 -- * The Operations
