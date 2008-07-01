@@ -3,7 +3,7 @@
     replacement in some situations for some of the Compos operations.
     Only the single-type traversals are supported, on normal
     algebraic data types. Must be used in conjunction with
-    "Data.Generics.UniplateStr"
+    "Data.Generics.UniplateStr".
 
     From the paper: \"A Pattern for Almost Compositional Functions\"
     by Bjorn Bringert and Aarne Ranta.
