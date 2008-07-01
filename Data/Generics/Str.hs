@@ -49,3 +49,20 @@ strList x = builder (f x)
 listStr :: [a] -> Str a
 listStr (x:xs) = Two (One x) (listStr xs)
 listStr [] = Zero
+
+
+strStructure :: Str a -> ([a], [a] -> Str a)
+strStructure x = (g x [], fst . f x)
+    where
+        g :: Str a -> [a] -> [a]
+        g Zero xs = xs
+        g (One x) xs = x:xs
+        g (Two a b) xs = g a (g b xs)
+
+        f :: Str a -> [a] -> (Str a, [a])
+        f Zero rs = (Zero, rs)
+        f (One _) (r:rs) = (One r, rs)
+        f (Two a b) rs1 = (Two a2 b2, rs3)
+            where
+                (a2,rs2) = f a rs1
+                (b2,rs3) = f b rs2
