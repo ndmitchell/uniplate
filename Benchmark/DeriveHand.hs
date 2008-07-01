@@ -17,6 +17,8 @@ instance Uniplate NExpr where
             NDiv  a b  -> (Two (One a) (One b)  , \(Two (One a') (One b')) -> NDiv  a' b'  )
             _          -> (Zero                 , \_         -> x           )
 
+instance Biplate NExpr NExpr where
+    biplate x = (Zero, const x)
 
 instance Biplate NStm NVar where
     biplate x =
