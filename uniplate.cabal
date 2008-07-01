@@ -38,5 +38,6 @@ Library
         Data.Generics.PlateInternal
         Data.Generics.Str
         Data.Generics.Compos
+        Data.Generics.SYB
 
     Extensions:     CPP, FlexibleInstances
