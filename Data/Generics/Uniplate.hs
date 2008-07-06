@@ -14,7 +14,7 @@ To illustate, I have used the @Expr@ type as below:
 
 
 module Data.Generics.Uniplate
-    {-# DEPRECATED "Use Data.Generics.UniplateStr instead" #-}
+    {- # DEPRECATED "Use Data.Generics.UniplateStr instead" # -}
     where
 
 import Control.Monad
