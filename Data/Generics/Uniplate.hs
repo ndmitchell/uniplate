@@ -122,17 +122,28 @@ descendM f x = liftM generate $ mapM f current
 
 -- ** Others
 
--- | Return all the contexts and holes. This operation is only occasionally useful.
+-- | Return all the contexts and holes.
 --
 -- > propUniverse x = universe x == map fst (contexts x)
 -- > propId x = all (== x) [b a | (a,b) <- contexts x]
 contexts :: Uniplate on => on -> [(on, on -> on)]
-contexts x = (x,id) : f current
+contexts x = (x,id) : f (holes x)
   where
-    (current, generate) = uniplate x
-    f xs = [ (y, \i -> generate (pre ++ [context i] ++ post))
-           | (pre,b:post) <- zip (inits xs) (tails xs)
-           , (y, context) <- contexts b]
+    f xs = [ (y, ctx . context)
+           | (child, ctx) <- xs
+           , (y, context) <- contexts child]
+
+
+-- | The one depth version of 'contexts'
+--
+-- > propUniverse x = children x == map fst (holes x)
+-- > propId x = all (== x) [b a | (a,b) <- holes x]
+holes :: Uniplate on => on -> [(on, on -> on)]
+holes x = uncurry f (uniplate x)
+  where f [] _ = []
+        f (x:xs) gen = (x, gen . (:xs)) :
+                       f xs (gen . (x:))
+
 
 -- | Perform a fold-like computation on each value,
 --   technically a paramorphism
