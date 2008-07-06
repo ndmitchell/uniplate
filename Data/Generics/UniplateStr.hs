@@ -138,7 +138,7 @@ descendM f x = liftM generate $ mapM f current
 
 -- ** Others
 
--- | Return all the contexts and holes. This operation is only occasionally useful.
+-- | Return all the contexts and holes.
 --
 -- > propUniverse x = universe x == map fst (contexts x)
 -- > propId x = all (== x) [b a | (a,b) <- contexts x]
@@ -149,7 +149,11 @@ contexts x = (x,id) : f (holes x)
            | (child, ctx) <- xs
            , (y, context) <- contexts child]
 
+
 -- | The one depth version of 'contexts'
+--
+-- > propUniverse x = children x == map fst (holes x)
+-- > propId x = all (== x) [b a | (a,b) <- holes x]
 holes :: Uniplate on => on -> [(on, on -> on)]
 holes x = uncurry f (uniplate x)
   where f Zero _ = []
