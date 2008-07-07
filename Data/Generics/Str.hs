@@ -1,5 +1,7 @@
 {- |
-This is the main central data structure in the Uniplate system.
+    This module provides the 'Str' data type, which is used by the
+    underlying 'uniplate' and 'biplate' methods. It should not
+    be used directly under ordinary circumstances.
 -}
 
 module Data.Generics.Str where
@@ -35,10 +37,13 @@ instance Traversable Str where
   traverse f (Two x y) = Two <$> traverse f x <*> traverse f y
 
 
+-- | Take the type of the method, will crash if called
 strType :: Str a -> a
-strType = undefined
+strType = error "Data.Generics.Str.strType: Cannot be called"
 
 
+-- | Convert a 'Str' to a list, assumes the value was created
+--   with 'listStr'
 strList :: Str a -> [a]
 strList x = builder (f x)
     where
@@ -46,11 +51,15 @@ strList x = builder (f x)
         f Zero cons nil = nil
 
 
+-- | Convert a list to a 'Str'
 listStr :: [a] -> Str a
 listStr (x:xs) = Two (One x) (listStr xs)
 listStr [] = Zero
 
 
+-- | Transform a 'Str' to a list, and back again, in a structure
+--   preserving way. The output and input lists must be equal in
+--   length.
 strStructure :: Str a -> ([a], [a] -> Str a)
 strStructure x = (g x [], fst . f x)
     where
