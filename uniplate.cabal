@@ -1,8 +1,8 @@
 Cabal-Version:      >= 1.2
 Build-Type:         Simple
 Name:               uniplate
-Version:            1.1
-Copyright:          2006-7, Neil Mitchell
+Version:            1.2
+Copyright:          2006-8, Neil Mitchell
 Maintainer:         ndmitchell@gmail.com
 Homepage:           http://www-users.cs.york.ac.uk/~ndm/uniplate/
 License:            BSD3
