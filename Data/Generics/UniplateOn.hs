@@ -41,7 +41,7 @@ universeOn biplate x = concatMap universe $ fst $ biplate x
 
 
 -- | Return the children of a type. If @to == from@ then it returns the
--- original element (in constract to 'children'
+-- original element (in contrast to 'children')
 childrenOn :: Uniplate to => BiplateType from to -> from -> [to]
 childrenOn biplate x = fst $ biplate x
 
