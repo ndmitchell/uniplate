@@ -3,7 +3,7 @@
 
 {- |
     Requires multi-parameter type classes, so is no longer Haskell 98. These operations
-    are easier to use and construct than the equivalent @Data.Generics.UniplateOn@ methods,
+    are easier to use and construct than the equivalent "Data.Generics.UniplateStrOn" methods,
     but perform the same operation.
     
     It is recommended that instead of importing this module, you import one of the following
