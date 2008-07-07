@@ -80,14 +80,20 @@ descendOnM biplate f x = liftM generate $ mapM f current
 
 -- ** Other
 
-contextsOn :: Uniplate to => BiplateType from to -> from -> [(to, to -> from)]
-contextsOn biplate x =
-        concat [f pre b post | (pre,b:post) <- zip (inits current) (tails current)]
-    where
-        (current, generate) = biplate x
 
-        f pre x post = [(cur, \new -> generate (pre ++ [new] ++ post))
-                       | (cur,gen) <- contexts x]
+holesOn :: Uniplate to => BiplateType from to -> from -> [(to, to -> from)]
+holesOn biplate x = uncurry f (biplate x)
+  where f [] _ = []
+        f (x:xs) gen = (x, gen . (:xs)) :
+                       f xs (gen . (x:))
+
+
+contextsOn :: Uniplate to => BiplateType from to -> from -> [(to, to -> from)]
+contextsOn biplate x = f (holesOn biplate x)
+    where
+       f xs = [ (y, ctx . context)
+              | (child, ctx) <- xs
+              , (y, context) <- contexts child]
 
 
 -- * Helper for writing instances
