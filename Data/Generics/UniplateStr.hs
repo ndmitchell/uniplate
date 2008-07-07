@@ -152,7 +152,7 @@ contexts x = (x,id) : f (holes x)
 
 -- | The one depth version of 'contexts'
 --
--- > propUniverse x = children x == map fst (holes x)
+-- > propChildren x = children x == map fst (holes x)
 -- > propId x = all (== x) [b a | (a,b) <- holes x]
 holes :: Uniplate on => on -> [(on, on -> on)]
 holes x = uncurry f (uniplate x)
