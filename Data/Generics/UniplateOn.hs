@@ -13,7 +13,7 @@ counterparts.
 -}
 
 module Data.Generics.UniplateOn
-    {- # DEPRECATED "Use Data.Generics.UniplateStrOn instead" # -}
+    {- DEPRECATED "Use Data.Generics.UniplateStrOn instead" -}
     (
     module Data.Generics.Uniplate,
     module Data.Generics.UniplateOn
