@@ -39,7 +39,7 @@ composOpM_ :: (Uniplate a, Monad m) => (a -> m ()) -> a -> m ()
 composOpM_ = composOpFold (return ()) (>>)
 
 
--- | @composOpMonoid = 'composOpFold; mempty mappend@
+-- | @composOpMonoid = 'composOpFold' mempty mappend@
 composOpMonoid :: (Uniplate a, Monoid m) => (a -> m) -> a -> m
 composOpMonoid = composOpFold mempty mappend
 
