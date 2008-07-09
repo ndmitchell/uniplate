@@ -32,13 +32,12 @@ import Data.Generics.Str
 type UniplateType on = on -> (Str on, Str on -> on)
 
 -- | The standard Uniplate class, all operations require this.
---   Must define one of 'uniplate' or 'uniplateStr', 'uniplateStr' is recommended
 class Uniplate on where
     -- | The underlying method in the class
     --
-    -- > uniplateStr (Add (Val 1) (Neg (Val 2)))
+    -- > uniplate (Add (Val 1) (Neg (Val 2)))
     -- >    = (Two (One (Val 1)) (One (Neg (Val 2)))], \(Two (One a) (One b)) -> Add a b)
-    -- > uniplateStr (Val 1)
+    -- > uniplate (Val 1)
     -- >    = (Zero                                  , \Zero                  -> Val 1  )
     uniplate :: UniplateType on
 
