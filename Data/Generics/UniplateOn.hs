@@ -1,6 +1,6 @@
 {-# OPTIONS_GHC -fno-warn-deprecations #-}
 {- |
-/DEPRECATED/ Use "Data.Generics.UniplateStrOn" instead.
+/RECOMMENDATION/ Use "Data.Generics.UniplateStrOn" instead.
 
 This module retained Haskell 98 compatability, but users who are happy with
 multi-parameter type classes should look towards "Data.Generics.Biplate".
