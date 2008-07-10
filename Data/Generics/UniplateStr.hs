@@ -36,16 +36,25 @@ type UniplateType on = on -> (Str on, Str on -> on)
 
 -- | The standard Uniplate class, all operations require this.
 class Uniplate on where
-    -- | The underlying method in the class
+    -- | The underlying method in the class.
     --
-    -- > uniplate (Add (Val 1) (Neg (Val 2)))
-    -- >    = (Two (One (Val 1)) (One (Neg (Val 2))), \(Two (One a) (One b)) -> Add a b)
-    -- > uniplate (Val 1)
-    -- >    = (Zero                                 , \Zero                  -> Val 1  )
+    --   Given @uniplate x = (cs, gen)@
+    --
+    --   @cs@ should be a @Str on@, constructed of @Zero@, @One@ and @Two@,
+    --   containing all the direct children of the same type as @x@. @gen@
+    --   should take a @Str on@ with exactly the same structure as @cs@,
+    --   and generate a new element with the children replaced.
+    --
+    --   Example instance:
+    --
+    -- > instance Uniplate Expr where
+    -- >     uniplate (Val i  ) = (Zero               , \Zero                  -> Val i  )
+    -- >     uniplate (Neg a  ) = (One a              , \(One a)               -> Neg a  )
+    -- >     uniplate (Add a b) = (Two (One a) (One b), \(Two (One a) (One b)) -> Add a b)
     uniplate :: UniplateType on
 
 
--- | Compatibility method, for direct users of the 'uniplate' function
+-- | Compatibility method, for direct users of the old list-based 'uniplate' function
 uniplateList :: Uniplate on => on -> ([on], [on] -> on)
 uniplateList x = (c, b . d)
     where
