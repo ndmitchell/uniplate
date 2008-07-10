@@ -11,7 +11,10 @@ To illustate, I have used the @Expr@ type as below:
 -}
 
 
-module Data.Generics.UniplateStr where
+module Data.Generics.UniplateStr(
+    module Data.Generics.UniplateStr,
+    module Data.Generics.Str
+    ) where
 
 import Control.Monad hiding (mapM)
 import Data.List(inits,tails)
