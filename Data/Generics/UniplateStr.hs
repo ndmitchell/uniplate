@@ -41,7 +41,7 @@ class Uniplate on where
     --   Given @uniplate x = (cs, gen)@
     --
     --   @cs@ should be a @Str on@, constructed of @Zero@, @One@ and @Two@,
-    --   containing all the direct children of the same type as @x@. @gen@
+    --   containing all @x@'s direct children of the same type as @x@. @gen@
     --   should take a @Str on@ with exactly the same structure as @cs@,
     --   and generate a new element with the children replaced.
     --
