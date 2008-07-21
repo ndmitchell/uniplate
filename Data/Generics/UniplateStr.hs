@@ -103,7 +103,7 @@ children x = builder f
 --
 -- For example, replacing negative literals with literals:
 --
--- > negLits = trasform f
+-- > negLits = transform f
 -- >    where f (Neg (Lit i)) = Lit (negate i)
 -- >          f x = x
 transform :: Uniplate on => (on -> on) -> on -> on
