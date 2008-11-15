@@ -20,6 +20,7 @@ import Data.Maybe
 import Data.List
 import qualified Data.IntSet as IntSet
 import Control.Monad.State
+import Data.Ratio
 
 
 
@@ -83,8 +84,15 @@ containsList x = f [] [DataBox x]
                 tt = typeOf t
                 xs = contains t
 
+
+-- Ratio is strict and causes bugs with fromConstr in GHC 6.10.1
+-- See bug http://hackage.haskell.org/trac/ghc/ticket/2782
+evilRatio = fst $ splitTyConApp $ typeOf (undefined :: Ratio Int) 
+
 contains :: (Data a, Typeable a) => a -> [DataBox]
-contains x = if isAlgType dtyp then concatMap f ctrs else []
+contains x | fst (splitTyConApp $ typeOf x) == evilRatio = []
+           | isAlgType dtyp = concatMap f ctrs
+           | otherwise = []
     where
         f ctr = gmapQ DataBox (asTypeOf (fromConstr ctr) x)
         ctrs = dataTypeConstrs dtyp
