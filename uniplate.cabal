@@ -17,14 +17,17 @@ Category:           Development
 Extra-Source-Files:
     uniplate.htm
 
-Flag splitBase
-    Description: Choose the new smaller, split-up base package.
+Flag ghc_6_10
+Flag ghc_6_8
 
 Library
-    if flag(splitBase)
-        build-depends: base >= 3, mtl, containers
+    if flag(ghc_6_10)
+        build-depends: base >= 4, mtl, contains, syb
     else
-        build-depends: base < 3, mtl
+        if flag(ghc_6_8)
+            build-depends: base >= 3, mtl, containers
+        else
+            build-depends: base < 3, mtl
 
     Exposed-modules:
         Data.Generics.Uniplate
