@@ -1,7 +1,7 @@
 Cabal-Version:      >= 1.2
 Build-Type:         Simple
 Name:               uniplate
-Version:            1.2.0.2
+Version:            1.2.0.3
 Copyright:          2006-8, Neil Mitchell
 Maintainer:         ndmitchell@gmail.com
 Homepage:           http://www-users.cs.york.ac.uk/~ndm/uniplate/
@@ -22,7 +22,7 @@ Flag ghc_6_8
 
 Library
     if flag(ghc_6_10)
-        build-depends: base >= 4, mtl, contains, syb
+        build-depends: base >= 4, mtl, containers, syb
     else
         if flag(ghc_6_8)
             build-depends: base >= 3, mtl, containers
