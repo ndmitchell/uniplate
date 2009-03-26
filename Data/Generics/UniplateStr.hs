@@ -73,7 +73,7 @@ uniplateList x = (c, b . d)
 --
 -- This method is often combined with a list comprehension, for example:
 --
--- > vals x = [Val i | i <- universe x]
+-- > vals x = [i | Val i <- universe x]
 universe :: Uniplate on => on -> [on]
 universe x = builder f
     where
