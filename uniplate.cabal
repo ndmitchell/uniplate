@@ -25,7 +25,7 @@ Library
         build-depends: base >= 4, mtl, containers, syb
     else
         if flag(ghc_6_8)
-            build-depends: base >= 3, mtl, containers
+            build-depends: base >= 3 && < 4, mtl, containers
         else
             build-depends: base < 3, mtl
 
