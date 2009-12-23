@@ -2,32 +2,28 @@ Cabal-Version:      >= 1.2
 Build-Type:         Simple
 Name:               uniplate
 Version:            1.2.0.3
-Copyright:          2006-8, Neil Mitchell
+Copyright:          2006-9, Neil Mitchell
 Maintainer:         ndmitchell@gmail.com
-Homepage:           http://www-users.cs.york.ac.uk/~ndm/uniplate/
+Homepage:           http://community.haskell.org/~ndm/uniplate/
 License:            BSD3
 License-File:       LICENSE
 Author:             Neil Mitchell
 Synopsis:           Uniform type generic traversals.
 Description:
-    Uniplate is a boilerplate removal library, with similar goals to the
-    original Scrap Your Boilerplate work. It requires few extensions to
-    Haskell.
+    Uniplate is a simple and concise generics library, which aims to eliminate
+    boilerplate code. It has similar goals to the original Scrap Your Boilerplate
+    work but is substantially simpler.
 Category:           Development
 Extra-Source-Files:
     uniplate.htm
 
 Flag ghc_6_10
-Flag ghc_6_8
 
 Library
     if flag(ghc_6_10)
-        build-depends: base >= 4, mtl, containers, syb
+        build-depends: base == 4.*, mtl, containers, syb
     else
-        if flag(ghc_6_8)
-            build-depends: base >= 3 && < 4, mtl, containers
-        else
-            build-depends: base < 3, mtl
+        build-depends: base == 3.*, mtl, containers
 
     Exposed-modules:
         Data.Generics.Uniplate
