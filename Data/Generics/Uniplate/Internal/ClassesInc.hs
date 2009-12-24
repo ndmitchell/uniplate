@@ -29,6 +29,18 @@ class Uniplate on where
     -- >     uniplate (Add a b) = (Two (One a) (One b), \(Two (One a) (One b)) -> Add a b)
     uniplate :: on -> (Str on, Str on -> on)
 
+    -- | Perform a transformation on all the immediate children, then combine them back.
+    -- This operation allows additional information to be passed downwards, and can be
+    -- used to provide a top-down transformation.
+    descend :: (on -> on) -> on -> on
+    descend f x = generate $ fmap f current
+        where (current, generate) = uniplate x
+
+    -- | Monadic variant of 'descend'    
+    descendM :: Monad m => (on -> m on) -> on -> m on
+    descendM f x = liftM generate $ mapM f current
+        where (current, generate) = uniplate x
+
 
 -- | Children are defined as the top-most items of type to
 --   /starting at the root/.
@@ -38,6 +50,16 @@ class Uniplate to => Biplate from to where
     -- If @from == to@ then this function should return the root as the single
     -- child.
     biplate :: from -> (Str to, Str to -> from)
+
+
+    descendBi :: (to -> to) -> from -> from
+    descendBi f x = generate $ fmap f current
+        where (current, generate) = biplate x
+
+
+    descendBiM :: Monad m => (to -> m to) -> from -> m from
+    descendBiM f x = liftM generate $ mapM f current
+        where (current, generate) = biplate x
 
 
 -- * Single Type Operations
@@ -109,19 +131,6 @@ rewriteM :: (Monad m, Uniplate on) => (on -> m (Maybe on)) -> on -> m on
 rewriteM f = transformM g
     where g x = f x >>= maybe (return x) (rewriteM f)
 
-
--- | Perform a transformation on all the immediate children, then combine them back.
--- This operation allows additional information to be passed downwards, and can be
--- used to provide a top-down transformation.
-descend :: Uniplate on => (on -> on) -> on -> on
-descend f x = generate $ fmap f current
-    where (current, generate) = uniplate x
-
-
--- | Monadic variant of 'descend'    
-descendM :: (Monad m, Uniplate on) => (on -> m on) -> on -> m on
-descendM f x = liftM generate $ mapM f current
-    where (current, generate) = uniplate x
 
 -- ** Others
 
@@ -198,16 +207,6 @@ rewriteBi f x = generate $ fmap (rewrite f) current
 
 rewriteBiM :: (Monad m, Biplate from to) => (to -> m (Maybe to)) -> from -> m from
 rewriteBiM f x = liftM generate $ mapM (rewriteM f) current
-    where (current, generate) = biplate x
-
-
-descendBi :: Biplate from to => (to -> to) -> from -> from
-descendBi f x = generate $ fmap f current
-    where (current, generate) = biplate x
-
-
-descendBiM :: (Monad m, Biplate from to) => (to -> m to) -> from -> m from
-descendBiM f x = liftM generate $ mapM f current
     where (current, generate) = biplate x
 
 
