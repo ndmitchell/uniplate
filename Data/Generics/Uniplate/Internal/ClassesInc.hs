@@ -63,8 +63,6 @@ universe x = builder f
 
 
 -- | Get the direct children of a node. Usually using 'universe' is more appropriate.
---
--- @children = fst . 'uniplate'@
 children :: Uniplate on => on -> [on]
 children x = builder f
     where
