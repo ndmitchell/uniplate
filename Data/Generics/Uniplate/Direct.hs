@@ -37,10 +37,11 @@
 module Data.Generics.Uniplate.Direct(
     module Data.Generics.Uniplate.Classes,
     -- * The Combinators
-    plate, plateSelf,
+    plate, plateSelf, plateProject,
     (|+), (|-), (|*), (||+), (||*)
     ) where
 
+import Control.Arrow
 import Data.Generics.Uniplate.Classes
 import Data.Generics.Str
 
@@ -90,6 +91,10 @@ plate f = (Zero, \_ -> f)
 -- | Used for 'PlayAll' definitions where both types are the same.
 plateSelf :: to -> Type to to
 plateSelf x = (One x, \(One x) -> x)
+
+
+plateProject :: Biplate item to => (from -> item) -> (item -> from) -> from -> Type from to
+plateProject into outof = second (outof . ) . biplate . into
 
 
 instance Uniplate Int where uniplate x = plate x

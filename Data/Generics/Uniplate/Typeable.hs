@@ -24,9 +24,10 @@ module Data.Generics.Uniplate.Typeable(
     -- * The Class
     PlateAll(..),
     -- * The Combinators
-    plate, (|+), (|-)
+    plate, (|+), (|-), plateProject
     ) where
 
+import Control.Arrow
 import Data.Generics.Uniplate.Classes
 import Data.Generics.Uniplate.Internal.Utils
 import Data.Generics.Str
@@ -77,6 +78,10 @@ plate x = (Zero, \_ -> x)
 -- primitives such as Int.
 (|-) :: Type (item -> from) to -> item -> Type from to
 (|-) (xs,x_) y = (xs,\xs -> x_ xs y)
+
+
+plateProject :: (Typeable item, Typeable to, PlateAll item to) => (from -> item) -> (item -> from) -> from -> Type from to
+plateProject into outof = second (outof . ) . plateAll . into
 
 
 -- * Instances
