@@ -29,6 +29,8 @@ deriving instance PlateDirect Stmt Stmt
 deriving instance PlateDirect (Either String Int) Int
 deriving instance PlateDirect (Either String Int) Char
 deriving instance PlateDirect [Stmt]
+deriving instance PlateDirect [([Char], Int)] Int
+deriving instance PlateDirect ([Char], Int) Int
 !-}
 
 

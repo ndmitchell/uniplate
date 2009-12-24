@@ -1,11 +1,14 @@
 
 import Uniplate.Type
 import Data.Char
+import qualified Data.Map as Map
 
-a === b = if a == b then return () else error $ "Did not match:\n" ++ show a ++ "\n" ++ show b
 
-test :: IO ()
-test = do
+test :: String -> IO ()
+test msg = do
+    let a === b | a == b = return ()
+                | otherwise = error $ "Did not match in " ++ msg ++ ":\n" ++ show a ++ "\n" ++ show b
+
     let expr1 = Add (Val 1) (Neg (Val 2))
     universe expr1 === [expr1, Val 1, Neg (Val 2), Val 2]
     children expr1 === [Val 1, Neg (Val 2)]
@@ -32,3 +35,7 @@ test = do
     let eith1 = Left str1 :: Either String Int
     universeBi eith1 === ([] :: [Int])
     childrenBi eith1 === str1
+
+    let mp1 = [Map.singleton "neil" (1::Int), Map.fromList [("more",3),("test",4)], Map.empty]
+    universeBi mp1 === [1::Int,3,4]
+    universeBi (transformBi (+(1::Int)) mp1) === [2::Int,4,5]

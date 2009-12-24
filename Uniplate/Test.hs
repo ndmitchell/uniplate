@@ -8,8 +8,8 @@ import qualified Uniplate.DataOnly
 
 
 test = do
-    Uniplate.Direct.test
-    Uniplate.Typeable.test
-    Uniplate.Data.test
-    Uniplate.DataOnly.test
+    Uniplate.Typeable.test "typeable"
+    Uniplate.Direct.test "direct"
+    Uniplate.Data.test "data"
+    Uniplate.DataOnly.test "dataonly"
     putStrLn "Test successful"

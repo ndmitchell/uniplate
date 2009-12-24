@@ -3,6 +3,13 @@ module Uniplate.Typeable where
 import Data.Generics.Uniplate.Typeable
 #include "CommonInc.hs"
 
+
+instance PlateAll (Map.Map [Char] Int) Int where
+    plateAll = plateProject Map.toAscList Map.fromDistinctAscList
+
+
+-- GENERATED
+
  
 instance (Typeable to, Uniplate to) => PlateAll Expr to where
         plateAll (Val x1) = plate Val |+ x1
