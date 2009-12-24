@@ -1,4 +1,4 @@
-{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE MultiParamTypeClasses, FlexibleInstances #-}
 
 {- |
     This module supplies a method for writing 'Biplate' instances more easily.
@@ -90,3 +90,23 @@ plate f = (Zero, \_ -> f)
 -- | Used for 'PlayAll' definitions where both types are the same.
 plateSelf :: to -> Type to to
 plateSelf x = (One x, \(One x) -> x)
+
+
+instance Uniplate Int where uniplate x = plate x
+instance Uniplate Bool where uniplate x = plate x
+instance Uniplate Char where uniplate x = plate x
+instance Uniplate Integer where uniplate x = plate x
+instance Uniplate Double where uniplate x = plate x
+instance Uniplate Float where uniplate x = plate x
+instance Uniplate () where uniplate x = plate x
+
+instance Uniplate [Char] where
+    uniplate (x:xs) = plate (x:) |* xs
+    uniplate x = plate x
+
+instance Biplate [Char] Char where
+    biplate (x:xs) = plate (:) |* x ||* xs
+    biplate x = plate x
+
+instance Biplate [Char] [Char] where
+    biplate = plateSelf
