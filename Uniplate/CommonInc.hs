@@ -4,6 +4,44 @@ import Data.Char
 import qualified Data.Map as Map
 
 
+benchmark :: Benchmark
+benchmark = Benchmark
+    variables_ zeros_ simplify_
+    rename_ symbols_ constFold_
+    (increase_ 100) (incrone_ "" 100) bill_
+
+
+variables_ x = [y | Var y <- universe x]
+
+zeros_ x = length [() | Div _ (Val 0) <- universe x]
+
+simplify_ = transform simp
+    where
+        simp (Sub x y)          = simp $ Add x (Neg y)
+        simp (Add x y) | x == y = Mul (Val 2) x
+        simp x                  = x
+
+rename_ = transformBi rename_op
+    where rename_op (V x) = V ("_" ++ x)
+
+symbols_ x = [(v,t) | SDecl t v <- universeBi x]
+
+constFold_ = transformBi const_op
+    where
+        const_op (EAdd (EInt n) (EInt m)) = EInt (n+m)
+        const_op x = x
+
+increase_op k (S s) = S (s+k)
+increase_ k = transformBi (increase_op k)
+
+incrone_ name k = descendBi $ f name k
+    where
+        f name k a@(D n _ _) | name == n = increase_ k a
+                              | otherwise = descend (f name k) a
+bill_ x = sum [x | S x <- universeBi x]
+
+
+
 test :: String -> IO ()
 test msg = do
     let a === b | a == b = return ()
@@ -20,8 +58,8 @@ test msg = do
         stmt1 = SBlock [stmt11,stmt12]
     universe stmt1 === [stmt1,stmt11,stmt12,stmt121]
     children stmt1 === [stmt11,stmt12]
-    childrenBi stmt1 === [EInt 1]
-    universeBi stmt1 === [EInt 1]
+    childrenBi stmt1 === [EInt 1,EAdd (EInt 1) (EStm (SAss (V "x") (EInt 3)))]
+    [i | EInt i <- universeBi stmt1] === [1,1,3]
     transformBi (const ([] :: [Stm])) stmt1 === SBlock []
     descend (const stmt121) stmt1 === SBlock [stmt121,stmt121]
 

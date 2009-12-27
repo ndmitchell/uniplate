@@ -42,3 +42,28 @@ instance (Typeable to, Uniplate to) => PlateAll Var to where
 instance (Typeable to, Uniplate to) => PlateAll Typ to where
         plateAll (T_int) = plate T_int
         plateAll (T_float) = plate T_float
+
+ 
+instance (Typeable to, Uniplate to) => PlateAll Company to where
+        plateAll (C x1) = plate C |+ x1
+
+ 
+instance (Typeable to, Uniplate to) => PlateAll Dept to where
+        plateAll (D x1 x2 x3) = plate D |+ x1 |+ x2 |+ x3
+
+ 
+instance (Typeable to, Uniplate to) => PlateAll Unt to where
+        plateAll (PU x1) = plate PU |+ x1
+        plateAll (DU x1) = plate DU |+ x1
+
+ 
+instance (Typeable to, Uniplate to) => PlateAll Employee to where
+        plateAll (E x1 x2) = plate E |+ x1 |+ x2
+
+ 
+instance (Typeable to, Uniplate to) => PlateAll Person to where
+        plateAll (P x1 x2) = plate P |+ x1 |+ x2
+
+ 
+instance (Typeable to, Uniplate to) => PlateAll Salary to where
+        plateAll (S x1) = plate S |+ x1

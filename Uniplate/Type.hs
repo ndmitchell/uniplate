@@ -57,8 +57,15 @@ deriving instance PlateTypeable Stm
 deriving instance PlateTypeable Exp
 deriving instance PlateTypeable Var
 deriving instance PlateTypeable Typ
+deriving instance PlateTypeable Company
+deriving instance PlateTypeable Dept
+deriving instance PlateTypeable Unt
+deriving instance PlateTypeable Employee
+deriving instance PlateTypeable Person
+deriving instance PlateTypeable Salary
 
 deriving instance PlateDirect Expr
+
 deriving instance PlateDirect Exp
 deriving instance PlateDirect Stm
 deriving instance PlateDirect Stm Exp
@@ -67,6 +74,19 @@ deriving instance PlateDirect Exp [Stm]
 deriving instance PlateDirect Stm [Stm]
 deriving instance PlateDirect Stm Stm
 deriving instance PlateDirect [Stm]
+deriving instance PlateDirect Stm Var
+deriving instance PlateDirect Var
+deriving instance PlateDirect Exp Var
+
+deriving instance PlateDirect Company Salary
+deriving instance PlateDirect Company Dept
+deriving instance PlateDirect Dept Salary
+deriving instance PlateDirect Salary
+deriving instance PlateDirect Dept
+deriving instance PlateDirect Employee Salary
+deriving instance PlateDirect Unt Salary
+deriving instance PlateDirect Unt Dept
+
 deriving instance PlateDirect (Either String Int) Int
 deriving instance PlateDirect (Either String Int) Char
 deriving instance PlateDirect [([Char], Int)] Int

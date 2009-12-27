@@ -3,6 +3,9 @@ module Uniplate.Benchmark(benchmark) where
 
 import qualified Uniplate.SYB as SYB
 import qualified Uniplate.Raw as Raw
+import qualified Uniplate.Direct as Direct
+import qualified Uniplate.Typeable as Typeable
+import qualified Uniplate.Data as Data
 import Uniplate.Type
 import Uniplate.Testset
 import Data.List
@@ -24,8 +27,8 @@ confidence = let (*) = (,) in
              ]
 
 benchmark = do
-    columns ["Raw","SYB"]
-    let bs = [Raw.benchmark, SYB.benchmark]
+    columns ["Raw","Direct","Typeable","Data","SYB"]
+    let bs = [Raw.benchmark, Direct.benchmark, Typeable.benchmark, Data.benchmark, SYB.benchmark]
     r1 <- run bs testsExpr simplify "simplify" 1000
     r2 <- run bs testsExpr variables "variables" 2000
     r3 <- run bs testsExpr zeros "zeros" 5000
@@ -45,7 +48,8 @@ dp2 x = showFFloat (Just 2) x ""
 
 columns xs = putStrLn $ pad colFirst "" ++ concatMap (pad colRest) xs
 
-line lbl xs = putStrLn $ pad colFirst lbl ++ concatMap (pad colRest . dp2 . (/ minimum xs)) xs
+line lbl xs = putStrLn $ pad colFirst lbl ++ concatMap (pad colRest . dp2) (map (/ mn) xs ++ [mn])
+    where mn = minimum xs
 
 run :: Eq out => [Benchmark] -> [inp] -> (Benchmark -> inp -> out) -> String -> Int -> IO [Double]
 run bs inp sel name n = do

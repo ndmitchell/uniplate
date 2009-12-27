@@ -7,8 +7,8 @@ import Data.List
 
 
 generate = do
-    gen "Typeable" "Direct"
-    gen "Direct" "Typeable"
+    gen "Typeable" "PlateDirect"
+    gen "Direct" "PlateTypeable"
 
 
 gen file bad = do
