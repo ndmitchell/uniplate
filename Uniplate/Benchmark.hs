@@ -14,18 +14,6 @@ import Control.Monad
 import Data.Time.Clock.POSIX(getPOSIXTime)
 
 
-confidence = let (*) = (,) in
-             ["simplify" * 1000
-             ,"variables" * 2000
-             ,"zeros" * 5000
-             ,"constFold" * 150
-             ,"rename" * 150
-             ,"symbols" * 800
-             ,"bill" * 1800
-             ,"increase" * 100
-             ,"incrone" * 100
-             ]
-
 benchmark = do
     columns ["Raw","Direct","Typeable","Data","SYB"]
     let bs = [Raw.benchmark, Direct.benchmark, Typeable.benchmark, Data.benchmark, SYB.benchmark]
