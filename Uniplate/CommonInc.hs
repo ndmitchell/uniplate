@@ -36,6 +36,29 @@ test msg = do
     universeBi eith1 === ([] :: [Int])
     childrenBi eith1 === str1
 
-    let mp1 = [Map.singleton "neil" (1::Int), Map.fromList [("more",3),("test",4)], Map.empty]
-    universeBi mp1 === [1::Int,3,4]
-    universeBi (transformBi (+(1::Int)) mp1) === [2::Int,4,5]
+    --let mp1 = [Map.singleton "neil" (1::Int), Map.fromList [("more",3),("test",4)], Map.empty]
+    --universeBi mp1 === [1::Int,3,4]
+    --universeBi (transformBi (+(1::Int)) mp1) === [2::Int,4,5]
+
+-- TO ADD
+-- Map/Set, check we go inside
+-- Ratio based test
+-- Strict fields
+-- Infinite type sizing, data Foo a = Foo Int | Bar (Foo (Foo a))
+
+-- should also rewrite PlateData:
+-- Info = IntMap (IntMap IntSet)
+
+-- a, b, then a set of those which are definate miss
+-- everything else is assumed to be follow
+-- then cache the two lookups inside the biplate instances (works even if biplate is missed)
+
+-- IntMap (IntSet, IntSet)
+
+-- The IntMap is indexed by "to"
+-- The first set is those "from" items that have been processed
+-- The second set is those which result in miss
+
+
+-- hitTest :: FromTypeRep -> ToTypeRep -> (FromTypeRep -> Bool)
+-- return True if it might be contained within
