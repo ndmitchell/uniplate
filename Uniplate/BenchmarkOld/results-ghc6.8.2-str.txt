@@ -1,0 +1,85 @@
+= EXPR =
+== simplify ==
+.......
+play                1.26
+play man            1.30
+comp                1.50
+play typ            1.50
+play data           2.35
+syb                 3.24
+== variables ==
+.......
+comp                1.17
+play                1.31
+play man            1.37
+play typ            1.72
+play data           3.76
+syb                 7.28
+== zeros ==
+.......
+comp                1.65
+play                1.89
+play man            2.17
+play typ            2.86
+play data           7.52
+syb                16.33
+
+= STM =
+== constFold ==
+.......
+play                1.25
+play man            1.34
+comp                1.50
+play typ            2.09
+play data           2.31
+syb                 3.69
+== rename ==
+.......
+play                1.25
+play man            1.36
+comp                1.38
+play typ            2.00
+play data           2.50
+syb                 3.33
+== symbols ==
+.......
+play man            1.28
+play                1.33
+comp                1.46
+play typ            3.10
+play data           4.10
+syb                 9.75
+
+= PAR =
+== bill ==
+.......
+play                2.18
+play man            2.89
+comp                3.70
+play typ            9.49
+play data          16.72
+syb                54.70
+== increase ==
+.......
+play                1.28
+play man            1.40
+comp                1.65
+play typ            1.74
+play data           2.08
+syb                 4.09
+== incrone ==
+.......
+play                1.15
+play man            1.24
+comp                1.60
+play typ            1.81
+play data           2.03
+syb                 3.70
+
+== SUMMARY ==
+play                1.43
+play man            1.59
+comp                1.73
+play typ            2.92
+play data           4.81
+syb                11.79
