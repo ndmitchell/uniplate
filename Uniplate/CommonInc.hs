@@ -14,16 +14,16 @@ test msg = do
     children expr1 === [Val 1, Neg (Val 2)]
     transform (\x -> case x of Val n -> Val (n+1) ; _ -> x) expr1 === Add (Val 2) (Neg (Val 3))
 
-    let stmt11 = Assign "v" (Val 1)
-        stmt121 = Assign "x" (Val 3)
-        stmt12 = While (Neg (Val 2)) stmt121
-        stmt1 = Sequence [stmt11,stmt12]
+    let stmt11 = SAss (V "v") (EInt 1)
+        stmt121 = SAss (V "x") (EInt 3)
+        stmt12 = SReturn (EAdd (EInt 1) (EStm stmt121))
+        stmt1 = SBlock [stmt11,stmt12]
     universe stmt1 === [stmt1,stmt11,stmt12,stmt121]
     children stmt1 === [stmt11,stmt12]
-    childrenBi stmt1 === [Val 1, Neg (Val 2), Val 3]
-    universeBi stmt1 === [Val 1, Neg (Val 2), Val 2, Val 3]
-    transformBi (const ([] :: [Stmt])) stmt1 === Sequence []
-    descend (const stmt121) stmt1 === Sequence [stmt121,stmt121]
+    childrenBi stmt1 === [EInt 1]
+    universeBi stmt1 === [EInt 1]
+    transformBi (const ([] :: [Stm])) stmt1 === SBlock []
+    descend (const stmt121) stmt1 === SBlock [stmt121,stmt121]
 
     let str1 = "neil"
     universe str1 === ["neil","eil","il","l",""]
@@ -35,6 +35,7 @@ test msg = do
     let eith1 = Left str1 :: Either String Int
     universeBi eith1 === ([] :: [Int])
     childrenBi eith1 === str1
+
 
     --let mp1 = [Map.singleton "neil" (1::Int), Map.fromList [("more",3),("test",4)], Map.empty]
     --universeBi mp1 === [1::Int,3,4]
@@ -62,3 +63,7 @@ test msg = do
 
 -- hitTest :: FromTypeRep -> ToTypeRep -> (FromTypeRep -> Bool)
 -- return True if it might be contained within
+
+
+
+

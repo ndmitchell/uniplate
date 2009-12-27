@@ -16,29 +16,57 @@ instance Biplate [Map.Map [Char] Int] Int where
 instance Uniplate Expr where
         uniplate (Neg x1) = plate Neg |* x1
         uniplate (Add x1 x2) = plate Add |* x1 |* x2
+        uniplate (Sub x1 x2) = plate Sub |* x1 |* x2
+        uniplate (Mul x1 x2) = plate Mul |* x1 |* x2
+        uniplate (Div x1 x2) = plate Div |* x1 |* x2
         uniplate x = plate x
 
  
-instance Uniplate Stmt where
-        uniplate (Sequence x1) = plate Sequence ||* x1
-        uniplate (While x1 x2) = plate (While x1) |* x2
+instance Uniplate Exp where
+        uniplate (EStm x1) = plate EStm |+ x1
+        uniplate (EAdd x1 x2) = plate EAdd |* x1 |* x2
         uniplate x = plate x
 
  
-instance Biplate Stmt Expr where
-        biplate (Assign x1 x2) = plate (Assign x1) |* x2
-        biplate (Sequence x1) = plate Sequence ||+ x1
-        biplate (While x1 x2) = plate While |* x1 |+ x2
+instance Uniplate Stm where
+        uniplate (SAss x1 x2) = plate (SAss x1) |+ x2
+        uniplate (SBlock x1) = plate SBlock ||* x1
+        uniplate (SReturn x1) = plate SReturn |+ x1
+        uniplate x = plate x
 
  
-instance Biplate Stmt [Stmt] where
-        biplate (Sequence x1) = plate Sequence |* x1
-        biplate (While x1 x2) = plate (While x1) |+ x2
+instance Biplate Stm Exp where
+        biplate (SAss x1 x2) = plate (SAss x1) |* x2
+        biplate (SBlock x1) = plate SBlock ||+ x1
+        biplate (SReturn x1) = plate SReturn |* x1
         biplate x = plate x
 
  
-instance Biplate Stmt Stmt where
+instance Biplate Exp Stm where
+        biplate (EStm x1) = plate EStm |* x1
+        biplate (EAdd x1 x2) = plate EAdd |+ x1 |+ x2
+        biplate x = plate x
+
+ 
+instance Biplate Exp [Stm] where
+        biplate (EStm x1) = plate EStm |+ x1
+        biplate x = plate x
+
+ 
+instance Biplate Stm [Stm] where
+        biplate (SAss x1 x2) = plate (SAss x1) |+ x2
+        biplate (SBlock x1) = plate SBlock |* x1
+        biplate (SReturn x1) = plate SReturn |+ x1
+        biplate x = plate x
+
+ 
+instance Biplate Stm Stm where
         biplate = plateSelf
+
+ 
+instance Uniplate [Stm] where
+        uniplate ((:) x1 x2) = plate (:) |+ x1 |* x2
+        uniplate x = plate x
 
  
 instance Biplate (Either String Int) Int where
@@ -49,11 +77,6 @@ instance Biplate (Either String Int) Int where
 instance Biplate (Either String Int) Char where
         biplate (Left x1) = plate Left ||* x1
         biplate x = plate x
-
- 
-instance Uniplate [Stmt] where
-        uniplate ((:) x1 x2) = plate (:) |+ x1 |* x2
-        uniplate x = plate x
 
  
 instance Biplate [([Char], Int)] Int where
