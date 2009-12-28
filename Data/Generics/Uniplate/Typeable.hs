@@ -32,6 +32,7 @@ import Data.Generics.Uniplate.Classes
 import Data.Generics.Uniplate.Internal.Utils
 import Data.Generics.Str
 import Data.Typeable
+import Data.Ratio
 
 
 instance (Typeable a, Typeable b, Uniplate b, PlateAll a b) => Biplate a b where
@@ -141,3 +142,5 @@ instance (PlateAll a to, Typeable a
          PlateAll (a,b,c,d,e) to where
     plateAll (a,b,c,d,e) = plate (,,,,) |+ a |+ b |+ c |+ d |+ e
 
+instance (Integral a, PlateAll a to, Typeable a, Typeable to, Uniplate to) => PlateAll (Ratio a) to where
+    plateAll = plateProject (\x -> (numerator x, denominator x)) (uncurry (%))
