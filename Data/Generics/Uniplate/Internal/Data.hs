@@ -61,7 +61,7 @@ cacheHitTest :: Cache -> TypeKey -> Bool
 cacheHitTest (Cache hit miss)
     | IntSet.null hit = const False
     | IntSet.null miss = const True
-    | otherwise = trace ("expensive on " ++ show (Cache hit miss)) $ \x -> x `IntSet.member` hit
+    | otherwise = \x -> x `IntSet.member` hit
 
 
 -- hit means that this value may result in a hit
