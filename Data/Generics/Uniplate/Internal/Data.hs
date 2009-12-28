@@ -1,4 +1,4 @@
-{-# LANGUAGE CPP, Rank2Types, MagicHash, UnboxedTuples, ExistentialQuantification #-}
+{-# LANGUAGE CPP, Rank2Types, MagicHash, UnboxedTuples, ExistentialQuantification, ScopedTypeVariables #-}
 
 {- |
     Internal module, do not import or use.
@@ -19,6 +19,8 @@ import Data.IORef
 import Control.Monad.State
 import Debug.Trace
 import Data.Ratio
+import Control.Exception
+
 
 ---------------------------------------------------------------------
 -- HIT TEST
@@ -85,9 +87,10 @@ hitTestQuery from@(DataBox kfrom _) kto = inlinePerformIO $ do
         Just ans -> return ans
         Nothing -> do
             let res = toCache $ hitTestAdd from kto IntMap.empty
-                mp2 = IntMap.adjust (IntMap.insert kto res) kfrom mp
+            res2 <- Control.Exception.catch (return $! res) (\(_ :: SomeException) -> return Nothing)
+            let mp2 = IntMap.adjust (IntMap.insert kto res2) kfrom mp
             writeIORef hitTestCache mp2
-            return res
+            return res2
 
 
 -- need to classify each item as one of the following
