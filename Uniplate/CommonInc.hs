@@ -75,9 +75,9 @@ test msg = do
     childrenBi eith1 === str1
 
 
-    --let mp1 = [Map.singleton "neil" (1::Int), Map.fromList [("more",3),("test",4)], Map.empty]
-    --universeBi mp1 === [1::Int,3,4]
-    --universeBi (transformBi (+(1::Int)) mp1) === [2::Int,4,5]
+    let mp1 = [Map.singleton "neil" (1::Int), Map.fromList [("more",3),("test",4)], Map.empty]
+    universeBi mp1 === [1::Int,3,4]
+    universeBi (transformBi (+(1::Int)) mp1) === [2::Int,4,5]
 
 -- TO ADD
 -- Map/Set, check we go inside

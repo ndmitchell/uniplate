@@ -135,6 +135,7 @@ dataBox x = DataBox (typeKey x) x
 -- if you can't do so, just return Nothing
 sybChildren :: Data a => a -> Maybe [DataBox]
 sybChildren x | isAlgType dtyp = Just $ concatMap f ctrs
+              | isNorepType dtyp = Nothing
               | otherwise = Just []
     where
         f ctr = gmapQ dataBox (asTypeOf (fromConstr ctr) x)
