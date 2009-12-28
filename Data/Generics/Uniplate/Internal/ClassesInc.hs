@@ -30,8 +30,8 @@ class Uniplate on where
     uniplate :: on -> (Str on, Str on -> on)
 
     -- | Perform a transformation on all the immediate children, then combine them back.
-    -- This operation allows additional information to be passed downwards, and can be
-    -- used to provide a top-down transformation.
+    --   This operation allows additional information to be passed downwards, and can be
+    --   used to provide a top-down transformation.
     descend :: (on -> on) -> on -> on
     descend f x = generate $ fmap f current
         where (current, generate) = uniplate x
