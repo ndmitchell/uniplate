@@ -5,7 +5,7 @@
 -}
 
 module Data.Generics.Uniplate.Internal.Utils(
-    unsafeCoerce, builder, inlinePerformIO, concatCont
+    unsafeCoerce, builder, unsafePerformIO, inlinePerformIO, concatCont
     ) where
 
 import Foreign(unsafePerformIO)
