@@ -44,6 +44,7 @@ module Data.Generics.Uniplate.Direct(
 import Control.Arrow
 import Data.Generics.Uniplate.Classes
 import Data.Generics.Str
+import Data.Ratio
 
 
 type Type from to = (Str to, Str to -> from)
@@ -115,3 +116,12 @@ instance Biplate [Char] Char where
 
 instance Biplate [Char] [Char] where
     biplate = plateSelf
+
+instance Uniplate (Ratio Integer) where
+    uniplate = plate
+
+instance Biplate (Ratio Integer) (Ratio Integer) where
+    biplate = plateSelf
+
+instance Biplate (Ratio Integer) Integer where
+    biplate x = (Two (One (numerator x)) (One (denominator x)), \(Two (One n) (One d)) -> n % d)
