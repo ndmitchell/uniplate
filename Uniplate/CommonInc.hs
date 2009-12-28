@@ -1,6 +1,7 @@
 
 import Uniplate.Type
 import Data.Char
+import Data.Ratio
 import qualified Data.Map as Map
 
 
@@ -74,10 +75,13 @@ test msg = do
     universeBi eith1 === ([] :: [Int])
     childrenBi eith1 === str1
 
-
     let mp1 = [Map.singleton "neil" (1::Int), Map.fromList [("more",3),("test",4)], Map.empty]
     universeBi mp1 === [1::Int,3,4]
     universeBi (transformBi (+(1::Int)) mp1) === [2::Int,4,5]
+
+    let rat1 = 1 % 2 :: Rational
+    universe rat1 === [rat1]
+    universeBi rat1 === [1::Integer,2::Integer]
 
 -- TO ADD
 -- Map/Set, check we go inside
