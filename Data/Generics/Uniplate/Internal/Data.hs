@@ -166,3 +166,13 @@ uniplateData oracle item = fromC $ gfoldl combine create item
 
         create :: g -> C with g
         create x = C (Zero, \_ -> x)
+
+
+descendData :: Data on => (forall a . Typeable a => a -> Answer on) -> (on -> on) -> on -> on
+descendData oracle op = gmapT (descendBiData oracle op)
+
+descendBiData :: (Data on, Data with) => (forall a . Typeable a => a -> Answer with) -> (with -> with) -> on -> on
+descendBiData oracle op x = case oracle x of
+    Hit y -> unsafeCoerce $ op y
+    Follow -> gmapT (descendBiData oracle op) x
+    Miss -> x
