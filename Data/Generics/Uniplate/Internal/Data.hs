@@ -150,7 +150,7 @@ newtype C x a = C {fromC :: CC x a}
 type CC x a = (Str x, Str x -> a)
 
 
-biplateData :: (Data on, Data with, Typeable on, Typeable with) =>
+biplateData :: (Data on, Data with) =>
                          (forall a . Typeable a => a -> Answer with) -> on -> CC with on
 biplateData oracle x = res
         where
@@ -160,7 +160,7 @@ biplateData oracle x = res
                        Miss -> (Zero, \_ -> x)
 
 
-uniplateData :: (Data on, Data with, Typeable on, Typeable with) =>
+uniplateData :: (Data on, Data with) =>
                     (forall a . Typeable a => a -> Answer with) -> on -> CC with on
 uniplateData oracle item = fromC $ gfoldl combine create item
     where
