@@ -16,9 +16,6 @@ import Data.IntSet(IntSet)
 import qualified Data.IntMap as IntMap
 import Data.IntMap(IntMap)
 import Data.IORef
-import Control.Monad.State
-import Debug.Trace
-import Data.Ratio
 import Control.Exception
 
 
@@ -32,6 +29,7 @@ data Answer a = Hit {fromHit :: a} -- you just hit the element you were after (h
 
 data Oracle to = Oracle {fromOracle :: forall on . Typeable on => on -> Answer to}
 
+{-# INLINE hitTest #-}
 hitTest :: (Data from, Typeable from, Data to, Typeable to) => from -> to -> Oracle to
 
 
@@ -42,10 +40,9 @@ hitTest :: (Data from, Typeable from, Data to, Typeable to) => from -> to -> Ora
 hitTest _ _ = Oracle . maybe Follow Hit . cast
 
 
-#elif 1
+#else
 
 
-{-# INLINE hitTest #-}
 hitTest from to =
     let kto = typeKey to
     in case hitTestQuery (dataBox from) kto of
@@ -145,64 +142,12 @@ sybChildren x | isAlgType dtyp = Just $ concatMap f ctrs
         ctrs = dataTypeConstrs dtyp
         dtyp = dataTypeOf x
 
-
-#else
-
-hitTest start find = Oracle query
-    where
-        typeInt x = inlinePerformIO $ typeRepKey x
-    
-        query :: Typeable a => a -> Answer find
-        query a = if tifind == tia then Hit (unsafeCoerce a)
-                  else if tia `IntSet.notMember` timatch then Follow else Miss
-            where tia = typeInt $ typeOf a
-    
-        tifind = typeInt tfind
-        timatch = IntSet.fromList [1,2,3] -- IntSet.fromList $ map typeInt tmatch
-
-        tfind = typeOf find
-        tmatch = f [tfind] (filter ((/=) tfind . fst) $ containsList start)
-
-        f want have = if null want2 then [] else want2 ++ f want2 no
-            where
-                want2 = map fst yes
-                (yes,no) = partition (not . null . intersect want . snd) have
-
-containsList :: (Data a, Typeable a) => a -> [(TypeRep, [TypeRep])]
-containsList x = f [] [DataBox x]
-    where
-        f done [] = []
-        f done (DataBox t:odo)
-            | tt `elem` done = f done odo
-            | otherwise = (tt,map (\(DataBox a) -> typeOf a) xs) : f (tt:done) (xs++odo)
-            where
-                tt = typeOf t
-                xs = contains t
-
-
--- Ratio is strict and causes bugs with fromConstr in GHC 6.10.1
--- See bug http://hackage.haskell.org/trac/ghc/ticket/2782
-evilRatio = fst $ splitTyConApp $ typeOf (undefined :: Ratio Int) 
-
-data DataBox = forall a . (Data a, Typeable a) => DataBox a
-
-contains :: (Data a, Typeable a) => a -> [DataBox]
-contains x | fst (splitTyConApp $ typeOf x) == evilRatio = []
-           | isAlgType dtyp = concatMap f ctrs
-           | otherwise = []
-    where
-        f ctr = gmapQ DataBox (asTypeOf (fromConstr ctr) x)
-        ctrs = dataTypeConstrs dtyp
-        dtyp = dataTypeOf x
-
 #endif
-
 
 
 newtype C x a = C {fromC :: CC x a}
 
 type CC x a = (Str x, Str x -> a)
-
 
 
 biplateData :: (Data on, Data with, Typeable on, Typeable with) =>
