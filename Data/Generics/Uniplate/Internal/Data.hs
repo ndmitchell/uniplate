@@ -30,7 +30,7 @@ data Answer a = Hit {fromHit :: a} -- you just hit the element you were after (h
 data Oracle to = Oracle {fromOracle :: forall on . Typeable on => on -> Answer to}
 
 {-# INLINE hitTest #-}
-hitTest :: (Data from, Typeable from, Data to, Typeable to) => from -> to -> Oracle to
+hitTest :: (Data from, Data to) => from -> to -> Oracle to
 
 
 #if __GLASGOW_HASKELL__ < 606
@@ -128,7 +128,7 @@ typeKey x = inlinePerformIO $ typeRepKey $ typeOf x
 -- operations.
 data DataBox = forall a . (Data a) => DataBox {dataBoxKey :: TypeKey, dataBoxVal :: a}
 
-dataBox :: (Data a, Typeable a) => a -> DataBox
+dataBox :: Data a => a -> DataBox
 dataBox x = DataBox (typeKey x) x
 
 -- return all the possible children of a node
@@ -150,23 +150,19 @@ newtype C x a = C {fromC :: CC x a}
 type CC x a = (Str x, Str x -> a)
 
 
-biplateData :: (Data on, Data with) =>
-                         (forall a . Typeable a => a -> Answer with) -> on -> CC with on
-biplateData oracle x = res
-        where
-            res = case oracle x of
-                       Hit y -> (One y, \(One x) -> unsafeCoerce x)
-                       Follow -> uniplateData oracle x
-                       Miss -> (Zero, \_ -> x)
+biplateData :: (Data on, Data with) => (forall a . Typeable a => a -> Answer with) -> on -> CC with on
+biplateData oracle x = case oracle x of
+    Hit y -> (One y, \(One x) -> unsafeCoerce x)
+    Follow -> uniplateData oracle x
+    Miss -> (Zero, \_ -> x)
 
 
-uniplateData :: (Data on, Data with) =>
-                    (forall a . Typeable a => a -> Answer with) -> on -> CC with on
+uniplateData :: forall on with . (Data on, Data with) => (forall a . Typeable a => a -> Answer with) -> on -> CC with on
 uniplateData oracle item = fromC $ gfoldl combine create item
     where
-        -- forall a b . Data a => C with (a -> b) -> a -> C with b
+        combine :: Data a => C with (a -> b) -> a -> C with b
         combine (C (c,g)) x = case biplateData oracle x of
                                   (c2, g2) -> C (Two c c2, \(Two c' c2') -> g c' (g2 c2'))
 
-        -- forall g . g -> C with g
+        create :: g -> C with g
         create x = C (Zero, \_ -> x)
