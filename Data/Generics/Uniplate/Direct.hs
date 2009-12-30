@@ -87,11 +87,9 @@ plate f = (Zero, \_ -> f)
 
 -- | The field to the right is a list of types which may contain the target
 (||+) :: Biplate item to => Type ([item] -> from) to -> [item] -> Type from to
-(||+) (xs,x_) y = case plateListDiff y of
+(||+) (xs,x_) [] = (xs, \xs -> x_ xs []) -- can eliminate a Two _ Zero in the base case
+(||+) (xs,x_) (y:ys) = case plate (:) |+ y ||+ ys of
                        (ys,y_) -> (Two xs ys, \(Two xs ys) -> x_ xs (y_ ys))
-    where
-        plateListDiff [] = plate []
-        plateListDiff (x:xs) = plate (:) |+ x ||+ xs
 
 
 -- | Used for 'PlayAll' definitions where both types are the same.
