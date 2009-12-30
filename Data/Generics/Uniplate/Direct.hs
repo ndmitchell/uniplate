@@ -54,28 +54,33 @@ type Type from to = (Str to, Str to -> from)
 -- The following rule can be used for optimisation:
 --
 -- > plate Ctor |- x == plate (Ctor x)
+{-# INLINE plate #-}
 plate :: from -> Type from to
 plate f = (Zero, \_ -> f)
 
 
 -- | The field to the right is the target.
+{-# INLINE (|*) #-}
 (|*) :: Type (to -> from) to -> to -> Type from to
 (|*) (xs,x_) y = (Two xs (One y),\(Two xs (One y)) -> x_ xs y)
 
 
 
 -- | The field to the right may contain the target.
+{-# INLINE (|+) #-}
 (|+) :: Biplate item to => Type (item -> from) to -> item -> Type from to
 (|+) (xs,x_) y = case biplate y of
                       (ys,y_) -> (Two xs ys, \(Two xs ys) -> x_ xs (y_ ys))
 
 
 -- | The field to the right /does not/ contain the target.
+{-# INLINE (|-) #-}
 (|-) :: Type (item -> from) to -> item -> Type from to
 (|-) (xs,x_) y = (xs,\xs -> x_ xs y)
 
 
 -- | The field to the right is a list of the type of the target
+{-# INLINE (||*) #-}
 (||*) :: Type ([to] -> from) to -> [to] -> Type from to
 (||*) (xs,x_) y = (Two xs (listStr y), \(Two xs ys) -> x_ xs (strList ys))
 
