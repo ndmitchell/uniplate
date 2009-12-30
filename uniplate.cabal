@@ -53,3 +53,5 @@ Library
         Data.Generics.Uniplate.Internal.Data
         Data.Generics.Uniplate.Internal.DataOnlyOperations
         Data.Generics.Uniplate.Internal.Utils
+
+    Extensions: CPP
