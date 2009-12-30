@@ -1,5 +1,4 @@
-{-# LANGUAGE ScopedTypeVariables, MultiParamTypeClasses, UndecidableInstances, ExistentialQuantification, Rank2Types, CPP #-}
--- OPTIONS_GHC is required only for 6.4.2, not 6.6.1
+{-# LANGUAGE ScopedTypeVariables, FlexibleInstances, MultiParamTypeClasses, UndecidableInstances, ExistentialQuantification, Rank2Types, CPP #-}
 
 {- |
     This module exports 'Biplate' instances for everything with 'Data' defined.
