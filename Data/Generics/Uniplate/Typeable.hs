@@ -19,7 +19,7 @@
 -}
 
 module Data.Generics.Uniplate.Typeable(
-    module Data.Generics.Uniplate.Classes,
+    module Data.Generics.Uniplate.Operations,
     module Data.Typeable,
     -- * The Class
     PlateAll(..),
@@ -28,7 +28,7 @@ module Data.Generics.Uniplate.Typeable(
     ) where
 
 import Control.Arrow
-import Data.Generics.Uniplate.Classes
+import Data.Generics.Uniplate.Operations
 import Data.Generics.Uniplate.Internal.Utils
 import Data.Generics.Str
 import Data.Typeable

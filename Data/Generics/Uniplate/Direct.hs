@@ -35,14 +35,14 @@
     
 
 module Data.Generics.Uniplate.Direct(
-    module Data.Generics.Uniplate.Classes,
+    module Data.Generics.Uniplate.Operations,
     -- * The Combinators
     plate, plateSelf, plateProject,
     (|+), (|-), (|*), (||+), (||*)
     ) where
 
 import Control.Arrow
-import Data.Generics.Uniplate.Classes
+import Data.Generics.Uniplate.Operations
 import Data.Generics.Str
 import Data.Ratio
 

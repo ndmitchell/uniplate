@@ -6,9 +6,9 @@
     Using GHC the 'Data' instances can be constructed with @deriving Data@.
 -}
 module Data.Generics.Uniplate.DataOnly(
-    module Data.Generics.Uniplate.Internal.DataOnlyClasses
+    module Data.Generics.Uniplate.Internal.DataOnlyOperations
     ) where
 
-import Data.Generics.Uniplate.Internal.DataOnlyClasses
+import Data.Generics.Uniplate.Internal.DataOnlyOperations
 
 #include "Internal/DataInc.hs"
