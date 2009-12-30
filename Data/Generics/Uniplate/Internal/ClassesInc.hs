@@ -193,11 +193,13 @@ childrenBi x = builder f
 
 -- ** Transformations
 
+{-# INLINE transformBi #-}
 transformBi :: Biplate from to => (to -> to) -> from -> from
 transformBi f x = generate $ fmap (transform f) current
     where (current, generate) = biplate x
 
 
+{-# INLINE transformBiM #-}
 transformBiM :: (Monad m, Biplate from to) => (to -> m to) -> from -> m from
 transformBiM f x = liftM generate $ mapM (transformM f) current
     where (current, generate) = biplate x
