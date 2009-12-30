@@ -16,7 +16,7 @@
 
 module Data.Generics.SYB where
 
-import Data.Generics.Biplate
+import Data.Generics.Uniplate.Operations
 
 -- | @gmapT == 'descend'@
 gmapT :: Uniplate a => (a -> a) -> a -> a

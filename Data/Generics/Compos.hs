@@ -17,7 +17,7 @@ module Data.Generics.Compos where
 
 import Control.Monad
 import Data.Monoid
-import Data.Generics.UniplateStr
+import Data.Generics.Uniplate.Operations
 
 
 -- | If you want to keep an existing type class
