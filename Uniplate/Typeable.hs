@@ -1,4 +1,4 @@
-{-# LANGUAGE CPP, FlexibleInstances, MultiParamTypeClasses #-}
+{-# LANGUAGE CPP, FlexibleInstances, FlexibleContexts, MultiParamTypeClasses #-}
 module Uniplate.Typeable where
 import Data.Generics.Uniplate.Typeable
 #include "CommonInc.hs"

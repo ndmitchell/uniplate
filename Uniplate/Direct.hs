@@ -1,4 +1,4 @@
-{-# LANGUAGE CPP, FlexibleInstances, MultiParamTypeClasses #-}
+{-# LANGUAGE CPP, FlexibleInstances, FlexibleContexts, MultiParamTypeClasses #-}
 module Uniplate.Direct where
 import Data.Generics.Uniplate.Direct
 #include "CommonInc.hs"

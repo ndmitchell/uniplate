@@ -11,36 +11,47 @@ benchmark = Benchmark
     rename_ symbols_ constFold_
     (increase_ 100) (incrone_ "" 100) bill_
 
-
+variables_ :: Expr -> [String]
 variables_ x = [y | Var y <- universe x]
 
+zeros_ :: Expr -> Int
 zeros_ x = length [() | Div _ (Val 0) <- universe x]
 
+simplify_ :: Expr -> Expr
 simplify_ = transform simp
     where
         simp (Sub x y)          = simp $ Add x (Neg y)
         simp (Add x y) | x == y = Mul (Val 2) x
         simp x                  = x
 
+rename_ :: Stm -> Stm
 rename_ = transformBi rename_op
     where rename_op (V x) = V ("_" ++ x)
 
+symbols_ :: Stm -> [(Var,Typ)]
 symbols_ x = [(v,t) | SDecl t v <- universeBi x]
 
+constFold_ :: Stm -> Stm
 constFold_ = transformBi const_op
     where
         const_op (EAdd (EInt n) (EInt m)) = EInt (n+m)
         const_op x = x
 
-increase_op k (S s) = S (s+k)
-increase_ k = transformBi (increase_op k)
+increase_ :: Integer -> Company -> Company
+increase_ = increaseAny_
 
+increaseAny_ :: Biplate a Salary => Integer -> a -> a
+increaseAny_ k = transformBi (increase_op k)
+    where increase_op k (S s) = S (s+k)
+
+incrone_ :: String -> Integer -> Company -> Company
 incrone_ name k = descendBi $ f name k
     where
-        f name k a@(D n _ _) | name == n = increase_ k a
-                              | otherwise = descend (f name k) a
-bill_ x = sum [x | S x <- universeBi x]
+        f name k a@(D n _ _) | name == n = increaseAny_ k a
+                             | otherwise = descend (f name k) a
 
+bill_ :: Company -> Integer
+bill_ x = sum [x | S x <- universeBi x]
 
 
 test :: String -> IO ()
