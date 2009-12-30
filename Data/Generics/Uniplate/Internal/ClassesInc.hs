@@ -74,6 +74,7 @@ class Uniplate to => Biplate from to where
 -- This method is often combined with a list comprehension, for example:
 --
 -- > vals x = [i | Val i <- universe x]
+{-# INLINE universe #-}
 universe :: Uniplate on => on -> [on]
 universe x = builder f
     where
@@ -169,6 +170,7 @@ para op x = op x $ map (para op) $ children x
 
 -- ** Queries
 
+{-# INLINE universeBi #-}
 universeBi :: Biplate from to => from -> [to]
 universeBi x = builder f
     where
