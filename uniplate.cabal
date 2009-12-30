@@ -1,7 +1,7 @@
 Cabal-Version:      >= 1.2
 Build-Type:         Simple
 Name:               uniplate
-Version:            1.2.0.3
+Version:            1.3
 Copyright:          2006-9, Neil Mitchell
 Maintainer:         ndmitchell@gmail.com
 Homepage:           http://community.haskell.org/~ndm/uniplate/
@@ -14,8 +14,11 @@ Description:
     boilerplate code. It has similar goals to the original Scrap Your Boilerplate
     work but is substantially simpler.
 Category:           Development
+
 Extra-Source-Files:
     uniplate.htm
+    Data/Generics/Uniplate/Internal/DataInc.hs
+    Data/Generics/Uniplate/Internal/OperationsInc.hs
 
 Flag ghc_6_10
 
@@ -26,6 +29,16 @@ Library
         build-depends: base == 3.*, mtl, containers
 
     Exposed-modules:
+        Data.Generics.Str
+        Data.Generics.Compos
+        Data.Generics.SYB
+        Data.Generics.Uniplate.Operations
+        Data.Generics.Uniplate.Direct
+        Data.Generics.Uniplate.Typeable
+        Data.Generics.Uniplate.Data
+        Data.Generics.Uniplate.DataOnly
+
+        -- DEPRECATED
         Data.Generics.Uniplate
         Data.Generics.UniplateOn
         Data.Generics.UniplateStr
@@ -35,8 +48,8 @@ Library
         Data.Generics.PlateTypeable
         Data.Generics.PlateData
         Data.Generics.PlateInternal
-        Data.Generics.Str
-        Data.Generics.Compos
-        Data.Generics.SYB
 
-    Extensions:     CPP, FlexibleInstances
+    Other-modules:
+        Data.Generics.Uniplate.Internal.Data
+        Data.Generics.Uniplate.Internal.DataOnlyOperations
+        Data.Generics.Uniplate.Internal.Utils
