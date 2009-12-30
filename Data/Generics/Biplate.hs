@@ -2,6 +2,8 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 
 {- |
+    /RECOMMENDATION/: Use "Data.Generics.Uniplate.Operations" instead.
+
     Requires multi-parameter type classes, so is no longer Haskell 98. These operations
     are easier to use and construct than the equivalent "Data.Generics.UniplateStrOn" methods,
     but perform the same operation.

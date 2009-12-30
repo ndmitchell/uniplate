@@ -1,6 +1,8 @@
 {-# LANGUAGE MultiParamTypeClasses, FlexibleInstances, UndecidableInstances #-}
 
 {- |
+    /RECOMMENDATION/: Use "Data.Generics.Uniplate.Typeable" instead.
+
     This module supplies a method for writing 'Biplate' instances more easily.
     
     To take an example:

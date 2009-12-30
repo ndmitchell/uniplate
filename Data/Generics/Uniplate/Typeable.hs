@@ -1,21 +1,22 @@
 {-# LANGUAGE MultiParamTypeClasses, FlexibleInstances, UndecidableInstances #-}
 
 {- |
-    This module supplies a method for writing 'Biplate' instances more easily.
-    
+    /RECOMMENDATION:/ Use "Data.Generics.Uniplate.Data" instead - it usually performs
+    faster (sometimes significantly so) and requires no special instance declarations.
+
+    This module supplies a method for writing 'Uniplate' / 'Biplate' instances. One
+    instance declaration is required for each data type you wish to work with. The
+    instances can be generated using Derive: <http://community.haskell.org/~ndm/derive/>.
+
     To take an example:
-    
+
     > data Expr = Var Int | Neg Expr | Add Expr Expr
-    >
-    > instance Typeable Expr where ...
+    >             deriving Typeable
     >
     > instance (Typeable a, Uniplate a) => PlateAll Expr a where
-    >   plateAll (Var x  ) = plate Var |- x
-    >   plateAll (Neg x  ) = plate Neg |+ x
-    >   plateAll (Add x y) = plate Add |+ x |+ y
-    >
-    > instance Uniplate Expr where
-    >   uniplate = uniplateAll
+    >     plateAll (Var x  ) = plate Var |+ x
+    >     plateAll (Neg x  ) = plate Neg |+ x
+    >     plateAll (Add x y) = plate Add |+ x |+ y
 -}
 
 module Data.Generics.Uniplate.Typeable(
@@ -53,34 +54,35 @@ plateMore x = res
                   Just y -> (One y, \(One y) -> unsafeCoerce y)
 
 
--- | This class represents going from the container type to the target.
---
--- This class should only be constructed with 'plate', '|+' and '|-'
+-- | This class should be defined for each data type of interest.
 class PlateAll from to where
+    -- | This method should be defined using 'plate' and '|+', '|-'.
     plateAll :: from -> Type from to
 
 
 -- | The main combinator used to start the chain.
---
--- The following rule can be used for optimisation:
---
--- > plate Ctor |- x == plate (Ctor x)
 plate :: from -> Type from to
 plate x = (Zero, \_ -> x)
 
 
--- | the field to the right may contain the target.
+-- | The field to the right may contain the target.
 (|+) :: (Typeable item, Typeable to, PlateAll item to) => Type (item -> from) to -> item -> Type from to
 (|+) (xs,x_) y = case plateMore y of
                       (ys,y_) -> (Two xs ys,\(Two xs ys) -> x_ xs (y_ ys))
 
 -- | The field to the right /does not/ contain the target.
--- This can be used as either an optimisation, or more commonly for excluding
--- primitives such as Int.
+--   This can be used as either an optimisation, or more commonly for excluding
+--   primitives such as Int.
 (|-) :: Type (item -> from) to -> item -> Type from to
 (|-) (xs,x_) y = (xs,\xs -> x_ xs y)
 
 
+-- | Write an instance in terms of a projection/injection pair. Usually used to define instances
+--   for abstract containers such as Map:
+--
+-- > instance (Ord a, Typeable a, PlateAll a c, Typeable b, PlateAll b c,
+-- >          Typeable c, PlateAll c c) => PlateAll (Map.Map a b) c where
+-- >     plateAll = plateProject Map.toList Map.fromList
 plateProject :: (Typeable item, Typeable to, PlateAll item to) => (from -> item) -> (item -> from) -> from -> Type from to
 plateProject into outof = second (outof . ) . plateAll . into
 

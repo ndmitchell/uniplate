@@ -1,4 +1,6 @@
 {- |
+/RECOMMENDATION/: Use "Data.Generics.Uniplate.Operations" instead.
+
 This is the main Uniplate module, which defines all the essential operations
 in a Haskell 98 compatible manner.
 

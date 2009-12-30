@@ -1,11 +1,12 @@
-{-# LANGUAGE CPP, FlexibleInstances, FlexibleContexts, MultiParamTypeClasses #-}
+{-# LANGUAGE CPP, FlexibleInstances, FlexibleContexts, UndecidableInstances, MultiParamTypeClasses #-}
 module Uniplate.Typeable where
 import Data.Generics.Uniplate.Typeable
 #include "CommonInc.hs"
 
 
-instance PlateAll (Map.Map [Char] Int) Int where
-    plateAll = plateProject Map.toAscList Map.fromDistinctAscList
+instance (Ord a, Typeable a, PlateAll a c, Typeable b, PlateAll b c,
+          Typeable c, PlateAll c c) => PlateAll (Map.Map a b) c where
+    plateAll = plateProject Map.toList Map.fromList
 
 
 -- GENERATED

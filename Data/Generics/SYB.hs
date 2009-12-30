@@ -1,9 +1,9 @@
 {-|
     SYB compatibility layer. This module serves as a drop-in
     replacement in some situations for some of the SYB operations.
-    Must be used in conjunction with "Data.Generics.Biplate".
+    Users should also import "Data.Generics.Uniplate.Data".
 
-    From the paper: \"Scrap your boilerplate: a practical design
+    SYB is described in the paper: \"Scrap your boilerplate: a practical design
     pattern for generic programming\" by Ralf Lammel and Simon
     Peyton Jones.
 

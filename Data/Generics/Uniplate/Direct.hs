@@ -1,9 +1,9 @@
 {-# LANGUAGE MultiParamTypeClasses, FlexibleInstances #-}
 
 {- |
-    This module supplies a method for writing 'Biplate' instances more easily.
-    This module requires fewest extensions, highest performance, and most instance
-    definitions.
+    This module supplies a method for writing 'Uniplate' and 'Biplate' instances.
+    This moulde gives the highest performance, but requires many instance definitions. The
+    instances can be generated using Derive: <http://community.haskell.org/~ndm/derive/>.
     
     To take an example:
     
@@ -37,8 +37,9 @@
 module Data.Generics.Uniplate.Direct(
     module Data.Generics.Uniplate.Operations,
     -- * The Combinators
-    plate, plateSelf, plateProject,
-    (|+), (|-), (|*), (||+), (||*)
+    plate, plateSelf,
+    (|+), (|-), (|*), (||+), (||*),
+    plateProject
     ) where
 
 import Control.Arrow
@@ -92,11 +93,19 @@ plate f = (Zero, \_ -> f)
                        (ys,y_) -> (Two xs ys, \(Two xs ys) -> x_ xs (y_ ys))
 
 
--- | Used for 'PlayAll' definitions where both types are the same.
+-- | Used for 'Biplate' definitions where both types are the same.
 plateSelf :: to -> Type to to
 plateSelf x = (One x, \(One x) -> x)
 
 
+-- | Write an instance in terms of a projection/injection pair. Usually used to define instances
+--   for abstract containers such as Map:
+--
+-- > instance Biplate (Map.Map [Char] Int) Int where
+-- >     biplate = plateProject Map.toAscList Map.fromDistinctAscList
+--
+-- Because we know that Uniplate operations will not change the keys,
+-- we can use the 'fromDistictAscList' function to reconstruct it.
 plateProject :: Biplate item to => (from -> item) -> (item -> from) -> from -> Type from to
 plateProject into outof = second (outof . ) . biplate . into
 

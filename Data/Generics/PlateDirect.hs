@@ -1,6 +1,8 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 
 {- |
+    /RECOMMENDATION/: Use "Data.Generics.Uniplate.Direct" instead.
+
     This module supplies a method for writing 'Biplate' instances more easily.
     This module requires fewest extensions, highest performance, and most instance
     definitions.

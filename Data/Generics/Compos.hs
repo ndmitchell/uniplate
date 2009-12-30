@@ -2,10 +2,10 @@
     Compos compatibility layer. This module serves as a drop-in
     replacement in some situations for some of the Compos operations.
     Only the single-type traversals are supported, on normal
-    algebraic data types. Must be used in conjunction with
-    "Data.Generics.UniplateStr".
+    algebraic data types. Users should also import either "Data.Generics.Uniplate.Data"
+    or "Data.Generics.Uniplate.Direct".
 
-    From the paper: \"A Pattern for Almost Compositional Functions\"
+    Compos is described in the paper: \"A Pattern for Almost Compositional Functions\"
     by Bjorn Bringert and Aarne Ranta.
 
     * <http://doi.acm.org/10.1145/1159803.1159834>

@@ -1,6 +1,8 @@
 {-# LANGUAGE ScopedTypeVariables, FlexibleInstances, MultiParamTypeClasses, UndecidableInstances, ExistentialQuantification, Rank2Types, CPP #-}
 
 {- |
+    /RECOMMENDATION/: Use "Data.Generics.Uniplate.Data" instead.
+
     This module exports 'Biplate' instances for everything with 'Data' defined.
     Using GHC the 'Data' instances can be constructed with @deriving Data@.
 -}

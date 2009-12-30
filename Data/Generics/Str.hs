@@ -1,7 +1,7 @@
 {- |
     This module provides the 'Str' data type, which is used by the
     underlying 'uniplate' and 'biplate' methods. It should not
-    be used directly under ordinary circumstances.
+    be used directly under normal circumstances.
 -}
 
 module Data.Generics.Str where

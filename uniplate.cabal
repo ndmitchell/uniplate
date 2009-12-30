@@ -8,12 +8,34 @@ Homepage:           http://community.haskell.org/~ndm/uniplate/
 License:            BSD3
 License-File:       LICENSE
 Author:             Neil Mitchell
-Synopsis:           Uniform type generic traversals.
+Synopsis:           Help writing simple, consise and fast generic operations.
+Category:           Generics
 Description:
-    Uniplate is a simple and concise generics library, which aims to eliminate
-    boilerplate code. It has similar goals to the original Scrap Your Boilerplate
-    work but is substantially simpler.
-Category:           Development
+    Uniplate is library for writing simple and concise generic operations.
+    Uniplate has similar goals to the original Scrap Your Boilerplate work,
+    but is substantially simpler and faster.
+    .
+    To get started with Uniplate you should import one of the three following
+    modules:
+    .
+    * "Data.Generics.Uniplate.Data" - to quickly start writing generic functions.
+    Most users should start by importing this module.
+    .
+    * "Data.Generics.Uniplate.Direct" - a replacement for "Data.Generics.Uniplate.Data"
+    with substantially higher performance (around 5 times), but requires writing
+    instance declarations.
+    .
+    * "Data.Generics.Uniplate.Operations" - definitions of all the operations defined
+    by Uniplate. Both the above two modules re-export this module.
+    .
+    In addition, some users may want to make use of the following modules:
+    .
+    * "Data.Generics.SYB" - users transitioning from the Scrap Your Boilerplate library.
+    .
+    * "Data.Generics.Compos" - users transitioning from the Compos library.
+    .
+    * "Data.Generics.Uniplate.DataOnly" - users making use of both @Data@ and @Direct@
+    to avoid getting instance conflicts.
 
 Extra-Source-Files:
     uniplate.htm
@@ -47,9 +69,9 @@ Library
         Data.Generics.PlateDirect
         Data.Generics.PlateTypeable
         Data.Generics.PlateData
-        Data.Generics.PlateInternal
 
     Other-modules:
+        Data.Generics.PlateInternal
         Data.Generics.Uniplate.Internal.Data
         Data.Generics.Uniplate.Internal.DataOnlyOperations
         Data.Generics.Uniplate.Internal.Utils

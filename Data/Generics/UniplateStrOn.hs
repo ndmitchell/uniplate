@@ -1,4 +1,6 @@
 {- |
+/RECOMMENDATION/: Use "Data.Generics.Uniplate.Operations" instead.
+
 This module retained Haskell 98 compatability, but users who are happy with
 multi-parameter type classes should look towards "Data.Generics.Biplate".
 
