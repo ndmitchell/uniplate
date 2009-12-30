@@ -105,13 +105,14 @@ children x = builder f
 -- >    where f (Neg (Lit i)) = Lit (negate i)
 -- >          f x = x
 transform :: Uniplate on => (on -> on) -> on -> on
-transform f = f . descend (transform f)
+transform f = g
+    where g = f . descend g
 
 
 -- | Monadic variant of 'transform'
 transformM :: (Monad m, Uniplate on) => (on -> m on) -> on -> m on
-transformM f x = f =<< descendM (transformM f) x
-
+transformM f = g
+    where g x = f =<< descendM g x
 
 -- | Rewrite by applying a rule everywhere you can. Ensures that the rule cannot
 -- be applied anywhere in the result:
