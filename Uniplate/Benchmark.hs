@@ -58,8 +58,3 @@ runOne n inp out op = do
 
 getTime :: IO Double
 getTime = (fromRational . toRational) `fmap` getPOSIXTime
-
-
-normResult :: [Double] -> [Double]
-normResult xs = map (/ mn) xs
-    where mn = minimum xs
