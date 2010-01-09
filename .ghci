@@ -1,0 +1,8 @@
+:set -w -fwarn-unused-binds -fwarn-unused-imports
+:load Main
+
+let cmdTest _ = return ":main test"
+:def test cmdTest
+
+let cmdBenchmark _ = return ":!ghc --make -O2 -hidir obj -odir obj Main.hs\n:!main.exe benchmark"
+:def benchmark cmdBenchmark
