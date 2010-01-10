@@ -9,9 +9,8 @@ import qualified Uniplate.Data as Data
 import Uniplate.Type
 import Uniplate.Testset
 import Data.List
-import Numeric
 import Control.Monad
-import Data.Time.Clock.POSIX(getPOSIXTime)
+import Uniplate.Timer
 
 
 benchmark = do
@@ -32,7 +31,6 @@ benchmark = do
 colFirst = 15
 colRest = 10
 pad n xs = replicate (n - length xs) ' ' ++ xs
-dp2 x = showFFloat (Just 2) x ""
 
 columns xs = putStrLn $ pad colFirst "" ++ concatMap (pad colRest) xs
 
@@ -46,15 +44,7 @@ run bs inp sel name n = do
     line name ts
     return ts
 
-
 runOne :: Eq out => Int -> [inp] -> [out] -> (inp -> out) -> IO Double
-runOne n inp out op = do
-    start <- getTime
+runOne n inp out op = timer $ do
     let b = all (== out) $ map (map op) $ replicate n inp
     unless b $ error "Mismatch on answers"
-    stop <- getTime
-    return $ stop - start
-
-
-getTime :: IO Double
-getTime = (fromRational . toRational) `fmap` getPOSIXTime
