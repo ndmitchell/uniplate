@@ -2,6 +2,6 @@
 :load Main
 
 :def test       \x -> return $ ":main test"
-:def build      \x -> return $ ":!ghc --make -O2 -hidir obj -odir obj Main.hs"
-:def exec       \x -> return $ ":build\n:!main.exe " ++ x
+:def build      \x -> return $ ":!ghc --make -O2 -hidir obj -odir obj Main.hs -o obj/main.exe"
+:def exec       \x -> return $ ":build\n:!obj\\main.exe " ++ x
 :def benchmark  \x -> return $ ":exec benchmark"
