@@ -5,6 +5,7 @@ import System.Environment
 import Uniplate.Test
 import Uniplate.Generate
 import Uniplate.Benchmark
+import Uniplate.Slowdown
 
 main = do
     xs <- getArgs
@@ -12,4 +13,5 @@ main = do
         ["generate"] -> generate
         ["test"] -> test
         ["benchmark"] -> benchmark
-        _ -> error "Must enter exactly one of: generate, test, benchmark"
+        ["slowdown"] -> slowdown
+        _ -> error "Must enter exactly one of: generate, test, benchmark, slowdown"
