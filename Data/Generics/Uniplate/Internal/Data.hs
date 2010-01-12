@@ -101,7 +101,7 @@ toCache res | not $ IntSet.null $ f RBad = Nothing
     where f x = IntMap.keysSet $ IntMap.filter (== x) res
 
 hitTestAdd :: DataBox -> TypeKey -> IntMap Res -> IntMap Res
-hitTestAdd (DataBox kfrom from) kto res = case sybChildren from of
+hitTestAdd from@(DataBox kfrom _) kto res = case sybChildren from of
     _ | kfrom `IntMap.member` res -> res
     Nothing -> IntMap.insert kfrom RBad res
 
@@ -134,14 +134,18 @@ dataBox x = DataBox (typeKey x) x
 
 -- return all the possible children of a node
 -- if you can't do so, just return Nothing
-sybChildren :: Data a => a -> Maybe [DataBox]
-sybChildren x | isAlgType dtyp = Just $ concatMap f ctrs
-              | isNorepType dtyp = Nothing
-              | otherwise = Just []
+sybChildren :: DataBox -> Maybe [DataBox]
+sybChildren (DataBox k x)
+    | k == typeRational = Just [dataBox (0 :: Integer)]
+    | isAlgType dtyp = Just $ concatMap f ctrs
+    | isNorepType dtyp = Nothing
+    | otherwise = Just []
     where
         f ctr = gmapQ dataBox (asTypeOf (fromConstr ctr) x)
         ctrs = dataTypeConstrs dtyp
         dtyp = dataTypeOf x
+
+typeRational = typeKey (undefined :: Rational)
 
 #endif
 
