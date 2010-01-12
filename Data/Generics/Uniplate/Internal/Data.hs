@@ -77,7 +77,7 @@ hitTestCache = unsafePerformIO $ newIORef IntMap.empty
 
 
 hitTestQuery :: DataBox -> TypeKey -> Maybe Cache
-hitTestQuery from@(DataBox kfrom _) kto = inlinePerformIO $ do
+hitTestQuery from@(DataBox kfrom vfrom) kto = inlinePerformIO $ do
     mp <- readIORef hitTestCache
     let res = IntMap.lookup kfrom mp >>= IntMap.lookup kto
     case res of
@@ -85,6 +85,8 @@ hitTestQuery from@(DataBox kfrom _) kto = inlinePerformIO $ do
         Nothing -> do
             let res = toCache $ hitTestAdd from kto IntMap.empty
             res2 <- Control.Exception.catch (return $! res) (\(_ :: SomeException) -> return Nothing)
+            -- -- uncomment these lines to see where type search fails
+            -- if isNothing res2 then print ("failure",show (typeOf vfrom),kfrom,kto) else return ()
 
             atomicModifyIORef hitTestCache $ \mp -> flip (,) () $
                 IntMap.insertWith (const $ IntMap.insert kto res2) kfrom (IntMap.singleton kto res2) mp
