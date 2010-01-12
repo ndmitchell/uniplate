@@ -85,8 +85,9 @@ hitTestQuery from@(DataBox kfrom _) kto = inlinePerformIO $ do
         Nothing -> do
             let res = toCache $ hitTestAdd from kto IntMap.empty
             res2 <- Control.Exception.catch (return $! res) (\(_ :: SomeException) -> return Nothing)
-            let mp2 = IntMap.adjust (IntMap.insert kto res2) kfrom mp
-            writeIORef hitTestCache mp2
+
+            atomicModifyIORef hitTestCache $ \mp -> flip (,) () $
+                IntMap.insertWith (const $ IntMap.insert kto res2) kfrom (IntMap.singleton kto res2) mp
             return res2
 
 
