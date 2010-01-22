@@ -59,11 +59,11 @@ h3 {
     Generic transformations and queries are often referred to as boilerplate code - they remain relatively similar as the action performed by the code changes, and can often outnumber the actual intent of the code in terms of lines. While other generic traversal schemes have shown how powerful new features can be added to compilers, and how the type system can be manipulated into accepting these operations, the Uniplate library focuses on a conceptually simpler generic concept. A more complete document on Uniplate was published at the Haskell Workshop 2007, and is available from the <a href="http://community.haskell.org/~ndm/uniplate/">project website</a>, along with a video presentation, and the associated thesis chapter.
 </p>
 <p>
-	Uniplate is a simple, concise and fast generics library. To expand on that sentance:
+	Uniplate is a simple, concise and fast generics library. To expand on that sentence:
 </p>
 <ol>
 	<li>A generics library is one which allows you to write functions that operate over a data structure without tying down all aspects of the data structure. In particular, when writing an operation, you don't need to give a case for each constructor, and you don't have to state which fields are recursive.</li>
-	<li>Uniplate is the simplest generics library. Using Uniplate is suitable for all Haskell programmers.</li>
+	<li>Uniplate is the simplest generics library. Using Uniplate is within the reach of all Haskell programmers.</li>
 	<li>Uniplate is more concise than any other generics library.</li>
 	<li>Uniplate is fast, not always the absolute fastest, but massively faster than many generics libraries.</li>
 	<li>Uniplate is also less powerful than some other generics libraries, but if it does the job, you should use it.</li>
@@ -94,11 +94,12 @@ cabal install uniplate
 <h2>Using Uniplate</h2>
 
 <p>
-    These examples revolve around a small arithmetic language, given here:
-
+	To demonstrate the facilities of Uniplate, we use a simple arithmetic type:
 </p>
 <pre>
-import Data.Generics.Uniplate.Data
+<b>{-# LANGUAGE DerivingDataTypeable #-}</b>
+module Expr where
+<b>import Data.Generics.Uniplate.Data</b>
 
 data Expr = Val Int
           | Add Expr Expr
@@ -106,10 +107,18 @@ data Expr = Val Int
           | Div Expr Expr
           | Mul Expr Expr
           | Neg Expr
-          deriving (Show, Eq, Data, Typeable)
+          deriving (Show, Eq, <b>Data, Typeable</b>)
 </pre>
 <p>
-    To start using Uniplate I recommend you import <tt>Data.Generics.Uniplate.Data</tt> and add <tt>deriving (Data, Typeable)</tt> to all types you wish to operate upon.
+	In this definition, the Uniplate specific bits are bolded. The three extra parts are:
+</p>
+<ul>
+<li><tt>import Data.Generics.Uniplate.Data</tt>, this module contains all the Uniplate functions and definitions.</li>
+<li><tt>deriving (Data,Typeable)</tt>, this deriving clause automatically adds the necessary instances for Uniplate.</li>
+<li><tt>{-# LANGUAGE DerivingDataTypeable #-}</tt>, this pragma turns on language support for the deriving line.</li>
+</ul>
+<p>
+	This definition makes use of the <a href="http://doi.acm.org/10.1145/604174.604179">Scrap Your Boilerplate (SYB) based</a> Uniplate implementation. The SYB implementation is compatible with the other implementations, but is slower (between 2 and 8 times) and requires some modest compiler extensions (implemented in <a href="http://haskell.org/ghc/">GHC</a> for many years). The alternative definition scheme is described towards the end of this document, in "Making Uniplate Faster". I recommend using the SYB implementation to start with, as it requires least setup.
 </p>
 
 <h3>Checking for division by zero</h3>
