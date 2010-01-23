@@ -94,6 +94,10 @@ test msg = do
     universe rat1 === [rat1]
     universeBi rat1 === [1::Integer,2::Integer]
 
+    let com1 = C [D "test" (E (P "fred" "bob") (S 12)) []]
+    universeBi com1 === [S 12]
+
+
 -- TO ADD
 -- Map/Set, check we go inside
 -- Ratio based test
