@@ -37,14 +37,15 @@ columns xs = putStrLn $ pad colFirst "" ++ concatMap (pad colRest) xs
 line lbl xs = putStrLn $ pad colFirst lbl ++ concatMap (pad colRest . dp2) (map (/ mn) xs ++ [mn])
     where mn = minimum xs
 
-run :: Eq out => [Benchmark] -> [inp] -> (Benchmark -> inp -> out) -> String -> Int -> IO [Double]
+run :: (Show out, Eq out) => [Benchmark] -> [inp] -> (Benchmark -> inp -> out) -> String -> Int -> IO [Double]
 run bs inp sel name n = do
     let out = map (sel $ head bs) inp
     ts <- mapM (runOne n inp out . sel) bs
     line name ts
     return ts
 
-runOne :: Eq out => Int -> [inp] -> [out] -> (inp -> out) -> IO Double
+runOne :: (Show out, Eq out) => Int -> [inp] -> [out] -> (inp -> out) -> IO Double
 runOne n inp out op = timer $ do
-    let b = all (== out) $ map (map op) $ replicate n inp
+    let x === y = x == y || error ("Mismatch with wanted:\n" ++ show y ++ "\nand got:\n" ++ show x)
+    let b = all (=== out) $ map (map op) $ replicate n inp
     unless b $ error "Mismatch on answers"
