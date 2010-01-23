@@ -1,0 +1,14 @@
+Changelog for HLint
+
+1.5
+    Massive speed improvements to Data loading initial cache
+1.4
+    Add back performance enhancement for Rationals
+1.3
+    Rewrite, simplify, roll out Data.Generics.Uniplate.*
+1.2
+    Allow Data operations to work on Rational
+1.1
+    Add versions based on Str
+1.0
+    Initial release
