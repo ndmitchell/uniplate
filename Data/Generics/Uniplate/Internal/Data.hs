@@ -40,7 +40,7 @@ hitTest :: (Data from, Data to) => from -> to -> Oracle to
 hitTest _ _ = Oracle . maybe Follow Hit . cast
 
 
-#else
+#elif 0
 
 
 hitTest from to =
@@ -148,6 +148,151 @@ sybChildren (DataBox k x)
         dtyp = dataTypeOf x
 
 typeRational = typeKey (undefined :: Rational)
+
+#else
+
+hitTest from to =
+    let kto = typeKey to
+    in case readCache (dataBox from) kto of
+           Nothing -> Oracle $ \on -> if typeKey on == kto then Hit $ unsafeCoerce on else Follow
+           Just test -> Oracle $ \on -> let kon = typeKey on in
+                   if kon == kto then Hit $ unsafeCoerce on
+                   else if test kon then Follow
+                   else Miss
+
+
+
+---------------------------------------------------------------------
+-- CACHE
+-- Store and compute the Follower and HitMap
+
+data Cache = Cache HitMap (IntMap2 (Maybe Follower))
+
+-- Indexed by the @from@ type, then the @to@ type
+-- Nothing means that we can't perform the trick on the set
+{-# NOINLINE cache #-}
+cache :: IORef Cache
+cache = unsafePerformIO $ newIORef $ Cache emptyHitMap IntMap.empty
+
+
+readCache :: DataBox -> TypeKey -> Maybe Follower
+readCache from@(DataBox kfrom vfrom) kto = inlinePerformIO $ do
+    Cache hit follow <- readIORef cache
+    case lookup2 kfrom kto follow of
+        Just ans -> return ans
+        Nothing -> do
+            res <- Control.Exception.catch (return $! Just $! insertHitMap from hit) (\(_ :: SomeException) -> return Nothing)
+            (hit,fol) <- return $ case res of
+                Nothing -> (hit, Nothing)
+                Just hit -> (hit, Just $ follower kfrom kto hit)
+            -- -- uncomment these lines to see where type search fails
+            -- if isNothing fol then print ("failure",show (typeOf vfrom),kfrom,kto) else return ()
+
+            atomicModifyIORef cache $ \(Cache _ follow) -> (Cache hit (insert2 kfrom kto fol follow), ())
+            return fol
+
+
+---------------------------------------------------------------------
+-- INTMAP2
+
+type IntMap2 a = IntMap (IntMap a)
+
+lookup2 :: Int -> Int -> IntMap (IntMap x) -> Maybe x
+lookup2 x y mp = IntMap.lookup x mp >>= IntMap.lookup y
+
+insert2 :: Int -> Int -> x -> IntMap (IntMap x) -> IntMap (IntMap x)
+insert2 x y v mp = IntMap.insertWith (const $ IntMap.insert y v) x (IntMap.singleton y v) mp
+
+
+---------------------------------------------------------------------
+-- FOLLOWER
+-- Function to test if you should follow
+
+type Follower = TypeKey -> Bool
+
+
+-- HitMap must have addHitMap on the key
+follower :: TypeKey -> TypeKey -> HitMap -> Follower
+follower from to mp
+    | IntSet.null hit = const False
+    | IntSet.null miss = const True
+    | otherwise = \now -> now `IntSet.member` hit
+    where
+        (hit,miss) = IntSet.partition (\x -> to `IntSet.member` grab x) (IntSet.insert from $ grab from)
+        grab x = IntMap.findWithDefault (error "couldn't grab in follower") x mp
+
+
+---------------------------------------------------------------------
+-- DATA/TYPEABLE OPERATIONS
+
+type TypeKey = Int
+
+typeKey :: Typeable a => a -> Int
+typeKey x = inlinePerformIO $ typeRepKey $ typeOf x
+
+
+-- | An existential box representing a type which supports SYB
+-- operations.
+data DataBox = forall a . (Data a) => DataBox {dataBoxKey :: TypeKey, dataBoxVal :: a}
+
+dataBox :: Data a => a -> DataBox
+dataBox x = DataBox (typeKey x) x
+
+
+-- NOTE: This function is partial, but all exceptions are caught later on
+sybChildren :: Data a => a -> [DataBox]
+sybChildren x
+    | isAlgType dtyp = concatMap f ctrs
+    | isNorepType dtyp = error "sybChildren on NorepType"
+    | otherwise = []
+    where
+        f ctr = gmapQ dataBox (asTypeOf (fromConstr ctr) x)
+        ctrs = dataTypeConstrs dtyp
+        dtyp = dataTypeOf x
+
+
+---------------------------------------------------------------------
+-- HITMAP
+-- What is the transitive closure of a type key
+
+type HitMap = IntMap IntSet
+
+emptyHitMap :: HitMap
+emptyHitMap = IntMap.fromList
+        [(tRational, IntSet.singleton tInteger)
+        ,(tInteger, IntSet.empty)]
+    where tRational = typeKey (undefined :: Rational)
+          tInteger = typeKey (0 :: Integer)
+
+
+insertHitMap :: DataBox -> HitMap -> HitMap
+insertHitMap box hit = fixEq trans (populate box) `IntMap.union` hit
+    where
+        -- create a fresh box with all the necessary children that aren't in hit
+        populate :: DataBox -> HitMap
+        populate x = f x IntMap.empty
+            where
+                f (DataBox key val) mp
+                    | key `IntMap.member` hit || key `IntMap.member` mp = mp
+                    | otherwise = fs cs $ IntMap.insert key (IntSet.fromList $ map dataBoxKey cs) mp
+                        where cs = sybChildren val
+
+                fs [] mp = mp
+                fs (x:xs) mp = fs xs (f x mp)
+
+
+        -- update every one to be the transitive closure
+        trans :: HitMap -> HitMap
+        trans mp = IntMap.map f mp
+            where
+                f x = IntSet.unions $ x : map g (IntSet.toList x)
+                g x = IntMap.findWithDefault (hit IntMap.! x) x mp
+
+
+fixEq :: Eq a => (a -> a) -> a -> a
+fixEq f x = if x == x2 then x2 else fixEq f x2
+    where x2 = f x
+
 
 #endif
 
