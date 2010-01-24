@@ -8,7 +8,7 @@ Homepage:           http://community.haskell.org/~ndm/uniplate/
 License:            BSD3
 License-File:       LICENSE
 Author:             Neil Mitchell
-Synopsis:           Help writing simple, consise and fast generic operations.
+Synopsis:           Help writing simple, concise and fast generic operations.
 Category:           Generics
 Description:
     Uniplate is library for writing simple and concise generic operations.

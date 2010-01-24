@@ -1,5 +1,6 @@
 Changelog for HLint
 
+    Fix a typo in the synopsis
 1.5
     Massive speed improvements to Data loading initial cache
 1.4
