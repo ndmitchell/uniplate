@@ -7,7 +7,8 @@ import Data.Generics.Uniplate.Internal.Utils
 
 -- * The Classes
 
--- | The standard Uniplate class, all operations require this.
+-- | The standard Uniplate class, all operations require this. All definitions must
+--   define 'uniplate', while 'descend' and 'descendM' are optional.
 class Uniplate on where
     -- | The underlying method in the class.
     --   Taking a value, the function should return all the immediate children
@@ -30,7 +31,14 @@ class Uniplate on where
 
     -- | Perform a transformation on all the immediate children, then combine them back.
     --   This operation allows additional information to be passed downwards, and can be
-    --   used to provide a top-down transformation.
+    --   used to provide a top-down transformation. This function can be defined explicitly,
+    --   or can be provided by automatically in terms of 'uniplate'.
+    --
+    --   For example, on the sample type, we could write:
+    --
+    -- > descend f (Val i  ) = Val i
+    -- > descend f (Neg a  ) = Neg (f a)
+    -- > descend f (Add a b) = Add (f a) (f b)
     descend :: (on -> on) -> on -> on
     descend f x = generate $ fmap f current
         where (current, generate) = uniplate x
@@ -42,15 +50,21 @@ class Uniplate on where
 
 
 -- | Children are defined as the top-most items of type to
---   /starting at the root/.
+--   /starting at the root/. All instances must define 'biplate', while
+--   'descendBi' and 'descendBiM' are optional.
 class Uniplate to => Biplate from to where
     -- | Return all the top most children of type @to@ within @from@.
     --
-    -- If @from == to@ then this function should return the root as the single
-    -- child.
+    --   If @from == to@ then this function should return the root as the single
+    --   child.
     biplate :: from -> (Str to, Str to -> from)
 
 
+    -- | Like 'descend' but with more general types. If @from == to@ then this
+    --   function /does not/ descend. Therefore, when writing definitions it is
+    --   highly unlikely that this function should be used in the recursive case.
+    --   A common pattern is to first match the types using 'descendBi', then continue
+    --   the recursion with 'descend'.
     descendBi :: (to -> to) -> from -> from
     descendBi f x = generate $ fmap f current
         where (current, generate) = biplate x
@@ -137,8 +151,8 @@ rewriteM f = transformM g
 
 -- | Return all the contexts and holes.
 --
--- > propUniverse x = universe x == map fst (contexts x)
--- > propId x = all (== x) [b a | (a,b) <- contexts x]
+-- > universe x == map fst (contexts x)
+-- > all (== x) [b a | (a,b) <- contexts x]
 contexts :: Uniplate on => on -> [(on, on -> on)]
 contexts x = (x,id) : f (holes x)
   where
@@ -149,8 +163,8 @@ contexts x = (x,id) : f (holes x)
 
 -- | The one depth version of 'contexts'
 --
--- > propChildren x = children x == map fst (holes x)
--- > propId x = all (== x) [b a | (a,b) <- holes x]
+-- > children x == map fst (holes x)
+-- > all (== x) [b a | (a,b) <- holes x]
 holes :: Uniplate on => on -> [(on, on -> on)]
 holes x = uncurry f (uniplate x)
   where f Zero _ = []
