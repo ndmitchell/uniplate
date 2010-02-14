@@ -10,7 +10,8 @@
     the same project and they are conflicting.
 -}
 module Data.Generics.Uniplate.DataOnly(
-    module Data.Generics.Uniplate.Internal.DataOnlyOperations
+    module Data.Generics.Uniplate.Internal.DataOnlyOperations,
+    transformBis, Transformer, transformer
     ) where
 
 import Data.Generics.Uniplate.Internal.DataOnlyOperations

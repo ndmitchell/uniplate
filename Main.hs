@@ -7,6 +7,7 @@ import Uniplate.Generate
 import Uniplate.Benchmark
 import Uniplate.Slowdown
 import Uniplate.HSE
+import Uniplate.Fusion
 
 main = do
     xs <- getArgs
@@ -16,4 +17,5 @@ main = do
         ["benchmark"] -> benchmark
         ["slowdown"] -> slowdown
         ["hse"] -> hse
+        ["fusion"] -> fusion
         _ -> error "Must enter exactly one of: generate, test, benchmark, slowdown"

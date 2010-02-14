@@ -16,7 +16,8 @@
     when using both @Data@ and @Direct@, switch to "Data.Generics.Uniplate.DataOnly".
 -}
 module Data.Generics.Uniplate.Data(
-    module Data.Generics.Uniplate.Operations
+    module Data.Generics.Uniplate.Operations,
+    transformBis, Transformer, transformer
     ) where
 
 import Data.Generics.Uniplate.Operations

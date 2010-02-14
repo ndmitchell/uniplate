@@ -9,6 +9,7 @@ module Data.Generics.Uniplate.Internal.Data where
 import Data.Generics.Str
 import Data.Generics.Uniplate.Internal.Utils
 import Data.Data
+import Data.Generics
 import Data.Maybe
 import Data.List
 import qualified Data.IntSet as IntSet
@@ -153,7 +154,7 @@ typeRational = typeKey (undefined :: Rational)
 
 hitTest from to =
     let kto = typeKey to
-    in case readCache (dataBox from) kto of
+    in case readCacheFollower (dataBox from) kto of
            Nothing -> Oracle $ \on -> if typeKey on == kto then Hit $ unsafeCoerce on else Follow
            Just test -> Oracle $ \on -> let kon = typeKey on in
                    if kon == kto then Hit $ unsafeCoerce on
@@ -175,8 +176,8 @@ cache :: IORef Cache
 cache = unsafePerformIO $ newIORef $ Cache emptyHitMap IntMap.empty
 
 
-readCache :: DataBox -> TypeKey -> Maybe Follower
-readCache from@(DataBox kfrom vfrom) kto = inlinePerformIO $ do
+readCacheFollower :: DataBox -> TypeKey -> Maybe Follower
+readCacheFollower from@(DataBox kfrom vfrom) kto = inlinePerformIO $ do
     Cache hit follow <- readIORef cache
     case lookup2 kfrom kto follow of
         Just ans -> return ans
@@ -190,6 +191,21 @@ readCache from@(DataBox kfrom vfrom) kto = inlinePerformIO $ do
 
             atomicModifyIORef cache $ \(Cache _ follow) -> (Cache hit (insert2 kfrom kto fol follow), ())
             return fol
+
+
+-- from which values, what can you reach
+readCacheHitMap :: DataBox -> Maybe HitMap
+readCacheHitMap from@(DataBox kfrom vfrom) = inlinePerformIO $ do
+    Cache hit _ <- readIORef cache
+    case IntMap.lookup kfrom hit of
+        Just _ -> return $ Just hit
+        Nothing -> do
+            res <- Control.Exception.catch (return $! Just $! insertHitMap from hit) (\(_ :: SomeException) -> return Nothing)
+            case res of
+                Nothing -> return Nothing
+                Just hit -> do
+                    atomicModifyIORef cache $ \(Cache _ follow) -> (Cache hit follow, ())
+                    return $ Just hit
 
 
 ---------------------------------------------------------------------
@@ -297,6 +313,9 @@ fixEq f x = if x == x2 then x2 else fixEq f x2
 #endif
 
 
+---------------------------------------------------------------------
+-- INSTANCE FUNCTIONS
+
 newtype C x a = C {fromC :: CC x a}
 
 type CC x a = (Str x, Str x -> a)
@@ -328,3 +347,70 @@ descendBiData oracle op x = case oracle x of
     Hit y -> unsafeCoerce $ op y
     Follow -> gmapT (descendBiData oracle op) x
     Miss -> x
+
+
+---------------------------------------------------------------------
+-- FUSION
+
+data Transformer = forall a . Data a => Transformer TypeKey (a -> a)
+
+transformer :: forall a . Data a => (a -> a) -> Transformer
+transformer = Transformer (typeKey (undefined :: a))
+
+
+-- | Note, you will increase performance if partially applying with the list of transformers
+transformBis :: forall a . Data a => [[Transformer]] -> a -> a
+
+
+#if __GLASGOW_HASKELL__ >= 606
+
+-- basic algorithm:
+-- as you go down, given transformBis [fN..f1]
+--   if x is not in the set reachable by fN..f1, return x
+--   if x is in the reachable set, gmap (transformBis [fN..f1]) x
+--   if x is one of fN..f1, pick the lowest fi then
+--      transformBis [fN..f(i+1)] $ fi $ gmap (transformBis [fi..f1]) x
+
+transformBis ts | isJust hitBoxM = op (sliceMe 1 n)
+    where
+        on = dataBox (undefined :: a)
+        hitBoxM = readCacheHitMap on
+        hitBox = fromJust hitBoxM
+        univ = IntSet.toAscList $ IntSet.insert (dataBoxKey on) $ hitBox IntMap.! dataBoxKey on
+        n = length ts
+
+        -- (a,b), where a < b, and both in range 1..n
+        sliceMe i j = fromMaybe IntMap.empty $ lookup2 i j slices
+        slices :: IntMap2 (IntMap (Maybe Transformer))
+        slices = IntMap.fromAscList
+            [ (i, IntMap.fromAscList [(j, slice i j ts) | (j,ts) <- zip [i..n] (tail $ inits ts)])
+            | (i,ts) <- zip [1..n] (tails $ reverse ts)]
+
+        slice :: Int -> Int -> [[Transformer]] -> IntMap (Maybe Transformer)
+        slice from to tts = self
+            where
+                self = f IntMap.empty (zip [from..] tts) -- FIXME: flattening out here gives different results...
+                f a ((i,[Transformer tk tr]):ts)
+                    | tk `IntMap.member` a = f a ts
+                    | otherwise = f (IntMap.insert tk t a) ts
+                    where
+                        t = Just $ Transformer tk $ op (sliceMe (i+1) to) . tr . gmapT (op $ sliceMe from i)
+
+                f a [] = a `IntMap.union` IntMap.fromAscList (mapMaybe (g $ IntMap.keysSet a) $ univ)
+
+                g a t = if b then Nothing else Just (t, Nothing)
+                    where b = IntSet.null $ a `IntSet.intersection` (hitBox IntMap.! t)
+
+        op :: forall b . Data b => IntMap (Maybe Transformer) -> b -> b
+        op slice = case IntMap.lookup (typeKey (undefined :: b)) slice of
+            Nothing -> id
+            Just Nothing -> gmapT (op slice)
+            Just (Just (Transformer _ t)) -> unsafeCoerce . t . unsafeCoerce
+
+#endif
+
+
+transformBis [] = id
+transformBis ([]:xs) = transformBis xs
+transformBis ((Transformer _ t:x):xs) = everywhere (mkT t) . transformBis (x:xs)
+
