@@ -96,6 +96,8 @@ test msg = do
 
     let com1 = C [D "test" (E (P "fred" "bob") (S 12)) []]
     universeBi com1 === [S 12]
+    
+    putChar '.'
 
 
 -- TO ADD

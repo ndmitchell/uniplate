@@ -12,4 +12,5 @@ test = do
     Uniplate.Direct.test "direct"
     Uniplate.Data.test "data"
     Uniplate.DataOnly.test "dataonly"
+    putStrLn ""
     putStrLn "Test successful"
