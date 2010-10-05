@@ -4,6 +4,10 @@ import Data.Char
 import Data.Ratio
 import qualified Data.Map as Map
 
+#ifndef SKIP_ZIPPER
+import Data.Generics.Uniplate.Zipper
+#endif
+
 
 benchmark :: Benchmark
 benchmark = Benchmark
@@ -96,7 +100,26 @@ test msg = do
 
     let com1 = C [D "test" (E (P "fred" "bob") (S 12)) []]
     universeBi com1 === [S 12]
-    
+
+#ifndef SKIP_ZIPPER
+    let z = zipper expr1
+    hole z === expr1
+    fmap hole (down z) === Just (Val 1)
+    fmap hole (left =<< down z) === Nothing
+    fmap hole (right =<< down z) === Just (Neg (Val 2))
+    fmap hole (right =<< right =<< down z) === Nothing
+    fmap hole (left =<< right =<< down z) === Just (Val 1)
+    fmap hole (up =<< down z) === Just expr1
+    fmap (fromZipper . replaceHole (Val 3)) (right =<< down z) === Just (Add (Val 1) (Val 3))
+    fmap hole (down =<< right =<< down z) === Just (Val 2)
+    fmap hole (up z) === Nothing
+
+    let zipChildren x = hole x : maybe [] zipChildren (right x)
+    fmap zipChildren (down z) === Just (children expr1)
+    maybe [] zipChildren (zipperBi stmt1) === (childrenBi stmt1 :: [Stm])
+    maybe [] zipChildren (zipperBi stmt1) === (childrenBi stmt1 :: [Exp])
+#endif
+
     putChar '.'
 
 

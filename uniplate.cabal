@@ -30,6 +30,8 @@ Description:
     .
     In addition, some users may want to make use of the following modules:
     .
+    * "Data.Generics.Uniplate.Zipper" - a zipper built on top of Uniplate instances.
+    .
     * "Data.Generics.SYB" - users transitioning from the Scrap Your Boilerplate library.
     .
     * "Data.Generics.Compos" - users transitioning from the Compos library.
@@ -54,11 +56,12 @@ Library
         Data.Generics.Str
         Data.Generics.Compos
         Data.Generics.SYB
-        Data.Generics.Uniplate.Operations
-        Data.Generics.Uniplate.Direct
-        Data.Generics.Uniplate.Typeable
         Data.Generics.Uniplate.Data
         Data.Generics.Uniplate.DataOnly
+        Data.Generics.Uniplate.Direct
+        Data.Generics.Uniplate.Operations
+        Data.Generics.Uniplate.Typeable
+        Data.Generics.Uniplate.Zipper
 
         -- DEPRECATED
         Data.Generics.Uniplate

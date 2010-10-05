@@ -1,5 +1,6 @@
 Changelog for Uniplate
 
+    #364, add a zipper in Data.Generics.Uniplate.Zipper
     Add an Eq instance for Str
 1.5.1
     Fix a typo in the synopsis
