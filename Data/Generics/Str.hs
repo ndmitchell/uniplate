@@ -18,6 +18,11 @@ import Data.Monoid
 data Str a = Zero | One a | Two (Str a) (Str a)
              deriving Show
 
+instance Eq a => Eq (Str a) where
+    Zero == Zero = True
+    One x == One y = x == y
+    Two x1 x2 == Two y1 y2 = x1 == y1 && x2 == y2
+    _ == _ = False
 
 instance Functor Str where
   fmap f Zero = Zero
