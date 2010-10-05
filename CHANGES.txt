@@ -1,4 +1,4 @@
-Changelog for HLint
+Changelog for Uniplate
 
 1.5.1
     Fix a typo in the synopsis
