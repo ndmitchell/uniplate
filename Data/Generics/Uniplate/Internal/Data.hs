@@ -354,12 +354,33 @@ descendBiData oracle op x = case oracle x of
 
 data Transformer = forall a . Data a => Transformer TypeKey (a -> a)
 
-transformer :: forall a . Data a => (a -> a) -> Transformer
-transformer = Transformer (typeKey (undefined :: a))
+
+-- | Wrap up a @(a -> a)@ transformation function, to use with 'transformBis'
+transformer :: Data a => (a -> a) -> Transformer
+transformer = transformer_
 
 
--- | Note, you will increase performance if partially applying with the list of transformers
+-- Don't export directly, as don't want Haddock to see the forall
+transformer_ :: forall a . Data a => (a -> a) -> Transformer
+transformer_ = Transformer (typeKey (undefined :: a))
+
+
+-- | Apply a sequence of transformations in order. This function obeys the equivalence:
+--
+-- > transformBis [[transformer f],[transformer g],...] == transformBi f . transformBi g . ...
+--
+--   Each item of type @[Transformer]@ is applied in turn, right to left. Within each
+--   @[Transformer]@, the individual @Transformer@ values may be interleaved.
+--
+--   The implementation will attempt to perform fusion, and avoid walking any part of the
+--   data structure more than necessary. To further improve performance, you may wish to
+--   partially apply the first argument, which will calculate information about the relationship
+--   between the transformations.
 transformBis :: forall a . Data a => [[Transformer]] -> a -> a
+transformBis = transformBis_
+
+
+transformBis_ :: forall a . Data a => [[Transformer]] -> a -> a
 
 
 #if __GLASGOW_HASKELL__ >= 606
@@ -371,7 +392,7 @@ transformBis :: forall a . Data a => [[Transformer]] -> a -> a
 --   if x is one of fN..f1, pick the lowest fi then
 --      transformBis [fN..f(i+1)] $ fi $ gmap (transformBis [fi..f1]) x
 
-transformBis ts | isJust hitBoxM = op (sliceMe 1 n)
+transformBis_ ts | isJust hitBoxM = op (sliceMe 1 n)
     where
         on = dataBox (undefined :: a)
         hitBoxM = readCacheHitMap on
@@ -410,7 +431,6 @@ transformBis ts | isJust hitBoxM = op (sliceMe 1 n)
 #endif
 
 
-transformBis [] = id
-transformBis ([]:xs) = transformBis xs
-transformBis ((Transformer _ t:x):xs) = everywhere (mkT t) . transformBis (x:xs)
-
+transformBis_ [] = id
+transformBis_ ([]:xs) = transformBis_ xs
+transformBis_ ((Transformer _ t:x):xs) = everywhere (mkT t) . transformBis_ (x:xs)

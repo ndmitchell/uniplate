@@ -1,5 +1,6 @@
 Changelog for Uniplate
 
+    Add transformer/transformBis, along with better documentation
     #364, add a zipper in Data.Generics.Uniplate.Zipper
     Add an Eq instance for Str
 1.5.1
