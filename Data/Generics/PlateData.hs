@@ -17,7 +17,6 @@ import Data.Generics
 import Data.Maybe
 import Data.List
 import qualified Data.IntSet as IntSet
-import Control.Monad.State
 import Data.Ratio
 
 

@@ -48,9 +48,9 @@ Flag ghc_6_10
 
 Library
     if flag(ghc_6_10)
-        build-depends: base >=4 && <5, mtl, containers, syb
+        build-depends: base >=4 && <5, containers, syb
     else
-        build-depends: base >=3 && <4, mtl, containers
+        build-depends: base >=3 && <4, containers
 
     Exposed-modules:
         Data.Generics.Str

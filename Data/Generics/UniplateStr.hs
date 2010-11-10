@@ -19,8 +19,6 @@ module Data.Generics.UniplateStr(
     ) where
 
 import Control.Monad hiding (mapM)
-import Data.List(inits,tails)
-import Control.Monad.State hiding (mapM)
 import Data.Traversable
 import Prelude hiding (mapM)
 
