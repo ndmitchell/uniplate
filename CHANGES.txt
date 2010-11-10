@@ -1,5 +1,7 @@
 Changelog for Uniplate
 
+    GHC 7 compatibility
+    Eliminate mtl dependency
     Add transformer/transformBis, along with better documentation
     #364, add a zipper in Data.Generics.Uniplate.Zipper
     Add an Eq instance for Str
