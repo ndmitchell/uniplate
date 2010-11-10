@@ -31,9 +31,7 @@ module Data.Generics.PlateTypeable(
 
 import Data.Generics.Biplate
 import Data.Generics.PlateInternal
-import Data.Generics.Str
 import Data.Typeable
-import Data.Maybe
 
 
 instance (Typeable a, Typeable b, Uniplate b, PlateAll a b) => Biplate a b where

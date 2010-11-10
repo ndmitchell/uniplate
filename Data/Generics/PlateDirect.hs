@@ -44,9 +44,6 @@ module Data.Generics.PlateDirect(
     ) where
 
 import Data.Generics.Biplate
-import Data.Generics.PlateInternal
-import Data.Generics.Str
-import Data.Maybe
 
 
 type Type from to = (Str to, Str to -> from)

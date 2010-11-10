@@ -1,5 +1,4 @@
-{-# OPTIONS_GHC -fglasgow-exts #-}
-{-# LANGUAGE CPP, Rank2Types #-}
+{-# LANGUAGE CPP, Rank2Types, MagicHash, UnboxedTuples #-}
 
 {- |
     Internal module, do not import or use.
@@ -19,7 +18,11 @@ module Data.Generics.PlateInternal(
 -}
 
 import GHC.Exts(unsafeCoerce#, build, realWorld#)
+#if __GLASGOW_HASKELL__ < 612
 import GHC.IOBase(IO(IO))
+#else
+import GHC.IO(IO(IO))
+#endif
 
 {-# INLINE unsafeCast #-}
 -- | @unsafeCoerce@, but for all compilers. In future this can be obtained from

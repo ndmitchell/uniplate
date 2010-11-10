@@ -13,7 +13,11 @@ import Unsafe.Coerce(unsafeCoerce)
 
 #ifdef __GLASGOW_HASKELL__
 import GHC.Exts(build, realWorld#)
+#if __GLASGOW_HASKELL__ < 612
 import GHC.IOBase(IO(IO))
+#else
+import GHC.IO(IO(IO))
+#endif
 #endif
 
 

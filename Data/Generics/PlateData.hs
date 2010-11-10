@@ -12,9 +12,7 @@ module Data.Generics.PlateData(
 
 import Data.Generics.Biplate
 import Data.Generics.PlateInternal
-import Data.Generics.Str
 import Data.Generics
-import Data.Maybe
 import Data.List
 import qualified Data.IntSet as IntSet
 import Data.Ratio

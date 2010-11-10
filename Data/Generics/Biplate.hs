@@ -1,4 +1,3 @@
-{-# OPTIONS_GHC -fglasgow-exts #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 
 {- |
@@ -26,7 +25,6 @@ module Data.Generics.Biplate(
     ) where
 
 import Data.Generics.UniplateStrOn
-import Data.Generics.Str
 
 
 -- * The Class

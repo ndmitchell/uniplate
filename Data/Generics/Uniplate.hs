@@ -18,7 +18,6 @@ module Data.Generics.Uniplate
     where
 
 import Control.Monad
-import Data.List(inits,tails)
 import Data.Generics.PlateInternal
 
 

@@ -21,7 +21,6 @@ module Data.Generics.UniplateOn
 
 import Data.Generics.Uniplate
 import Control.Monad(liftM)
-import Data.List(inits,tails)
 
 -- * Types
 
