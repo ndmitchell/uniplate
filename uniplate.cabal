@@ -1,4 +1,4 @@
-cabal-version:      >= 1.2
+cabal-version:      >= 1.6
 build-type:         Simple
 name:               uniplate
 version:            1.6
