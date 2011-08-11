@@ -35,7 +35,7 @@ containsMatch :: (Data start, Typeable start, Data find, Typeable find) =>
                  start -> find ->
                  Box find
 
-#if __GLASGOW_HASKELL__ < 606
+#if __GLASGOW_HASKELL__ < 606 || __GLASGOW_HASKELL__ >= 702
 -- GHC 6.4.2 does not export typeRepKey, so we can't do the trick
 -- as efficiently, so we just give up and revert to always following
 
