@@ -2,7 +2,7 @@ Changelog for Uniplate
 
 1.6.1
     Mark everything that was recommended not to use as deprecated
-    GHC 7.2 compatibility
+    #449, GHC 7.2 compatibility
 1.6
     GHC 7 compatibility
     Eliminate mtl dependency
