@@ -8,7 +8,11 @@ module Data.Generics.Uniplate.Internal.Utils(
     unsafeCoerce, builder, unsafePerformIO, inlinePerformIO, concatCont
     ) where
 
+#if __GLASGOW_HASKELL__ >= 702
+import System.IO.Unsafe(unsafePerformIO)
+#else
 import Foreign(unsafePerformIO)
+#endif
 import Unsafe.Coerce(unsafeCoerce)
 
 #ifdef __GLASGOW_HASKELL__
