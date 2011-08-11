@@ -1,16 +1,16 @@
-Cabal-Version:      >= 1.2
-Build-Type:         Simple
-Name:               uniplate
-Version:            1.6
-Copyright:          2006-10, Neil Mitchell
-Maintainer:         ndmitchell@gmail.com
-Homepage:           http://community.haskell.org/~ndm/uniplate/
-License:            BSD3
-License-File:       LICENSE
-Author:             Neil Mitchell
-Synopsis:           Help writing simple, concise and fast generic operations.
-Category:           Generics
-Description:
+cabal-version:      >= 1.2
+build-type:         Simple
+name:               uniplate
+version:            1.6
+copyright:          2006-10, Neil Mitchell
+maintainer:         ndmitchell@gmail.com
+homepage:           http://community.haskell.org/~ndm/uniplate/
+license:            BSD3
+license-file:       LICENSE
+author:             Neil Mitchell
+synopsis:           Help writing simple, concise and fast generic operations.
+category:           Generics
+description:
     Uniplate is library for writing simple and concise generic operations.
     Uniplate has similar goals to the original Scrap Your Boilerplate work,
     but is substantially simpler and faster.
@@ -39,20 +39,20 @@ Description:
     * "Data.Generics.Uniplate.DataOnly" - users making use of both @Data@ and @Direct@
     to avoid getting instance conflicts.
 
-Extra-Source-Files:
+extra-source-files:
     uniplate.htm
     Data/Generics/Uniplate/Internal/DataInc.hs
     Data/Generics/Uniplate/Internal/OperationsInc.hs
 
-Flag ghc_6_10
+flag ghc_6_10
 
-Library
+library
     if flag(ghc_6_10)
         build-depends: base >=4 && <5, containers, syb
     else
         build-depends: base >=3 && <4, containers
 
-    Exposed-modules:
+    exposed-modules:
         Data.Generics.Str
         Data.Generics.Compos
         Data.Generics.SYB
@@ -73,10 +73,10 @@ Library
         Data.Generics.PlateTypeable
         Data.Generics.PlateData
 
-    Other-modules:
+    other-modules:
         Data.Generics.PlateInternal
         Data.Generics.Uniplate.Internal.Data
         Data.Generics.Uniplate.Internal.DataOnlyOperations
         Data.Generics.Uniplate.Internal.Utils
 
-    Extensions: CPP
+    extensions: CPP
