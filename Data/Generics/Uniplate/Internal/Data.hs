@@ -12,12 +12,34 @@ import Data.Data
 import Data.Generics
 import Data.Maybe
 import Data.List
-import qualified Data.IntSet as IntSet
-import Data.IntSet(IntSet)
-import qualified Data.IntMap as IntMap
-import Data.IntMap(IntMap)
 import Data.IORef
 import Control.Exception
+import qualified Data.IntMap as IntMap; import Data.IntMap(IntMap)
+
+
+#if __GLASGOW_HASKELL__ >= 606 && __GLASGOW_HASKELL__ < 702
+import qualified Data.IntSet as Set
+import qualified Data.IntMap as Map
+
+type TypeKey = Int
+type TypeSet = Set.IntSet
+type TypeMap = Map.IntMap
+
+typeKey :: Typeable a => a -> TypeKey
+typeKey x = inlinePerformIO $ typeRepKey $ typeOf x
+
+#else
+import qualified Data.Set as Set
+import qualified Data.Map as Map
+
+type TypeKey = TypeRep
+type TypeSet = Set.Set TypeKey
+type TypeMap = Map.Map TypeKey
+
+typeKey :: Typeable a => a -> TypeKey
+typeKey = typeOf
+
+#endif
 
 
 ---------------------------------------------------------------------
@@ -32,16 +54,6 @@ data Oracle to = Oracle {fromOracle :: forall on . Typeable on => on -> Answer t
 
 {-# INLINE hitTest #-}
 hitTest :: (Data from, Data to) => from -> to -> Oracle to
-
-
-#if __GLASGOW_HASKELL__ < 606
--- GHC 6.4.2 does not export typeRepKey, so we can't do the trick
--- as efficiently, so we just give up and revert to always following
-
-hitTest _ _ = Oracle . maybe Follow Hit . cast
-
-#else
-
 hitTest from to =
     let kto = typeKey to
     in case readCacheFollower (dataBox from) kto of
@@ -57,13 +69,13 @@ hitTest from to =
 -- CACHE
 -- Store and compute the Follower and HitMap
 
-data Cache = Cache HitMap (IntMap2 (Maybe Follower))
+data Cache = Cache HitMap (TypeMap2 (Maybe Follower))
 
 -- Indexed by the @from@ type, then the @to@ type
 -- Nothing means that we can't perform the trick on the set
 {-# NOINLINE cache #-}
 cache :: IORef Cache
-cache = unsafePerformIO $ newIORef $ Cache emptyHitMap IntMap.empty
+cache = unsafePerformIO $ newIORef $ Cache emptyHitMap Map.empty
 
 
 readCacheFollower :: DataBox -> TypeKey -> Maybe Follower
@@ -87,7 +99,7 @@ readCacheFollower from@(DataBox kfrom vfrom) kto = inlinePerformIO $ do
 readCacheHitMap :: DataBox -> Maybe HitMap
 readCacheHitMap from@(DataBox kfrom vfrom) = inlinePerformIO $ do
     Cache hit _ <- readIORef cache
-    case IntMap.lookup kfrom hit of
+    case Map.lookup kfrom hit of
         Just _ -> return $ Just hit
         Nothing -> do
             res <- Control.Exception.catch (return $! Just $! insertHitMap from hit) (\(_ :: SomeException) -> return Nothing)
@@ -99,15 +111,24 @@ readCacheHitMap from@(DataBox kfrom vfrom) = inlinePerformIO $ do
 
 
 ---------------------------------------------------------------------
--- INTMAP2
+-- TYPEMAP2/INTMAP2
+
+type TypeMap2 a = TypeMap (TypeMap a)
+
+lookup2 :: TypeKey -> TypeKey -> TypeMap2 a -> Maybe a
+lookup2 x y mp = Map.lookup x mp >>= Map.lookup y
+
+insert2 :: TypeKey -> TypeKey -> a -> TypeMap2 a -> TypeMap2 a
+insert2 x y v mp = Map.insertWith (const $ Map.insert y v) x (Map.singleton y v) mp
+
 
 type IntMap2 a = IntMap (IntMap a)
 
-lookup2 :: Int -> Int -> IntMap (IntMap x) -> Maybe x
-lookup2 x y mp = IntMap.lookup x mp >>= IntMap.lookup y
+intLookup2 :: Int -> Int -> IntMap2 a -> Maybe a
+intLookup2 x y mp = IntMap.lookup x mp >>= IntMap.lookup y
 
-insert2 :: Int -> Int -> x -> IntMap (IntMap x) -> IntMap (IntMap x)
-insert2 x y v mp = IntMap.insertWith (const $ IntMap.insert y v) x (IntMap.singleton y v) mp
+intInsert2 :: Int -> Int -> a -> IntMap2 a -> IntMap2 a
+intInsert2 x y v mp = IntMap.insertWith (const $ IntMap.insert y v) x (IntMap.singleton y v) mp
 
 
 ---------------------------------------------------------------------
@@ -120,22 +141,16 @@ type Follower = TypeKey -> Bool
 -- HitMap must have addHitMap on the key
 follower :: TypeKey -> TypeKey -> HitMap -> Follower
 follower from to mp
-    | IntSet.null hit = const False
-    | IntSet.null miss = const True
-    | otherwise = \now -> now `IntSet.member` hit
+    | Set.null hit = const False
+    | Set.null miss = const True
+    | otherwise = \now -> now `Set.member` hit
     where
-        (hit,miss) = IntSet.partition (\x -> to `IntSet.member` grab x) (IntSet.insert from $ grab from)
-        grab x = IntMap.findWithDefault (error "couldn't grab in follower") x mp
+        (hit,miss) = Set.partition (\x -> to `Set.member` grab x) (Set.insert from $ grab from)
+        grab x = Map.findWithDefault (error "couldn't grab in follower") x mp
 
 
 ---------------------------------------------------------------------
 -- DATA/TYPEABLE OPERATIONS
-
-type TypeKey = Int
-
-typeKey :: Typeable a => a -> Int
-typeKey x = inlinePerformIO $ typeRepKey $ typeOf x
-
 
 -- | An existential box representing a type which supports SYB
 -- operations.
@@ -161,26 +176,26 @@ sybChildren x
 -- HITMAP
 -- What is the transitive closure of a type key
 
-type HitMap = IntMap IntSet
+type HitMap = TypeMap TypeSet
 
 emptyHitMap :: HitMap
-emptyHitMap = IntMap.fromList
-        [(tRational, IntSet.singleton tInteger)
-        ,(tInteger, IntSet.empty)]
+emptyHitMap = Map.fromList
+        [(tRational, Set.singleton tInteger)
+        ,(tInteger, Set.empty)]
     where tRational = typeKey (undefined :: Rational)
           tInteger = typeKey (0 :: Integer)
 
 
 insertHitMap :: DataBox -> HitMap -> HitMap
-insertHitMap box hit = fixEq trans (populate box) `IntMap.union` hit
+insertHitMap box hit = fixEq trans (populate box) `Map.union` hit
     where
         -- create a fresh box with all the necessary children that aren't in hit
         populate :: DataBox -> HitMap
-        populate x = f x IntMap.empty
+        populate x = f x Map.empty
             where
                 f (DataBox key val) mp
-                    | key `IntMap.member` hit || key `IntMap.member` mp = mp
-                    | otherwise = fs cs $ IntMap.insert key (IntSet.fromList $ map dataBoxKey cs) mp
+                    | key `Map.member` hit || key `Map.member` mp = mp
+                    | otherwise = fs cs $ Map.insert key (Set.fromList $ map dataBoxKey cs) mp
                         where cs = sybChildren val
 
                 fs [] mp = mp
@@ -189,18 +204,15 @@ insertHitMap box hit = fixEq trans (populate box) `IntMap.union` hit
 
         -- update every one to be the transitive closure
         trans :: HitMap -> HitMap
-        trans mp = IntMap.map f mp
+        trans mp = Map.map f mp
             where
-                f x = IntSet.unions $ x : map g (IntSet.toList x)
-                g x = IntMap.findWithDefault (hit IntMap.! x) x mp
+                f x = Set.unions $ x : map g (Set.toList x)
+                g x = Map.findWithDefault (hit Map.! x) x mp
 
 
 fixEq :: Eq a => (a -> a) -> a -> a
 fixEq f x = if x == x2 then x2 else fixEq f x2
     where x2 = f x
-
-
-#endif
 
 
 ---------------------------------------------------------------------
@@ -272,9 +284,6 @@ transformBis = transformBis_
 
 transformBis_ :: forall a . Data a => [[Transformer]] -> a -> a
 
-
-#if __GLASGOW_HASKELL__ >= 606
-
 -- basic algorithm:
 -- as you go down, given transformBis [fN..f1]
 --   if x is not in the set reachable by fN..f1, return x
@@ -287,38 +296,36 @@ transformBis_ ts | isJust hitBoxM = op (sliceMe 1 n)
         on = dataBox (undefined :: a)
         hitBoxM = readCacheHitMap on
         hitBox = fromJust hitBoxM
-        univ = IntSet.toAscList $ IntSet.insert (dataBoxKey on) $ hitBox IntMap.! dataBoxKey on
+        univ = Set.toAscList $ Set.insert (dataBoxKey on) $ hitBox Map.! dataBoxKey on
         n = length ts
 
         -- (a,b), where a < b, and both in range 1..n
-        sliceMe i j = fromMaybe IntMap.empty $ lookup2 i j slices
-        slices :: IntMap2 (IntMap (Maybe Transformer))
+        sliceMe i j = fromMaybe Map.empty $ intLookup2 i j slices
+        slices :: IntMap2 (TypeMap (Maybe Transformer))
         slices = IntMap.fromAscList
             [ (i, IntMap.fromAscList [(j, slice i j ts) | (j,ts) <- zip [i..n] (tail $ inits ts)])
             | (i,ts) <- zip [1..n] (tails $ reverse ts)]
 
-        slice :: Int -> Int -> [[Transformer]] -> IntMap (Maybe Transformer)
+        slice :: Int -> Int -> [[Transformer]] -> TypeMap (Maybe Transformer)
         slice from to tts = self
             where
-                self = f IntMap.empty (zip [from..] tts) -- FIXME: flattening out here gives different results...
+                self = f Map.empty (zip [from..] tts) -- FIXME: flattening out here gives different results...
                 f a ((i,[Transformer tk tr]):ts)
-                    | tk `IntMap.member` a = f a ts
-                    | otherwise = f (IntMap.insert tk t a) ts
+                    | tk `Map.member` a = f a ts
+                    | otherwise = f (Map.insert tk t a) ts
                     where
                         t = Just $ Transformer tk $ op (sliceMe (i+1) to) . tr . gmapT (op $ sliceMe from i)
 
-                f a [] = a `IntMap.union` IntMap.fromAscList (mapMaybe (g $ IntMap.keysSet a) $ univ)
+                f a [] = a `Map.union` Map.fromAscList (mapMaybe (g $ Map.keysSet a) univ)
 
                 g a t = if b then Nothing else Just (t, Nothing)
-                    where b = IntSet.null $ a `IntSet.intersection` (hitBox IntMap.! t)
+                    where b = Set.null $ a `Set.intersection` (hitBox Map.! t)
 
-        op :: forall b . Data b => IntMap (Maybe Transformer) -> b -> b
-        op slice = case IntMap.lookup (typeKey (undefined :: b)) slice of
+        op :: forall b . Data b => TypeMap (Maybe Transformer) -> b -> b
+        op slice = case Map.lookup (typeKey (undefined :: b)) slice of
             Nothing -> id
             Just Nothing -> gmapT (op slice)
             Just (Just (Transformer _ t)) -> unsafeCoerce . t . unsafeCoerce
-
-#endif
 
 
 transformBis_ [] = id
