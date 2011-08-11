@@ -2,12 +2,12 @@ cabal-version:      >= 1.2
 build-type:         Simple
 name:               uniplate
 version:            1.6
-copyright:          2006-10, Neil Mitchell
-maintainer:         ndmitchell@gmail.com
+author:             Neil Mitchell <ndmitchell@gmail.com>
+maintainer:         Neil Mitchell <ndmitchell@gmail.com>
+copyright:          Neil Mitchell 2006-2011
 homepage:           http://community.haskell.org/~ndm/uniplate/
 license:            BSD3
 license-file:       LICENSE
-author:             Neil Mitchell
 synopsis:           Help writing simple, concise and fast generic operations.
 category:           Generics
 description:
@@ -43,6 +43,10 @@ extra-source-files:
     uniplate.htm
     Data/Generics/Uniplate/Internal/DataInc.hs
     Data/Generics/Uniplate/Internal/OperationsInc.hs
+
+source-repository head
+    type:     darcs
+    location: http://community.haskell.org/~ndm/darcs/hlint/
 
 flag ghc_6_10
 
