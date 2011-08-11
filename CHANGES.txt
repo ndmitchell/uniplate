@@ -1,5 +1,6 @@
 Changelog for Uniplate
 
+    GHC 7.2 compatibility
 1.6
     GHC 7 compatibility
     Eliminate mtl dependency
