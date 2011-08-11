@@ -1,7 +1,7 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 
 {- |
-    /RECOMMENDATION/: Use "Data.Generics.Uniplate.Operations" instead.
+    /DEPRECATED/: Use "Data.Generics.Uniplate.Operations" instead.
 
     Requires multi-parameter type classes, so is no longer Haskell 98. These operations
     are easier to use and construct than the equivalent "Data.Generics.UniplateStrOn" methods,
@@ -19,7 +19,9 @@
     available on GHC, but automatically infers instances.
 -}
 
-module Data.Generics.Biplate(
+module Data.Generics.Biplate
+    {- DEPRECATED "Use Data.Generics.Uniplate.Operations instead" -}
+    (
     module Data.Generics.UniplateStrOn,
     module Data.Generics.Biplate
     ) where

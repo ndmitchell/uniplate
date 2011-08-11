@@ -1,7 +1,7 @@
 {-# LANGUAGE MultiParamTypeClasses, FlexibleInstances, UndecidableInstances #-}
 
 {- |
-    /RECOMMENDATION/: Use "Data.Generics.Uniplate.Typeable" instead.
+    /DEPRECATED/: Use "Data.Generics.Uniplate.Typeable" instead.
 
     This module supplies a method for writing 'Biplate' instances more easily.
     
@@ -20,7 +20,9 @@
     >   uniplate = uniplateAll
 -}
 
-module Data.Generics.PlateTypeable(
+module Data.Generics.PlateTypeable
+    {-# DEPRECATED "Use Data.Generics.Uniplate.Typeable instead" #-}
+    (
     module Data.Generics.Biplate,
     module Data.Typeable,
     -- * The Class

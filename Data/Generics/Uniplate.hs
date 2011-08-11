@@ -1,5 +1,5 @@
 {- |
-/RECOMMENDATION/ Use "Data.Generics.UniplateStr" instead.
+/DEPRECATED/ Use "Data.Generics.Uniplate.Operations" instead.
 
 This is the main Uniplate module, which defines all the essential operations
 in a Haskell 98 compatible manner.
@@ -14,7 +14,7 @@ To illustate, I have used the @Expr@ type as below:
 
 
 module Data.Generics.Uniplate
-    {- DEPRECATED "Use Data.Generics.UniplateStr instead" -}
+    {- DEPRECATED "Use Data.Generics.Uniplate.Operations instead" -}
     where
 
 import Control.Monad

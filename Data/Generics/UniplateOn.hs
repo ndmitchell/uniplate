@@ -1,6 +1,6 @@
 {-# OPTIONS_GHC -fno-warn-deprecations #-}
 {- |
-/RECOMMENDATION/: Use "Data.Generics.Uniplate.Operations" instead.
+/DEPRECATED/: Use "Data.Generics.Uniplate.Operations" instead.
 
 This module retained Haskell 98 compatability, but users who are happy with
 multi-parameter type classes should look towards "Data.Generics.Biplate".
@@ -13,7 +13,7 @@ counterparts.
 -}
 
 module Data.Generics.UniplateOn
-    {- DEPRECATED "Use Data.Generics.UniplateStrOn instead" -}
+    {- DEPRECATED "Use Data.Generics.Uniplate.Operations instead" -}
     (
     module Data.Generics.Uniplate,
     module Data.Generics.UniplateOn

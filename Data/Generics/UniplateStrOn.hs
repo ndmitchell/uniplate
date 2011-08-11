@@ -1,5 +1,5 @@
 {- |
-/RECOMMENDATION/: Use "Data.Generics.Uniplate.Operations" instead.
+/DEPRECATED/: Use "Data.Generics.Uniplate.Operations" instead.
 
 This module retained Haskell 98 compatability, but users who are happy with
 multi-parameter type classes should look towards "Data.Generics.Biplate".
@@ -11,7 +11,9 @@ All operations, apart from 'childrenOn', 'descendOn' and 'holesOn' should perfor
 identically to their non @On@ counterparts.
 -}
 
-module Data.Generics.UniplateStrOn(
+module Data.Generics.UniplateStrOn
+    {- DEPRECATED "Use Data.Generics.Uniplate.Operations instead" -}
+    (
     module Data.Generics.UniplateStr,
     module Data.Generics.UniplateStrOn
     ) where

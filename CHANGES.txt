@@ -1,5 +1,6 @@
 Changelog for Uniplate
 
+    Mark everything that was recommended not to use as deprecated
     GHC 7.2 compatibility
 1.6
     GHC 7 compatibility

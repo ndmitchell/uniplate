@@ -1,7 +1,7 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 
 {- |
-    /RECOMMENDATION/: Use "Data.Generics.Uniplate.Direct" instead.
+    /DEPRECATED/: Use "Data.Generics.Uniplate.Direct" instead.
 
     This module supplies a method for writing 'Biplate' instances more easily.
     This module requires fewest extensions, highest performance, and most instance
@@ -36,7 +36,9 @@
 -}
     
 
-module Data.Generics.PlateDirect(
+module Data.Generics.PlateDirect
+    {-# DEPRECATED "Use Data.Generics.Uniplate.Direct instead" #-}
+    (
     module Data.Generics.Biplate,
     -- * The Combinators
     plate, plateSelf,
