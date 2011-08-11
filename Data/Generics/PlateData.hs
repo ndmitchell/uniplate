@@ -15,10 +15,12 @@ module Data.Generics.PlateData
 import Data.Generics.Biplate
 import Data.Generics.PlateInternal
 import Data.Generics
+
+#if !(__GLASGOW_HASKELL__ < 606 || __GLASGOW_HASKELL__ >= 702)
 import Data.List
 import qualified Data.IntSet as IntSet
 import Data.Ratio
-
+#endif
 
 
 -- | An existential box representing a type which supports SYB
