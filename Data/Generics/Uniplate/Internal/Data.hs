@@ -96,9 +96,12 @@ readCacheFollower from@(DataBox kfrom vfrom) kto = inlinePerformIO $ do
                 Left _ -> (hit, Nothing)
                 Right hit -> (hit, Just $ follower kfrom kto hit)
 
-            when (True || uniplateVerbose + maybe 1 (const 0) fol > 1) $ putStrLn $
-                "# Uniplate lookup on (" ++ show (typeOf vfrom) ++ "), from (" ++ show kfrom ++ "), to (" ++ show kto ++ "): " ++
-                either (\(msg::SomeException) -> "FAILURE (" ++ show msg ++ ")") (const "Success") res
+            let msg =
+                    "# Uniplate lookup on (" ++ show (typeOf vfrom) ++ "), from (" ++ show kfrom ++ "), to (" ++ show kto ++ "): " ++
+                    either (\(msg::SomeException) -> "FAILURE (" ++ show msg ++ ")") (const "Success") res
+
+            when (uniplateVerbose + maybe 1 (const 0) fol >= 2) $ putStrLn msg
+            when (uniplateVerbose < 0 && isNothing fol) $ error msg
 
             atomicModifyIORef cache $ \(Cache _ follow) -> (Cache hit (insert2 kfrom kto fol follow), ())
             return fol
@@ -173,7 +176,7 @@ dataBox x = DataBox (typeKey x) x
 sybChildren :: Data a => a -> [DataBox]
 sybChildren x
     | isAlgType dtyp = concatMap f ctrs
-    | isNorepType dtyp = error $ "Data.Generics.Uniplate.Data: sybChildren on data type which returns NorepType, " ++ show dtyp
+    | isNorepType dtyp = error $ "Data.Generics.Uniplate.Data: sybChildren on data type which returns NorepType, " ++ show (typeOf x) ++ ", " ++ show dtyp
     | otherwise = []
     where
         f ctr = gmapQ dataBox (asTypeOf (fromConstr ctr) x)

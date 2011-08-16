@@ -20,9 +20,17 @@
     to compute the table, in which case this library will perform about the same speed as
     SYB.
 
-    You can set the environment variable @$UNIPLATE_VERBOSE@ to @1@ to be told every time
-    there is a failure to compute a table, or to @2@ to be told about every table computation.
-    This environment variable must be set before the first call to uniplate.
+    Setting the environment variable @$UNIPLATE_VERBOSE@ has the following effects:
+
+  * @-1@ - raise a program error every time construction of the table fails
+
+  * @0@ (or unset) - never print any messages or raise any errors
+
+  * @1@ - give a message every time a table is computed
+
+  * @2@ - give a message when table computation fails
+
+    The @$UNIPLATE_VERBOSE@ environment variable must be set before the first call to uniplate.
 -}
 module Data.Generics.Uniplate.Data(
     module Data.Generics.Uniplate.Operations,
