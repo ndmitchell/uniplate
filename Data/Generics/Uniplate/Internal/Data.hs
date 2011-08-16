@@ -164,7 +164,7 @@ dataBox x = DataBox (typeKey x) x
 sybChildren :: Data a => a -> [DataBox]
 sybChildren x
     | isAlgType dtyp = concatMap f ctrs
-    | isNorepType dtyp = error "sybChildren on NorepType"
+    | isNorepType dtyp = error $ "Data.Generics.Uniplate.Data: sybChildren on data type which returns NorepType, " ++ show dtyp
     | otherwise = []
     where
         f ctr = gmapQ dataBox (asTypeOf (fromConstr ctr) x)
