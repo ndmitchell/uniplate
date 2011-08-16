@@ -176,7 +176,11 @@ dataBox x = DataBox (typeKey x) x
 sybChildren :: Data a => a -> [DataBox]
 sybChildren x
     | isAlgType dtyp = concatMap f ctrs
-    | isNorepType dtyp = error $ "Data.Generics.Uniplate.Data: sybChildren on data type which returns NorepType, " ++ show (typeOf x) ++ ", " ++ show dtyp
+    | isNorepType dtyp = []
+        -- Extensive discussions with Lennart and Roman decided that if something returns NorepType, it really wants to be atomic
+        -- so we should let it be, and pretend it has no children.
+        -- The most common types which say this are Data.Set/Data.Map, and we think that's a bug in their Data instances.
+        -- error $ "Data.Generics.Uniplate.Data: sybChildren on data type which returns NorepType, " ++ show (typeOf x) ++ ", " ++ show dtyp
     | otherwise = []
     where
         f ctr = gmapQ dataBox (asTypeOf (fromConstr ctr) x)
