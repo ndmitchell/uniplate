@@ -1,5 +1,6 @@
 Changelog for Uniplate
 
+    Add $UNIPLATE_VERBOSE to give messages about cache construction
 1.6.1
     Mark everything that was recommended not to use as deprecated
     #449, GHC 7.2 compatibility

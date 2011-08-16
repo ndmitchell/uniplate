@@ -14,6 +14,8 @@ import Data.Maybe
 import Data.List
 import Data.IORef
 import Control.Exception
+import Control.Monad
+import System.Environment(getEnv)
 import qualified Data.IntMap as IntMap; import Data.IntMap(IntMap)
 
 
@@ -40,6 +42,11 @@ typeKey :: Typeable a => a -> TypeKey
 typeKey = typeOf
 
 #endif
+
+{-# NOINLINE uniplateVerbose #-}
+uniplateVerbose :: Int -- 0 = quiet, 1 = errors only, 2 = everything
+uniplateVerbose = unsafePerformIO $ do
+    fmap read (getEnv "UNIPLATE_VERBOSE") `Control.Exception.catch` \(_ :: SomeException) -> return 0
 
 
 ---------------------------------------------------------------------
@@ -84,12 +91,14 @@ readCacheFollower from@(DataBox kfrom vfrom) kto = inlinePerformIO $ do
     case lookup2 kfrom kto follow of
         Just ans -> return ans
         Nothing -> do
-            res <- Control.Exception.catch (return $! Just $! insertHitMap from hit) (\(_ :: SomeException) -> return Nothing)
+            res <- Control.Exception.try (return $! insertHitMap from hit)
             (hit,fol) <- return $ case res of
-                Nothing -> (hit, Nothing)
-                Just hit -> (hit, Just $ follower kfrom kto hit)
-            -- -- uncomment these lines to see where type search fails
-            -- if isNothing fol then print ("failure",show (typeOf vfrom),kfrom,kto) else return ()
+                Left _ -> (hit, Nothing)
+                Right hit -> (hit, Just $ follower kfrom kto hit)
+
+            when (True || uniplateVerbose + maybe 1 (const 0) fol > 1) $ putStrLn $
+                "# Uniplate lookup on (" ++ show (typeOf vfrom) ++ "), from (" ++ show kfrom ++ "), to (" ++ show kto ++ "): " ++
+                either (\(msg::SomeException) -> "FAILURE (" ++ show msg ++ ")") (const "Success") res
 
             atomicModifyIORef cache $ \(Cache _ follow) -> (Cache hit (insert2 kfrom kto fol follow), ())
             return fol
