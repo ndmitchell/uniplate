@@ -1,5 +1,6 @@
 Changelog for Uniplate
 
+1.6.2
     Given a Map/Set (or anything with NorepType) ignore it
     Add $UNIPLATE_VERBOSE to give messages about cache construction
 1.6.1
