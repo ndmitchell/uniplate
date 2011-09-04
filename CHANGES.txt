@@ -4,7 +4,7 @@ Changelog for Uniplate
     Given a Map/Set (or anything with NorepType) ignore it
     Add $UNIPLATE_VERBOSE to give messages about cache construction
 1.6.1
-    Mark everything that was recommended not to use as deprecated
+    #435, mark things that were recommended not to use as deprecated
     #449, GHC 7.2 compatibility
 1.6
     GHC 7 compatibility
