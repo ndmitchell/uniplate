@@ -48,13 +48,17 @@ source-repository head
     type:     darcs
     location: http://community.haskell.org/~ndm/darcs/uniplate/
 
-flag ghc_6_10
+flag typeable_fingerprint
+flag separate_syb
 
 library
-    if flag(ghc_6_10)
-        build-depends: base >=4 && <5, containers, syb
+    if flag(typeable_fingerprint)
+        build-depends: base >=4.4 && <5, containers, syb, unordered-containers == 0.1.*
     else
-        build-depends: base >=3 && <4, containers
+        if flag(separate_syb)
+            build-depends: base >=4 && <4.4, containers, syb
+        else
+            build-depends: base >=3 && <4, containers
 
     exposed-modules:
         Data.Generics.Str

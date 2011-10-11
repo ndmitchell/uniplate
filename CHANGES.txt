@@ -1,5 +1,6 @@
 Changelog for Uniplate
 
+    #454, use unordered-containers on GHC 7.2 and above (faster)
 1.6.2
     Given a Map/Set (or anything with NorepType) ignore it
     Add $UNIPLATE_VERBOSE to give messages about cache construction

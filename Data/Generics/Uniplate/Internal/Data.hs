@@ -19,7 +19,26 @@ import System.Environment(getEnv)
 import qualified Data.IntMap as IntMap; import Data.IntMap(IntMap)
 
 
-#if __GLASGOW_HASKELL__ >= 606 && __GLASGOW_HASKELL__ < 702
+#if __GLASGOW_HASKELL__ < 606
+
+---------------------------------------------------------------------
+-- GHC 6.4 and below
+
+import qualified Data.Set as Set
+import qualified Data.Map as Map
+
+type TypeKey = TypeRep
+type TypeSet = Set.Set TypeKey
+type TypeMap = Map.Map TypeKey
+
+typeKey :: Typeable a => a -> TypeKey
+typeKey = typeOf
+
+#elif __GLASGOW_HASKELL__ < 702
+
+---------------------------------------------------------------------
+-- GHC 6.6 to 7.0 (has typeRepKey)
+
 import qualified Data.IntSet as Set
 import qualified Data.IntMap as Map
 
@@ -31,17 +50,61 @@ typeKey :: Typeable a => a -> TypeKey
 typeKey x = inlinePerformIO $ typeRepKey $ typeOf x
 
 #else
-import qualified Data.Set as Set
-import qualified Data.Map as Map
+
+---------------------------------------------------------------------
+-- GHC 7.2 and above (using fingerprint)
+
+import GHC.Fingerprint.Type(Fingerprint(..))
+import Data.Typeable.Internal(TypeRep(..))
+
+import Data.Hashable
+import qualified Data.HashMap.Strict as Map
+import qualified Data.HashSet as Set
+type TypeSet = Set.HashSet TypeKey
+type TypeMap = Map.HashMap TypeKey
 
 type TypeKey = TypeRep
-type TypeSet = Set.Set TypeKey
-type TypeMap = Map.Map TypeKey
 
 typeKey :: Typeable a => a -> TypeKey
 typeKey = typeOf
 
+instance Hashable TypeRep where
+    -- Fingerprint is just the MD5, so taking any Int from it is fine
+    hash (TypeRep (Fingerprint x _) _ _) = fromIntegral x
+
 #endif
+
+
+#if __GLASGOW_HASKELL__ < 702
+
+---------------------------------------------------------------------
+-- GHC 7.0 and below (using containers API)
+
+(!) = (Map.!)
+map_findWithDefault = Map.findWithDefault
+map_fromAscList = Map.fromAscList
+map_keysSet = Map.keysSet
+map_member = Map.member
+set_partition = Set.partition
+set_toAscList = Set.toAscList
+set_unions = Set.unions
+
+#else
+
+---------------------------------------------------------------------
+-- GHC 7.2 and above (using unordered-containers API)
+
+(!) mp k = Map.lookupDefault (error "Could not find element") k mp
+map_findWithDefault = Map.lookupDefault
+map_fromAscList = Map.fromList
+map_keysSet = Set.fromList . Map.keys
+map_member x xs = isJust $ Map.lookup x xs
+set_partition f x = (Set.filter f x, Set.filter (not . f) x)
+set_toAscList = Set.toList
+set_unions = foldr Set.union Set.empty
+
+#endif
+
 
 {-# NOINLINE uniplateVerbose #-}
 uniplateVerbose :: Int -- 0 = quiet, 1 = errors only, 2 = everything
@@ -158,8 +221,8 @@ follower from to mp
     | Set.size hit < Set.size miss = \k -> k `Set.member` hit
     | otherwise = \k -> not $ k `Set.member` miss
     where
-        (hit,miss) = Set.partition (\x -> to `Set.member` grab x) (Set.insert from $ grab from)
-        grab x = Map.findWithDefault (error "couldn't grab in follower") x mp
+        (hit,miss) = set_partition (\x -> to `Set.member` grab x) (Set.insert from $ grab from)
+        grab x = map_findWithDefault (error "couldn't grab in follower") x mp
 
 
 ---------------------------------------------------------------------
@@ -211,7 +274,7 @@ insertHitMap box hit = fixEq trans (populate box) `Map.union` hit
         populate x = f x Map.empty
             where
                 f (DataBox key val) mp
-                    | key `Map.member` hit || key `Map.member` mp = mp
+                    | key `map_member` hit || key `map_member` mp = mp
                     | otherwise = fs cs $ Map.insert key (Set.fromList $ map dataBoxKey cs) mp
                         where cs = sybChildren val
 
@@ -223,8 +286,8 @@ insertHitMap box hit = fixEq trans (populate box) `Map.union` hit
         trans :: HitMap -> HitMap
         trans mp = Map.map f mp
             where
-                f x = Set.unions $ x : map g (Set.toList x)
-                g x = Map.findWithDefault (hit Map.! x) x mp
+                f x = set_unions $ x : map g (Set.toList x)
+                g x = map_findWithDefault (hit ! x) x mp
 
 
 fixEq :: Eq a => (a -> a) -> a -> a
@@ -313,7 +376,7 @@ transformBis_ ts | isJust hitBoxM = op (sliceMe 1 n)
         on = dataBox (undefined :: a)
         hitBoxM = readCacheHitMap on
         hitBox = fromJust hitBoxM
-        univ = Set.toAscList $ Set.insert (dataBoxKey on) $ hitBox Map.! dataBoxKey on
+        univ = set_toAscList $ Set.insert (dataBoxKey on) $ hitBox ! dataBoxKey on
         n = length ts
 
         -- (a,b), where a < b, and both in range 1..n
@@ -328,15 +391,15 @@ transformBis_ ts | isJust hitBoxM = op (sliceMe 1 n)
             where
                 self = f Map.empty (zip [from..] tts) -- FIXME: flattening out here gives different results...
                 f a ((i,[Transformer tk tr]):ts)
-                    | tk `Map.member` a = f a ts
+                    | tk `map_member` a = f a ts
                     | otherwise = f (Map.insert tk t a) ts
                     where
                         t = Just $ Transformer tk $ op (sliceMe (i+1) to) . tr . gmapT (op $ sliceMe from i)
 
-                f a [] = a `Map.union` Map.fromAscList (mapMaybe (g $ Map.keysSet a) univ)
+                f a [] = a `Map.union` map_fromAscList (mapMaybe (g $ map_keysSet a) univ)
 
                 g a t = if b then Nothing else Just (t, Nothing)
-                    where b = Set.null $ a `Set.intersection` (hitBox Map.! t)
+                    where b = Set.null $ a `Set.intersection` (hitBox ! t)
 
         op :: forall b . Data b => TypeMap (Maybe Transformer) -> b -> b
         op slice = case Map.lookup (typeKey (undefined :: b)) slice of
