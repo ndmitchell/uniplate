@@ -53,7 +53,10 @@ flag separate_syb
 
 library
     if flag(typeable_fingerprint)
-        build-depends: base >=4.4 && <5, containers, syb, unordered-containers == 0.1.*
+        build-depends:
+            base >=4.4 && <5, containers, syb,
+            hashable < 1.2,
+            unordered-containers == 0.1.*
     else
         if flag(separate_syb)
             build-depends: base >=4 && <4.4, containers, syb
