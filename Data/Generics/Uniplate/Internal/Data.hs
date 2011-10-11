@@ -155,7 +155,8 @@ follower :: TypeKey -> TypeKey -> HitMap -> Follower
 follower from to mp
     | Set.null hit = const False
     | Set.null miss = const True
-    | otherwise = \now -> now `Set.member` hit
+    | Set.size hit < Set.size miss = \k -> k `Set.member` hit
+    | otherwise = \k -> not $ k `Set.member` miss
     where
         (hit,miss) = Set.partition (\x -> to `Set.member` grab x) (Set.insert from $ grab from)
         grab x = Map.findWithDefault (error "couldn't grab in follower") x mp
