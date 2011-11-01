@@ -31,6 +31,16 @@
     >     biplate (Seq x  ) = plate Seq ||+ x
     >     biplate (Sel x  ) = plate Sel ||* x
     >     biplate (Let x y) = plate Let |-  x |* y
+
+    This module provides a few monomorphic instances of 'Uniplate'/'Biplate'
+    for common types available in the base library, but does not provide any polymorphic
+    instances. Given only monomorphic instances it is trivial to ensure that all instances
+    are disjoint, making it easier to add your own instances.
+
+    When defining polymorphic instances, be carefully to mention all potential children.
+    Consider @Biplate Int (Int, a)@ - this instance cannot be correct because it will fail
+    to return both @Int@ values on @(Int,Int)@. There are some legitimate polymorphic instances,
+    such as @Biplate a [a]@ and @Biplate a a@, but take care to avoid overlapping instances.
 -}
     
 
