@@ -115,7 +115,7 @@ plateSelf x = (One x, \(One x) -> x)
 -- > instance Biplate (Map.Map [Char] Int) Char where
 -- >     biplate = plateProject Map.toList Map.fromList
 --
---   If the types ensure that no operations will not change the keys we
+--   If the types ensure that no operations will not change the keys
 --   we can use the 'fromDistictAscList' function to reconstruct the Map:
 --
 -- > instance Biplate (Map.Map [Char] Int) Int where
