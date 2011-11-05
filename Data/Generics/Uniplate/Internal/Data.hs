@@ -107,7 +107,7 @@ set_unions = foldr Set.union Set.empty
 
 
 {-# NOINLINE uniplateVerbose #-}
-uniplateVerbose :: Int -- 0 = quiet, 1 = errors only, 2 = everything
+uniplateVerbose :: Int -- -1 = error if failed, 0 = quiet, 1 = print errors only, 2 = print everything
 uniplateVerbose = unsafePerformIO $ do
     fmap read (getEnv "UNIPLATE_VERBOSE") `Control.Exception.catch` \(_ :: SomeException) -> return 0
 
