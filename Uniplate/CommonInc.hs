@@ -90,9 +90,12 @@ test msg = do
     universeBi eith1 === ([] :: [Int])
     childrenBi eith1 === str1
 
-    let mp1 = [Map.singleton "neil" (1::Int), Map.fromList [("more",3),("test",4)], Map.empty]
+    let mp1 = map toMap [Map.singleton "neil" (1::Int), Map.fromList [("morz",3),("test",4)], Map.empty]
     universeBi mp1 === [1::Int,3,4]
     universeBi (transformBi (+(1::Int)) mp1) === [2::Int,4,5]
+    let mp2 = map fromMap $ descendBi (reverse :: String -> String) mp1
+    map Map.keys mp2 === [["lien"],["tset","zrom"],[]]
+    map Map.valid mp2 === [True,True,True]
 
     let rat1 = 1 % 2 :: Rational
     universe rat1 === [rat1]

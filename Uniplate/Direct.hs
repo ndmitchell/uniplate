@@ -3,12 +3,23 @@ module Uniplate.Direct where
 import Data.Generics.Uniplate.Direct
 #include "CommonInc.hs"
 
+toMap = id
+fromMap = id
+
 instance Biplate (Map.Map [Char] Int) Int where
     biplate = plateProject Map.toAscList Map.fromDistinctAscList
 
 instance Biplate [Map.Map [Char] Int] Int where
     biplate (x:xs) = plate (:) |+ x ||+ xs
     biplate x = plate x
+
+instance Biplate (Map.Map [Char] Int) [Char] where
+    biplate = plateProject Map.toList Map.fromList
+
+instance Biplate [Map.Map [Char] Int] [Char] where
+    biplate (x:xs) = plate (:) |+ x ||+ xs
+    biplate x = plate x
+
 
 -- GENERATED
 
@@ -163,3 +174,13 @@ instance Biplate [([Char], Int)] Int where
 instance Biplate ([Char], Int) Int where
         {-# INLINE biplate #-}
         biplate (x1, x2) = plate ((,) x1) |* x2
+
+
+instance Biplate [([Char], Int)] [Char] where
+        {-# INLINE biplate #-}
+        biplate ((:) x1 x2) = plate (:) |+ x1 ||+ x2
+        biplate x = plate x
+
+instance Biplate ([Char], Int) [Char] where
+        {-# INLINE biplate #-}
+        biplate (x1, x2) = plate (,) |* x1 |- x2

@@ -3,6 +3,8 @@ module Uniplate.Typeable where
 import Data.Generics.Uniplate.Typeable
 #include "CommonInc.hs"
 
+toMap = id
+fromMap = id
 
 instance (Ord a, Typeable a, PlateAll a c, Typeable b, PlateAll b c,
           Typeable c, PlateAll c c) => PlateAll (Map.Map a b) c where
