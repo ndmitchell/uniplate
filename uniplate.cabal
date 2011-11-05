@@ -68,6 +68,7 @@ library
         Data.Generics.Compos
         Data.Generics.SYB
         Data.Generics.Uniplate.Data
+        Data.Generics.Uniplate.Data.Instances
         Data.Generics.Uniplate.DataOnly
         Data.Generics.Uniplate.Direct
         Data.Generics.Uniplate.Operations

@@ -9,7 +9,9 @@
     >             deriving (Data,Typeable)
 
     All the Uniplate operations defined in "Data.Generics.Uniplate.Operations"
-    can be used.
+    can be used. If you are working with abstract data types, such as @Map@ or @Set@
+    from the @containers@ package, you  may also need to use the data types defined
+    in "Data.Generics.Uniplate.Data.Instances".
 
     For faster performance (5x faster, but requires writing instances) switch to
     "Data.Generics.Uniplate.Direct". If you get instance conflicts
