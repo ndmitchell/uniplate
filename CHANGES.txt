@@ -1,5 +1,6 @@
 Changelog for Uniplate
 
+1.6.4
     Give better Data instances for the containers package
 1.6.3
     #454, use unordered-containers on GHC 7.2 and above (faster)
