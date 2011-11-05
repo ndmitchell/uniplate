@@ -5,3 +5,10 @@
 :def build      \x -> return $ ":!mkdir obj\n:!ghc --make -O2 -hidir obj -odir obj Main.hs -o obj/main.exe"
 :def exec       \x -> return $ ":build\n:!obj\\main.exe " ++ x
 :def benchmark  \x -> return $ ":exec benchmark"
+
+:{
+:def docs \x -> return $ unlines $
+     [":!cabal configure"
+     ,":!cabal haddock"] ++
+     [":!start dist\\doc\\html\\uniplate\\index.html" | null x]
+:}
