@@ -84,7 +84,13 @@ import qualified Data.IntSet as IntSet
 --   As a result of having no constructors, any calls to the methods 'toConstr' or 'gunfoldl'
 --   will raise an error.
 newtype Hide a = Hide {fromHide :: a}
-    deriving Typeable
+    deriving (Read,Ord,Eq,Typeable)
+
+instance Show a => Show (Hide a) where
+    show (Hide a) = "Hide " ++ show a
+
+instance Functor Hide where
+    fmap f (Hide x) = Hide $ f x
 
 
 instance Typeable a => Data (Hide a) where
@@ -114,7 +120,11 @@ tyHide = mkDataType "Data.Generics.Uniplate.Data.Instances.Hide" []
 --
 --   The 'Trigger' type is often used in conjunction with 'Invariant', which fixes the invariants.
 data Trigger a = Trigger {trigger :: Bool, fromTrigger :: a}
-    deriving Typeable
+    deriving (Read,Ord,Eq,Show,Typeable)
+
+instance Functor Trigger where
+    fmap f (Trigger a b) = Trigger a $ f b
+
 
 instance (Data a, Typeable a) => Data (Trigger a) where
     gfoldl k z (Trigger _ x) = z (Trigger True) `k` x
@@ -146,6 +156,9 @@ tyTrigger = mkDataType "Data.Generics.Uniplate.Data.Instances.Trigger" [conTrigg
 data Invariant a = Invariant {invariant :: a -> a, fromInvariant :: a}
     deriving Typeable
 
+instance Show a => Show (Invariant a) where
+    show (Invariant _ x) = "Invariant " ++ show x
+
 instance (Data a, Typeable a) => Data (Invariant a) where
     gfoldl k z (Invariant f x) = z (Invariant f . f) `k` x
     gunfold k z c = k $ z $ \x -> Invariant (error msg) (error msg `asTypeOf` x)
@@ -164,6 +177,10 @@ tyInvariant = mkDataType "Data.Generics.Uniplate.Data.Instances.Invariant" [conI
 --   Use 'toMap' to construct values, and 'fromMap' to deconstruct values.
 newtype Map k v = Map (Invariant (Trigger [k], Trigger [v], Hide (Map.Map k v)))
     deriving (Data, Typeable)
+
+instance (Show k, Show v) => Show (Map k v) where; show = show . fromMap
+instance (Eq k, Eq v) => Eq (Map k v) where; a == b = fromMap a == fromMap b
+instance (Ord k, Ord v) => Ord (Map k v) where; compare a b = compare (fromMap a) (fromMap b)
 
 -- | Deconstruct a value of type 'Map'.
 fromMap :: Map k v -> Map.Map k v
@@ -187,6 +204,10 @@ toMap x = Map $ Invariant inv $ create x
 newtype Set k = Set (Invariant (Trigger [k], Hide (Set.Set k)))
     deriving (Data, Typeable)
 
+instance Show k => Show (Set k) where; show = show . fromSet
+instance Eq k => Eq (Set k) where; a == b = fromSet a == fromSet b
+instance Ord k => Ord (Set k) where; compare a b = compare (fromSet a) (fromSet b)
+
 -- | Deconstruct a value of type 'Set'.
 fromSet :: Set k -> Set.Set k
 fromSet (Set (Invariant _ (_,Hide x))) = x
@@ -206,6 +227,10 @@ toSet x = Set $ Invariant inv $ create x
 --   Use 'toIntMap' to construct values, and 'fromIntMap' to deconstruct values.
 newtype IntMap v = IntMap (Invariant (Trigger [Int], Trigger [v], Hide (IntMap.IntMap v)))
     deriving (Data, Typeable)
+
+instance Show v => Show (IntMap v) where; show = show . fromIntMap
+instance Eq v => Eq (IntMap v) where; a == b = fromIntMap a == fromIntMap b
+instance Ord v => Ord (IntMap v) where; compare a b = compare (fromIntMap a) (fromIntMap b)
 
 -- | Deconstruct a value of type 'IntMap'.
 fromIntMap :: IntMap v -> IntMap.IntMap v
@@ -228,6 +253,10 @@ toIntMap x = IntMap $ Invariant inv $ create x
 --   Use 'toIntSet' to construct values, and 'fromIntSet' to deconstruct values.
 newtype IntSet = IntSet (Invariant (Trigger [Int], Hide (IntSet.IntSet)))
     deriving (Data, Typeable)
+
+instance Show IntSet where; show = show . fromIntSet
+instance Eq IntSet where; a == b = fromIntSet a == fromIntSet b
+instance Ord IntSet where; compare a b = compare (fromIntSet a) (fromIntSet b)
 
 -- | Deconstruct a value of type 'IntSet'.
 fromIntSet :: IntSet -> IntSet.IntSet
