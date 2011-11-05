@@ -81,7 +81,7 @@ import qualified Data.IntSet as IntSet
 --
 -- > transformBi (+1) (1, 2, Hide 3, Just 4) == (2, 3, Hide 3, Just 4)
 --
---   As a result of having no constructors, any calls to the methods 'toConstr' or 'gunfoldl'
+--   As a result of having no constructors, any calls to the methods 'toConstr' or 'gunfold'
 --   will raise an error.
 newtype Hide a = Hide {fromHide :: a}
     deriving (Read,Ord,Eq,Typeable)
