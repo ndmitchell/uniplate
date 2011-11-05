@@ -32,7 +32,7 @@
     >     biplate (Sel x  ) = plate Sel ||* x
     >     biplate (Let x y) = plate Let |-  x |* y
 
-    This module provides a few monomorphic instances of 'Uniplate'/'Biplate'
+    This module provides a few monomorphic instances of 'Uniplate' / 'Biplate'
     for common types available in the base library, but does not provide any polymorphic
     instances. Given only monomorphic instances it is trivial to ensure that all instances
     are disjoint, making it easier to add your own instances.
