@@ -32,6 +32,9 @@
     >     biplate (Sel x  ) = plate Sel ||* x
     >     biplate (Let x y) = plate Let |-  x |* y
 
+    To define instances for abstract data types, such as @Map@ or @Set@ from the @containers@ package,
+    use 'plateProject'.
+
     This module provides a few monomorphic instances of 'Uniplate' / 'Biplate'
     for common types available in the base library, but does not provide any polymorphic
     instances. Given only monomorphic instances it is trivial to ensure that all instances
@@ -42,8 +45,6 @@
     to return both @Int@ values on @(Int,Int)@. There are some legitimate polymorphic instances,
     such as @Biplate a [a]@ and @Biplate a a@, but take care to avoid overlapping instances.
 -}
-    
-
 module Data.Generics.Uniplate.Direct(
     module Data.Generics.Uniplate.Operations,
     -- * The Combinators
@@ -111,11 +112,14 @@ plateSelf x = (One x, \(One x) -> x)
 -- | Write an instance in terms of a projection/injection pair. Usually used to define instances
 --   for abstract containers such as Map:
 --
+-- > instance Biplate (Map.Map [Char] Int) Char where
+-- >     biplate = plateProject Map.toList Map.fromList
+--
+--   If the types ensure that no operations will not change the keys we
+--   we can use the 'fromDistictAscList' function to reconstruct the Map:
+--
 -- > instance Biplate (Map.Map [Char] Int) Int where
 -- >     biplate = plateProject Map.toAscList Map.fromDistinctAscList
---
--- Because we know that Uniplate operations will not change the keys,
--- we can use the 'fromDistictAscList' function to reconstruct it.
 plateProject :: Biplate item to => (from -> item) -> (item -> from) -> from -> Type from to
 plateProject into outof = second (outof . ) . biplate . into
 
