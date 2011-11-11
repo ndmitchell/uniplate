@@ -112,7 +112,7 @@ tyHide = mkDataType "Data.Generics.Uniplate.Data.Instances.Hide" []
 --
 -- > data SortedList a = SortedList (Trigger [a]) deriving (Data,Typeable)
 -- > toSortedList xs = SortedList $ Trigger False $ sort xs
--- > fromSortedList (SortedList (Trigger t xs)) = if trigger x then sort xs else xs
+-- > fromSortedList (SortedList (Trigger t xs)) = if t then sort xs else xs
 --
 --   This data type represents a sorted list. When constructed the items are initially sorted,
 --   but operations such as 'gmapT' could break that invariant. The 'Trigger' type is used to
