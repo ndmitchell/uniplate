@@ -54,10 +54,6 @@ typeKey x = inlinePerformIO $ typeRepKey $ typeOf x
 ---------------------------------------------------------------------
 -- GHC 7.2 and above (using fingerprint)
 
-import GHC.Fingerprint.Type(Fingerprint(..))
-import Data.Typeable.Internal(TypeRep(..))
-
-import Data.Hashable
 import qualified Data.HashMap.Strict as Map
 import qualified Data.HashSet as Set
 type TypeSet = Set.HashSet TypeKey
@@ -67,10 +63,6 @@ type TypeKey = TypeRep
 
 typeKey :: Typeable a => a -> TypeKey
 typeKey = typeOf
-
-instance Hashable TypeRep where
-    -- Fingerprint is just the MD5, so taking any Int from it is fine
-    hash (TypeRep (Fingerprint x _) _ _) = fromIntegral x
 
 #endif
 
