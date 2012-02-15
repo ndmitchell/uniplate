@@ -4,7 +4,7 @@ name:               uniplate
 version:            1.6.5
 author:             Neil Mitchell <ndmitchell@gmail.com>
 maintainer:         Neil Mitchell <ndmitchell@gmail.com>
-copyright:          Neil Mitchell 2006-2011
+copyright:          Neil Mitchell 2006-2012
 homepage:           http://community.haskell.org/~ndm/uniplate/
 license:            BSD3
 license-file:       LICENSE
