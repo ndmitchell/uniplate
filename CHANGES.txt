@@ -1,5 +1,6 @@
 Changelog for Uniplate
 
+    Allow unordered-containers 0.2.*
 1.6.6
     Require hashable-1.1.2.3, which has a TypeRep instance
 1.6.5
