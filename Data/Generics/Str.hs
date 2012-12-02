@@ -25,21 +25,21 @@ instance Eq a => Eq (Str a) where
     _ == _ = False
 
 instance Functor Str where
-  fmap f Zero = Zero
-  fmap f (One x) = One (f x)
-  fmap f (Two x y) = Two (fmap f x) (fmap f y)
+    fmap f Zero = Zero
+    fmap f (One x) = One (f x)
+    fmap f (Two x y) = Two (fmap f x) (fmap f y)
 
 
 instance Foldable Str where
-  foldMap m Zero = mempty
-  foldMap m (One x) = m x
-  foldMap m (Two l r) = foldMap m l `mappend` foldMap m r
+    foldMap m Zero = mempty
+    foldMap m (One x) = m x
+    foldMap m (Two l r) = foldMap m l `mappend` foldMap m r
 
 
 instance Traversable Str where
-  traverse f Zero = pure Zero
-  traverse f (One x) = One <$> f x
-  traverse f (Two x y) = Two <$> traverse f x <*> traverse f y
+    traverse f Zero = pure Zero
+    traverse f (One x) = One <$> f x
+    traverse f (Two x y) = Two <$> traverse f x <*> traverse f y
 
 
 -- | Take the type of the method, will crash if called
