@@ -1,5 +1,6 @@
 Changelog for Uniplate
 
+    Add RULES for the Direct method which follow plate identities
     Disallow unordered-containers 0.2.0.*
 1.6.7
     Allow unordered-containers 0.2.*

@@ -66,27 +66,44 @@ type Type from to = (Str to, Str to -> from)
 -- The following rule can be used for optimisation:
 --
 -- > plate Ctor |- x == plate (Ctor x)
-{-# INLINE plate #-}
+{-# INLINE[1] plate #-}
 plate :: from -> Type from to
 plate f = (Zero, \_ -> f)
 
 
+{-# RULES
+"plate/-"    forall f x. plate f |- x = plate (f x)
+"plate/+"    forall f x. plate f |+ x = platePlus f x
+"plate/*"    forall f x. plate f |* x = plateStar f x
+  #-}
+
+
+{-# INLINE plateStar #-}
+plateStar :: (to -> from) -> to -> Type from to
+plateStar f x = (One x, \(One x) -> f x)
+
+{-# INLINE platePlus #-}
+platePlus :: Biplate item to => (item -> from) -> item -> Type from to
+platePlus f x = case biplate x of
+                        (ys,y_) -> (ys, \ys -> f $ y_ ys)
+
+
 -- | The field to the right is the target.
-{-# INLINE (|*) #-}
+{-# INLINE[1] (|*) #-}
 (|*) :: Type (to -> from) to -> to -> Type from to
 (|*) (xs,x_) y = (Two xs (One y),\(Two xs (One y)) -> x_ xs y)
 
 
 
 -- | The field to the right may contain the target.
-{-# INLINE (|+) #-}
+{-# INLINE[1] (|+) #-}
 (|+) :: Biplate item to => Type (item -> from) to -> item -> Type from to
 (|+) (xs,x_) y = case biplate y of
                       (ys,y_) -> (Two xs ys, \(Two xs ys) -> x_ xs (y_ ys))
 
 
 -- | The field to the right /does not/ contain the target.
-{-# INLINE (|-) #-}
+{-# INLINE[1] (|-) #-}
 (|-) :: Type (item -> from) to -> item -> Type from to
 (|-) (xs,x_) y = (xs,\xs -> x_ xs y)
 
