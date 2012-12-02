@@ -57,7 +57,7 @@ library
         build-depends:
             base >=4.4 && <5, containers, syb,
             hashable >= 1.1.2.3 && < 1.2,
-            unordered-containers >= 0.1 && < 0.3
+            unordered-containers >= 0.2.1 && < 0.3
     else
         if flag(separate_syb)
             build-depends: base >=4 && <4.4, containers, syb
