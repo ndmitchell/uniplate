@@ -2,7 +2,7 @@
 
 -- | Internal module, do not import or use.
 module Data.Generics.Uniplate.Internal.Utils(
-    unsafeCoerce, builder, unsafePerformIO, inlinePerformIO, concatCont
+    unsafeCoerce, builder, unsafePerformIO, inlinePerformIO, concatCont, SPEC(SPEC)
     ) where
 
 #if __GLASGOW_HASKELL__ >= 702
@@ -19,6 +19,11 @@ import GHC.IOBase(IO(IO))
 #else
 import GHC.IO(IO(IO))
 #endif
+#endif
+
+#if __GLASGOW_HASKELL__ >= 701
+import GHC.Exts(SpecConstrAnnotation(..))
+{-# ANN type SPEC ForceSpecConstr #-}
 #endif
 
 
@@ -47,3 +52,7 @@ inlinePerformIO = unsafePerformIO
 -- | Perform concatentation of continuations
 concatCont :: [a -> a] -> a -> a
 concatCont xs rest = foldr ($) rest xs
+
+
+-- | Constructor specialisation on newer GHC
+data SPEC = SPEC | SPEC2
