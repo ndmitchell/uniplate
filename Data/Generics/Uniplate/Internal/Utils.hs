@@ -1,9 +1,6 @@
 {-# LANGUAGE CPP, Rank2Types, MagicHash, UnboxedTuples, ExistentialQuantification #-}
 
-{- |
-    Internal module, do not import or use.
--}
-
+-- | Internal module, do not import or use.
 module Data.Generics.Uniplate.Internal.Utils(
     unsafeCoerce, builder, unsafePerformIO, inlinePerformIO, concatCont
     ) where
