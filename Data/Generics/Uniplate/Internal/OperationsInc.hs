@@ -1,4 +1,4 @@
-import Control.Monad(liftM)
+import Control.Monad(liftM,liftM2)
 import Data.Traversable
 import Prelude hiding (mapM)
 import Data.Generics.Str
@@ -39,14 +39,25 @@ class Uniplate on where
     -- > descend f (Val i  ) = Val i
     -- > descend f (Neg a  ) = Neg (f a)
     -- > descend f (Add a b) = Add (f a) (f b)
+    {-# INLINE descend #-}
     descend :: (on -> on) -> on -> on
-    descend f x = generate $ fmap f current
-        where (current, generate) = uniplate x
+    descend f x = case uniplate x of
+        (current, generate) -> generate $ g current
+        where
+            g Zero = Zero
+            g (One x) = One $ f x
+            g (Two x y) = Two (g x) (g y)
 
-    -- | Monadic variant of 'descend'    
+    -- | Monadic variant of 'descend'
+    {-# INLINE descendM #-}
     descendM :: Monad m => (on -> m on) -> on -> m on
-    descendM f x = liftM generate $ mapM f current
-        where (current, generate) = uniplate x
+    descendM f x = case uniplate x of
+        (current, generate) -> liftM generate $ g SPEC current
+        where
+            g !spec Zero = return Zero
+            g !spec (One x) = liftM One $ f x
+            g !spec (Two x y) = liftM2 Two (g spec x) (g spec y)
+
 
 
 -- | Children are defined as the top-most items of type to
@@ -65,14 +76,23 @@ class Uniplate to => Biplate from to where
     --   highly unlikely that this function should be used in the recursive case.
     --   A common pattern is to first match the types using 'descendBi', then continue
     --   the recursion with 'descend'.
+    {-# INLINE descendBi #-}
     descendBi :: (to -> to) -> from -> from
-    descendBi f x = generate $ fmap f current
-        where (current, generate) = biplate x
+    descendBi f x = case biplate x of
+        (current, generate) -> generate $ g current
+        where
+            g Zero = Zero
+            g (One x) = One $ f x
+            g (Two x y) = Two (g x) (g y)
 
 
     descendBiM :: Monad m => (to -> m to) -> from -> m from
-    descendBiM f x = liftM generate $ mapM f current
-        where (current, generate) = biplate x
+    descendBiM f x = case biplate x of
+        (current, generate) -> liftM generate $ g SPEC current
+        where
+            g !spec Zero = return Zero
+            g !spec (One x) = liftM One $ f x
+            g !spec (Two x y) = liftM2 Two (g spec x) (g spec y)
 
 
 -- * Single Type Operations

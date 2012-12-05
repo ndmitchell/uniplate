@@ -1,4 +1,4 @@
-{-# LANGUAGE CPP, MultiParamTypeClasses #-}
+{-# LANGUAGE CPP, MultiParamTypeClasses, BangPatterns #-}
 
 module Data.Generics.Uniplate.Internal.DataOnlyOperations where
 
