@@ -322,6 +322,15 @@ descendBiData oracle op x = case oracle x of
     Follow -> gmapT (descendBiData oracle op) x
     Miss -> x
 
+descendDataM :: (Data on, Monad m) => (forall a . Typeable a => a -> Answer on) -> (on -> m on) -> on -> m on
+descendDataM oracle op = gmapM (descendBiDataM oracle op)
+
+descendBiDataM :: (Data on, Data with, Monad m) => (forall a . Typeable a => a -> Answer with) -> (with -> m with) -> on -> m on
+descendBiDataM oracle op x = case oracle x of
+    Hit y -> unsafeCoerce $ op y
+    Follow -> gmapM (descendBiDataM oracle op) x
+    Miss -> return x
+
 
 ---------------------------------------------------------------------
 -- FUSION
