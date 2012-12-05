@@ -1,4 +1,5 @@
 {-# LANGUAGE CPP, Rank2Types, MagicHash, UnboxedTuples, ExistentialQuantification #-}
+{-# OPTIONS_GHC -fno-warn-unused-binds #-} -- SPEC2
 
 -- | Internal module, do not import or use.
 module Data.Generics.Uniplate.Internal.Utils(
