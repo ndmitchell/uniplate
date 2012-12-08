@@ -13,7 +13,7 @@ module Data.Generics.PlateData
     ) where
 
 import Data.Generics.Biplate
-import Data.Generics.PlateInternal
+import Data.Generics.Uniplate.Internal.Utils
 import Data.Generics
 
 #if !(__GLASGOW_HASKELL__ < 606 || __GLASGOW_HASKELL__ >= 702)
@@ -124,7 +124,7 @@ collect_generate_self :: (Data on, Data with, Typeable on, Typeable with) =>
 collect_generate_self oracle x = res
         where
             res = case oracle x of
-                       Hit y -> (One y, \(One x) -> unsafeCast x)
+                       Hit y -> (One y, \(One x) -> unsafeCoerce x)
                        Follow -> collect_generate oracle x
                        Miss -> (Zero, \_ -> x)
 

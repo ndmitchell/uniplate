@@ -87,7 +87,6 @@ library
         Data.Generics.PlateData
 
     other-modules:
-        Data.Generics.PlateInternal
         Data.Generics.Uniplate.Internal.Data
         Data.Generics.Uniplate.Internal.DataOnlyOperations
         Data.Generics.Uniplate.Internal.Utils

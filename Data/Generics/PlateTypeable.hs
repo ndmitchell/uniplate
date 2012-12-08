@@ -32,7 +32,7 @@ module Data.Generics.PlateTypeable
     ) where
 
 import Data.Generics.Biplate
-import Data.Generics.PlateInternal
+import Data.Generics.Uniplate.Internal.Utils
 import Data.Typeable
 
 
@@ -53,7 +53,7 @@ plateMore x = res
     where
         res = case asTypeOf (cast x) (Just $ strType $ fst res) of
                   Nothing -> plateAll x
-                  Just y -> (One y, \(One y) -> unsafeCast y)
+                  Just y -> (One y, \(One y) -> unsafeCoerce y)
 
 
 -- | This class represents going from the container type to the target.

@@ -18,7 +18,7 @@ module Data.Generics.Uniplate
     where
 
 import Control.Monad
-import Data.Generics.PlateInternal
+import Data.Generics.Uniplate.Internal.Utils
 
 
 -- * The Class

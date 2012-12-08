@@ -24,7 +24,7 @@ import Control.Monad hiding (mapM)
 import Data.Traversable
 import Prelude hiding (mapM)
 
-import Data.Generics.PlateInternal
+import Data.Generics.Uniplate.Internal.Utils
 import Data.Generics.Str
 
 

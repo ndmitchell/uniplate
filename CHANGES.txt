@@ -1,5 +1,6 @@
 Changelog for Uniplate
 
+    Remove dependencies on an old internal module
     More performance work (speculative)
 1.6.8
     Significant speed up to default descend/descendM versions
