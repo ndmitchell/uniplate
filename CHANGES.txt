@@ -1,5 +1,6 @@
 Changelog for Uniplate
 
+    More performance work (speculative)
 1.6.8
     Significant speed up to default descend/descendM versions
     Implement faster descendM/descendBiM for the Data version

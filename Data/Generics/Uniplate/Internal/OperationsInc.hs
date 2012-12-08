@@ -1,6 +1,4 @@
-import Control.Monad(liftM,liftM2)
-import Data.Traversable
-import Prelude hiding (mapM)
+import Control.Monad
 import Data.Generics.Str
 import Data.Generics.Uniplate.Internal.Utils
 
@@ -42,21 +40,13 @@ class Uniplate on where
     {-# INLINE descend #-}
     descend :: (on -> on) -> on -> on
     descend f x = case uniplate x of
-        (current, generate) -> generate $ g current
-        where
-            g Zero = Zero
-            g (One x) = One $ f x
-            g (Two x y) = Two (g x) (g y)
+        (current, generate) -> generate $ strMap f current
 
     -- | Monadic variant of 'descend'
     {-# INLINE descendM #-}
     descendM :: Monad m => (on -> m on) -> on -> m on
     descendM f x = case uniplate x of
-        (current, generate) -> liftM generate $ g SPEC current
-        where
-            g !spec Zero = return Zero
-            g !spec (One x) = liftM One $ f x
-            g !spec (Two x y) = liftM2 Two (g spec x) (g spec y)
+        (current, generate) -> liftM generate $ strMapM f current
 
 
 
@@ -79,20 +69,12 @@ class Uniplate to => Biplate from to where
     {-# INLINE descendBi #-}
     descendBi :: (to -> to) -> from -> from
     descendBi f x = case biplate x of
-        (current, generate) -> generate $ g current
-        where
-            g Zero = Zero
-            g (One x) = One $ f x
-            g (Two x y) = Two (g x) (g y)
+        (current, generate) -> generate $ strMap f current
 
-
+    {-# INLINE descendBiM #-}
     descendBiM :: Monad m => (to -> m to) -> from -> m from
     descendBiM f x = case biplate x of
-        (current, generate) -> liftM generate $ g SPEC current
-        where
-            g !spec Zero = return Zero
-            g !spec (One x) = liftM One $ f x
-            g !spec (Two x y) = liftM2 Two (g spec x) (g spec y)
+        (current, generate) -> liftM generate $ strMapM f current
 
 
 -- * Single Type Operations
@@ -228,24 +210,24 @@ childrenBi x = builder f
 
 {-# INLINE transformBi #-}
 transformBi :: Biplate from to => (to -> to) -> from -> from
-transformBi f x = generate $ fmap (transform f) current
-    where (current, generate) = biplate x
+transformBi f x = case biplate x of
+    (current, generate) -> generate $ strMap (transform f) current
 
 
 {-# INLINE transformBiM #-}
 transformBiM :: (Monad m, Biplate from to) => (to -> m to) -> from -> m from
-transformBiM f x = liftM generate $ mapM (transformM f) current
-    where (current, generate) = biplate x
+transformBiM f x = case biplate x of
+    (current, generate) -> liftM generate $ strMapM (transformM f) current
 
 
 rewriteBi :: Biplate from to => (to -> Maybe to) -> from -> from
-rewriteBi f x = generate $ fmap (rewrite f) current
-    where (current, generate) = biplate x
+rewriteBi f x = case biplate x of
+    (current, generate) -> generate $ strMap (rewrite f) current
 
 
 rewriteBiM :: (Monad m, Biplate from to) => (to -> m (Maybe to)) -> from -> m from
-rewriteBiM f x = liftM generate $ mapM (rewriteM f) current
-    where (current, generate) = biplate x
+rewriteBiM f x = case biplate x of
+    (current, generate) -> liftM generate $ strMapM (rewriteM f) current
 
 
 -- ** Others

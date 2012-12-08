@@ -1,3 +1,4 @@
+{-# LANGUAGE BangPatterns #-}
 {- |
     This module provides the 'Str' data type, which is used by the
     underlying 'uniplate' and 'biplate' methods. It should not
@@ -6,12 +7,14 @@
 
 module Data.Generics.Str where
 
-import Data.Generics.PlateInternal
+import Data.Generics.Uniplate.Internal.Utils
 
-import Data.Traversable
-import Data.Foldable
 import Control.Applicative
+import Control.Monad
+import Data.Foldable
 import Data.Monoid
+import Data.Traversable
+
 
 -- * The Data Type
 
@@ -24,10 +27,31 @@ instance Eq a => Eq (Str a) where
     Two x1 x2 == Two y1 y2 = x1 == y1 && x2 == y2
     _ == _ = False
 
+
+{-# INLINE strMap #-}
+strMap :: (a -> b) -> Str a -> Str b
+strMap f x = g SPEC x
+    where
+        g !spec Zero = Zero
+        g !spec (One x) = One $ f x
+        g !spec (Two x y) = Two (g spec x) (g spec y)
+
+
+
+{-# INLINE strMapM #-}
+strMapM :: Monad m => (a -> m b) -> Str a -> m (Str b)
+strMapM f x = g SPEC x
+    where
+        g !spec Zero = return Zero
+        g !spec (One x) = liftM One $ f x
+        g !spec (Two x y) = liftM2 Two (g spec x) (g spec y)
+
+
 instance Functor Str where
     fmap f Zero = Zero
     fmap f (One x) = One (f x)
     fmap f (Two x y) = Two (fmap f x) (fmap f y)
+
 
 
 instance Foldable Str where

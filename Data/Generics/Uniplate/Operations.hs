@@ -1,4 +1,4 @@
-{-# LANGUAGE CPP, MultiParamTypeClasses, BangPatterns #-}
+{-# LANGUAGE CPP, MultiParamTypeClasses #-}
 {- |
 Definitions of 'Uniplate' and 'Biplate' classes, along with all the standard operations.
 
