@@ -57,7 +57,7 @@ containsMatch start find = Box query
         typeInt x = inlinePerformIO $ typeRepKey x
     
         query :: Typeable a => a -> Answer find
-        query a = if tifind == tia then Hit (unsafeCast a)
+        query a = if tifind == tia then Hit (unsafeCoerce a)
                   else if tia `IntSet.member` timatch then Follow else Miss
             where tia = typeInt $ typeOf a
     
