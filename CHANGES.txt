@@ -1,5 +1,6 @@
 Changelog for Uniplate
 
+1.6.9
     Remove dependencies on an old internal module
     More performance work (speculative)
 1.6.8
