@@ -1,5 +1,6 @@
 Changelog for Uniplate
 
+    Work around excessive strictness in unordered-containers-0.2.3.0
 1.6.9
     Remove dependencies on an old internal module
     More performance work (speculative)

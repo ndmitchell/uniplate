@@ -87,7 +87,7 @@ set_unions = Set.unions
 -- GHC 7.2 and above (using unordered-containers API)
 
 (!) mp k = Map.lookupDefault (error "Could not find element") k mp
-map_findWithDefault = Map.lookupDefault
+map_findWithDefault d k mp = fromMaybe d $ Map.lookup k mp -- in 0.2.3.0 lookupDefault is strict in the default :(
 map_fromAscList = Map.fromList
 map_keysSet = Set.fromList . Map.keys
 map_member x xs = isJust $ Map.lookup x xs
