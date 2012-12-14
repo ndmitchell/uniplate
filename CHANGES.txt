@@ -1,5 +1,6 @@
 Changelog for Uniplate
 
+1.6.10
     Allow hashable-1.2
     Work around excessive strictness in unordered-containers-0.2.3.0
 1.6.9
