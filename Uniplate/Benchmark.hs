@@ -16,15 +16,15 @@ import Uniplate.Timer
 benchmark = do
     columns ["Raw","Direct","Typeable","Data","SYB"]
     let bs = [Raw.benchmark, Direct.benchmark, Typeable.benchmark, Data.benchmark, SYB.benchmark]
-    r1 <- run bs testsExpr simplify "simplify" 1000
-    r2 <- run bs testsExpr variables "variables" 2000
-    r3 <- run bs testsExpr zeros "zeros" 5000
-    r4 <- run bs testsStm constFold "constFold" 150
-    r5 <- run bs testsStm rename "rename" 150
-    r6 <- run bs testsStm symbols "symbols" 800
-    r7 <- run bs testsPar bill "bill" 1800
-    r8 <- run bs testsPar increase "increase" 100
-    r9 <- run bs testsPar incrone "incrone" 100
+    r1 <- run bs testsExpr simplify "simplify" 5000
+    r2 <- run bs testsExpr variables "variables" 5000
+    r3 <- run bs testsExpr zeros "zeros" 8000
+    r4 <- run bs testsStm constFold "constFold" 2000
+    r5 <- run bs testsStm rename "rename" 2000
+    r6 <- run bs testsStm symbols "symbols" 4000
+    r7 <- run bs testsPar bill "bill" 5000
+    r8 <- run bs testsPar increase "increase" 800
+    r9 <- run bs testsPar incrone "incrone" 1500
     line "Totals" $ map sum $ transpose [r1,r2,r3,r4,r5,r6,r7,r8,r9]
 
 
