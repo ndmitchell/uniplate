@@ -74,8 +74,7 @@ plate f = (Zero, \_ -> f)
 {-# RULES
 "plate/-"    forall f x. plate f |- x = plate (f x)
 "plate/+"    forall f x. plate f |+ x = platePlus f x
-"plate/*"    forall f x. plate f |* x = plateStar f x
-  #-}
+"plate/*"    forall f x. plate f |* x = plateStar f x #-}
 
 
 {-# INLINE plateStar #-}

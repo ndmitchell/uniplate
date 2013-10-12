@@ -1,5 +1,6 @@
 Changelog for Uniplate
 
+    Allow compilation with clang
 1.6.11
     Work around more excessive strictness, gives 10x speed improvement
 1.6.10
