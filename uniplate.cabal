@@ -46,8 +46,8 @@ extra-source-files:
     Data/Generics/Uniplate/Internal/OperationsInc.hs
 
 source-repository head
-    type:     darcs
-    location: http://community.haskell.org/~ndm/darcs/uniplate/
+    type:     git
+    location: https://github.com/ndmitchell/uniplate.git
 
 flag typeable_fingerprint
 flag separate_syb
