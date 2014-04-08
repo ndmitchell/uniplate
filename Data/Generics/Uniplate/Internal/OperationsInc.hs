@@ -1,6 +1,7 @@
 import Control.Applicative
 import Data.Generics.Str
 import Data.Generics.Uniplate.Internal.Utils
+import Data.Monoid
 
 
 -- * The Classes
@@ -77,6 +78,16 @@ class Uniplate to => Biplate from to where
         (current, generate) -> generate <$> strMapM f current
 
 
+data Collect a b = Collect {collected :: a, fromCollect :: b}
+
+instance Functor (Collect a) where
+    fmap f (Collect a b) = Collect a $ f b
+
+instance Monoid a => Applicative (Collect a) where
+    pure = Collect mempty
+    Collect a f <*> Collect b x = Collect (a `mappend` b) (f x)
+
+
 -- * Single Type Operations
 
 -- ** Queries
@@ -93,21 +104,13 @@ class Uniplate to => Biplate from to where
 universe :: Uniplate on => on -> [on]
 universe x = builder f
     where
-        f cons nil = g cons nil (One x) nil
-        g cons nil Zero res = res
-        g cons nil (One x) res = x `cons` g cons nil (fst $ uniplate x) res
-        g cons nil (Two x y) res = g cons nil x (g cons nil y res)
-
+        f cons nil = ($ nil) $ appEndo $ collected $ g x
+            where g x = Collect (Endo (cons x)) id <*> descendM g x
 
 
 -- | Get the direct children of a node. Usually using 'universe' is more appropriate.
 children :: Uniplate on => on -> [on]
-children x = builder f
-    where
-        f cons nil = g cons nil (fst $ uniplate x) nil
-        g cons nil Zero res = res
-        g cons nil (One x) res = x `cons` res
-        g cons nil (Two x y) res = g cons nil x (g cons nil y res)
+children x = builder $ \cons nil -> ($ nil) $ appEndo $ collected $ descendM (\x -> Collect (Endo $ cons x) x) x
 
 
 -- ** Transformations
@@ -189,21 +192,13 @@ para op x = op x $ map (para op) $ children x
 universeBi :: Biplate from to => from -> [to]
 universeBi x = builder f
     where
-        f cons nil = g cons nil (fst $ biplate x) nil
-        g cons nil Zero res = res
-        g cons nil (One x) res = x `cons` g cons nil (fst $ uniplate x) res
-        g cons nil (Two x y) res = g cons nil x (g cons nil y res)
-
+        f cons nil = ($ nil) $ appEndo $ collected $ descendBiM g x
+            where g x = Collect (Endo (cons x)) id <*> descendM g x
 
 -- | Return the children of a type. If @to == from@ then it returns the
 -- original element (in contrast to 'children')
 childrenBi :: Biplate from to => from -> [to]
-childrenBi x = builder f
-    where
-        f cons nil = g cons nil (fst $ biplate x) nil
-        g cons nil Zero res = res
-        g cons nil (One x) res = x `cons` res
-        g cons nil (Two x y) res = g cons nil x (g cons nil y res)
+childrenBi x = builder $ \cons nil -> ($ nil) $ appEndo $ collected $ descendBiM (\x -> Collect (Endo $ cons x) x) x
 
 
 -- ** Transformations
