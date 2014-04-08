@@ -79,16 +79,6 @@ library
         Data.Generics.Uniplate.Typeable
         Data.Generics.Uniplate.Zipper
 
-        -- DEPRECATED
-        Data.Generics.Uniplate
-        Data.Generics.UniplateOn
-        Data.Generics.UniplateStr
-        Data.Generics.UniplateStrOn
-        Data.Generics.Biplate
-        Data.Generics.PlateDirect
-        Data.Generics.PlateTypeable
-        Data.Generics.PlateData
-
     other-modules:
         Data.Generics.Uniplate.Internal.Data
         Data.Generics.Uniplate.Internal.DataOnlyOperations
