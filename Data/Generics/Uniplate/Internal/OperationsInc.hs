@@ -78,14 +78,14 @@ class Uniplate to => Biplate from to where
         (current, generate) -> generate <$> strMapM f current
 
 
-data Collect a b = Collect {collected :: a, fromCollect :: b}
+newtype Collect a b = Collect {collected :: a}
 
 instance Functor (Collect a) where
-    fmap f (Collect a b) = Collect a $ f b
+    fmap f (Collect a) = Collect a
 
 instance Monoid a => Applicative (Collect a) where
-    pure = Collect mempty
-    Collect a f <*> Collect b x = Collect (a `mappend` b) (f x)
+    pure x = Collect mempty
+    Collect a <*> Collect b = Collect (a `mappend` b)
 
 
 -- * Single Type Operations
@@ -105,12 +105,12 @@ universe :: Uniplate on => on -> [on]
 universe x = builder f
     where
         f cons nil = ($ nil) $ appEndo $ collected $ g x
-            where g x = Collect (Endo (cons x)) id <*> descendM g x
+            where g x = Collect (Endo (cons x)) <*> descendM g x
 
 
 -- | Get the direct children of a node. Usually using 'universe' is more appropriate.
 children :: Uniplate on => on -> [on]
-children x = builder $ \cons nil -> ($ nil) $ appEndo $ collected $ descendM (\x -> Collect (Endo $ cons x) x) x
+children x = builder $ \cons nil -> ($ nil) $ appEndo $ collected $ descendM (\x -> Collect $ Endo $ cons x) x
 
 
 -- ** Transformations
@@ -193,12 +193,12 @@ universeBi :: Biplate from to => from -> [to]
 universeBi x = builder f
     where
         f cons nil = ($ nil) $ appEndo $ collected $ descendBiM g x
-            where g x = Collect (Endo (cons x)) id <*> descendM g x
+            where g x = Collect (Endo (cons x)) <*> descendM g x
 
 -- | Return the children of a type. If @to == from@ then it returns the
 -- original element (in contrast to 'children')
 childrenBi :: Biplate from to => from -> [to]
-childrenBi x = builder $ \cons nil -> ($ nil) $ appEndo $ collected $ descendBiM (\x -> Collect (Endo $ cons x) x) x
+childrenBi x = builder $ \cons nil -> ($ nil) $ appEndo $ collected $ descendBiM (\x -> Collect (Endo $ cons x)) x
 
 
 -- ** Transformations
