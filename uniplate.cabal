@@ -68,6 +68,7 @@ library
             build-depends: base >=3 && <4, containers
 
     exposed-modules:
+        Data.Generics.Str
         Data.Generics.Compos
         Data.Generics.SYB
         Data.Generics.Uniplate.Data
