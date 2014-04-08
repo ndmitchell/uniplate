@@ -41,7 +41,7 @@ description:
     to avoid getting instance conflicts.
 
 extra-source-files:
-    uniplate.htm
+    README.md
     Data/Generics/Uniplate/Internal/DataInc.hs
     Data/Generics/Uniplate/Internal/OperationsInc.hs
 
