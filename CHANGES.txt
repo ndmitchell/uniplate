@@ -1,5 +1,6 @@
 Changelog for Uniplate
 
+    Temporarily remove the Zipper module
     Change descendM to be applicative, not monadic
     Delete everything that was marked deprecated
 1.6.12

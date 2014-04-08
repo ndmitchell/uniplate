@@ -77,7 +77,7 @@ library
         Data.Generics.Uniplate.Direct
         Data.Generics.Uniplate.Operations
         Data.Generics.Uniplate.Typeable
-        Data.Generics.Uniplate.Zipper
+--        Data.Generics.Uniplate.Zipper
 
     other-modules:
         Data.Generics.Uniplate.Internal.Data

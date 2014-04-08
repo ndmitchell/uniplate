@@ -4,6 +4,8 @@ import Data.Char
 import Data.Ratio
 import qualified Data.Map as Map
 
+#define SKIP_ZIPPER
+
 #ifndef SKIP_ZIPPER
 import Data.Generics.Uniplate.Zipper
 #endif
