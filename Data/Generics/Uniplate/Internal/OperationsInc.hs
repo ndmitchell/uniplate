@@ -1,4 +1,4 @@
-import Control.Monad
+import Control.Applicative
 import Data.Generics.Str
 import Data.Generics.Uniplate.Internal.Utils
 
@@ -42,11 +42,11 @@ class Uniplate on where
     descend f x = case uniplate x of
         (current, generate) -> generate $ strMap f current
 
-    -- | Monadic variant of 'descend'
+    -- | Applicative variant of 'descend'
     {-# INLINE descendM #-}
-    descendM :: Monad m => (on -> m on) -> on -> m on
+    descendM :: Applicative m => (on -> m on) -> on -> m on
     descendM f x = case uniplate x of
-        (current, generate) -> liftM generate $ strMapM f current
+        (current, generate) -> generate <$> strMapM f current
 
 
 
@@ -72,9 +72,9 @@ class Uniplate to => Biplate from to where
         (current, generate) -> generate $ strMap f current
 
     {-# INLINE descendBiM #-}
-    descendBiM :: Monad m => (to -> m to) -> from -> m from
+    descendBiM :: Applicative m => (to -> m to) -> from -> m from
     descendBiM f x = case biplate x of
-        (current, generate) -> liftM generate $ strMapM f current
+        (current, generate) -> generate <$> strMapM f current
 
 
 -- * Single Type Operations
@@ -125,8 +125,8 @@ transform f = g
     where g = f . descend g
 
 
--- | Monadic variant of 'transform'
-transformM :: (Monad m, Uniplate on) => (on -> m on) -> on -> m on
+-- | Applicative variant of 'transform'
+transformM :: (Monad m, Applicative m, Uniplate on) => (on -> m on) -> on -> m on
 transformM f = g
     where g x = f =<< descendM g x
 
@@ -143,8 +143,8 @@ rewrite f = transform g
     where g x = maybe x (rewrite f) (f x)
 
 
--- | Monadic variant of 'rewrite'
-rewriteM :: (Monad m, Uniplate on) => (on -> m (Maybe on)) -> on -> m on
+-- | Applicative variant of 'rewrite'
+rewriteM :: (Monad m, Applicative m, Uniplate on) => (on -> m (Maybe on)) -> on -> m on
 rewriteM f = transformM g
     where g x = f x >>= maybe (return x) (rewriteM f)
 
@@ -215,9 +215,9 @@ transformBi f x = case biplate x of
 
 
 {-# INLINE transformBiM #-}
-transformBiM :: (Monad m, Biplate from to) => (to -> m to) -> from -> m from
+transformBiM :: (Monad m, Applicative m, Biplate from to) => (to -> m to) -> from -> m from
 transformBiM f x = case biplate x of
-    (current, generate) -> liftM generate $ strMapM (transformM f) current
+    (current, generate) -> generate <$> strMapM (transformM f) current
 
 
 rewriteBi :: Biplate from to => (to -> Maybe to) -> from -> from
@@ -225,9 +225,9 @@ rewriteBi f x = case biplate x of
     (current, generate) -> generate $ strMap (rewrite f) current
 
 
-rewriteBiM :: (Monad m, Biplate from to) => (to -> m (Maybe to)) -> from -> m from
+rewriteBiM :: (Monad m, Applicative m, Biplate from to) => (to -> m (Maybe to)) -> from -> m from
 rewriteBiM f x = case biplate x of
-    (current, generate) -> liftM generate $ strMapM (rewriteM f) current
+    (current, generate) -> generate <$> strMapM (rewriteM f) current
 
 
 -- ** Others

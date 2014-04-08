@@ -15,6 +15,7 @@
 
 module Data.Generics.Compos where
 
+import Control.Applicative
 import Control.Monad
 import Data.Monoid
 import Data.Generics.Uniplate.Operations
@@ -30,7 +31,7 @@ composOp = descend
 
 
 -- | @composOpM == 'descendM'@
-composOpM :: (Uniplate a, Monad m) => (a -> m a) -> a -> m a
+composOpM :: (Uniplate a, Applicative m) => (a -> m a) -> a -> m a
 composOpM = descendM
 
 

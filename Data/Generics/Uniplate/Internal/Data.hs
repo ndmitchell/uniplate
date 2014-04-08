@@ -13,6 +13,7 @@ import Data.Generics
 import Data.Maybe
 import Data.List
 import Data.IORef
+import Control.Applicative
 import Control.Exception
 import Control.Monad
 import System.Environment(getEnv)
@@ -322,14 +323,19 @@ descendBiData oracle op x = case oracle x of
     Follow -> gmapT (descendBiData oracle op) x
     Miss -> x
 
-descendDataM :: (Data on, Monad m) => (forall a . Typeable a => a -> Answer on) -> (on -> m on) -> on -> m on
-descendDataM oracle op = gmapM (descendBiDataM oracle op)
+descendDataM :: (Data on, Applicative m) => (forall a . Typeable a => a -> Answer on) -> (on -> m on) -> on -> m on
+descendDataM oracle op = gmapA (descendBiDataM oracle op)
 
-descendBiDataM :: (Data on, Data with, Monad m) => (forall a . Typeable a => a -> Answer with) -> (with -> m with) -> on -> m on
+descendBiDataM :: (Data on, Data with, Applicative m) => (forall a . Typeable a => a -> Answer with) -> (with -> m with) -> on -> m on
 descendBiDataM oracle op x = case oracle x of
     Hit y -> unsafeCoerce $ op y
-    Follow -> gmapM (descendBiDataM oracle op) x
-    Miss -> return x
+    Follow -> gmapA (descendBiDataM oracle op) x
+    Miss -> pure x
+
+gmapA :: forall m a. (Data a, Applicative m) => (forall d. Data d => d -> m d) -> a -> m a
+gmapA f = gfoldl k pure
+    where k :: Data d => m (d -> b) -> d -> m b
+          k c x = c <*> f x
 
 
 ---------------------------------------------------------------------

@@ -16,7 +16,9 @@
 
 module Data.Generics.SYB where
 
+import Control.Applicative
 import Data.Generics.Uniplate.Operations
+
 
 -- | @gmapT == 'descend'@
 gmapT :: Uniplate a => (a -> a) -> a -> a
@@ -44,7 +46,7 @@ gmapQi i f x = gmapQ f x !! i
 
 
 -- | @gmapM == 'descendM'@
-gmapM :: (Uniplate a, Monad m) => (a -> m a) -> a -> m a
+gmapM :: (Uniplate a, Applicative m) => (a -> m a) -> a -> m a
 gmapM = descendM
 
 
@@ -60,12 +62,12 @@ everywhere = transformBi
 
 
 -- | @mkM == id@
-mkM :: Monad m => (a -> m a) -> a -> m a
+mkM :: (a -> m a) -> a -> m a
 mkM = id
 
 
 -- | @everywhereM == 'transformBiM'@
-everywhereM :: (Biplate b a, Monad m) => (a -> m a) -> b -> m b
+everywhereM :: (Biplate b a, Monad m, Applicative m) => (a -> m a) -> b -> m b
 everywhereM = transformBiM
 
 

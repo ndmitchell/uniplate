@@ -10,7 +10,6 @@ module Data.Generics.Str where
 import Data.Generics.Uniplate.Internal.Utils
 
 import Control.Applicative
-import Control.Monad
 import Data.Foldable
 import Data.Monoid
 import Data.Traversable
@@ -39,12 +38,12 @@ strMap f x = g SPEC x
 
 
 {-# INLINE strMapM #-}
-strMapM :: Monad m => (a -> m b) -> Str a -> m (Str b)
+strMapM :: Applicative m => (a -> m b) -> Str a -> m (Str b)
 strMapM f x = g SPEC x
     where
-        g !spec Zero = return Zero
-        g !spec (One x) = liftM One $ f x
-        g !spec (Two x y) = liftM2 Two (g spec x) (g spec y)
+        g !spec Zero = pure Zero
+        g !spec (One x) = One <$> f x
+        g !spec (Two x y) = Two <$> g spec x <*> g spec y
 
 
 instance Functor Str where
