@@ -1,4 +1,5 @@
 import Control.Applicative
+import Control.Arrow
 import Data.Generics.Str
 import Data.Generics.Uniplate.Internal.Utils
 import Data.Monoid
@@ -166,16 +167,25 @@ contexts x = (x,id) : f (holes x)
            , (y, context) <- contexts child]
 
 
+
+data Replace v a = Replace {replaced :: [(v, v -> a)], replacedValue :: a}
+
+instance Functor (Replace v) where
+    fmap f (Replace xs v) = Replace (map (second (f .)) xs) (f v)
+
+instance Applicative (Replace v) where
+    pure v = Replace [] v
+    Replace xs1 f <*> Replace xs2 v = Replace (ys1 ++ ys2) (f v)
+        where ys1 = map (second (($ v) .)) xs1
+              ys2 = map (second (f .)) xs2
+
+
 -- | The one depth version of 'contexts'
 --
 -- > children x == map fst (holes x)
 -- > all (== x) [b a | (a,b) <- holes x]
 holes :: Uniplate on => on -> [(on, on -> on)]
-holes x = uncurry f (uniplate x)
-  where f Zero _ = []
-        f (One i) generate = [(i, generate . One)]
-        f (Two l r) gen = f l (gen . (\i -> Two i r))
-                       ++ f r (gen . (\i -> Two l i))
+holes x = replaced $ descendM (\v -> Replace [(v, id)] v) x
 
 -- | Perform a fold-like computation on each value,
 --   technically a paramorphism
@@ -232,8 +242,4 @@ contextsBi = f . holesBi
 
 
 holesBi :: Biplate from to => from -> [(to, to -> from)]
-holesBi = uncurry f . biplate
-  where f Zero _ = []
-        f (One i) generate = [(i, generate . One)]
-        f (Two l r) gen = f l (gen . (\i -> Two i r))
-                       ++ f r (gen . (\i -> Two l i))
+holesBi x = replaced $ descendBiM (\v -> Replace [(v, id)] v) x
