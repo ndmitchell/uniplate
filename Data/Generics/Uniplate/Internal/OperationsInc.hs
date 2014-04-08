@@ -5,6 +5,16 @@ import Data.Generics.Uniplate.Internal.Utils
 import Data.Monoid
 
 
+newtype Identity a = Identity {runIdentity :: a}
+
+instance Functor Identity where
+    fmap f (Identity x) = Identity $ f x
+
+instance Applicative Identity where
+    pure = Identity
+    Identity f <*> Identity x = Identity $ f x
+
+
 -- * The Classes
 
 -- | The standard Uniplate class, all operations require this. All definitions must
@@ -41,8 +51,7 @@ class Uniplate on where
     -- > descend f (Add a b) = Add (f a) (f b)
     {-# INLINE descend #-}
     descend :: (on -> on) -> on -> on
-    descend f x = case uniplate x of
-        (current, generate) -> generate $ strMap f current
+    descend f x = runIdentity $ descendM (pure . f) x
 
     -- | Applicative variant of 'descend'
     {-# INLINE descendM #-}
@@ -70,8 +79,7 @@ class Uniplate to => Biplate from to where
     --   the recursion with 'descend'.
     {-# INLINE descendBi #-}
     descendBi :: (to -> to) -> from -> from
-    descendBi f x = case biplate x of
-        (current, generate) -> generate $ strMap f current
+    descendBi f x = runIdentity $ descendBiM (pure . f) x
 
     {-# INLINE descendBiM #-}
     descendBiM :: Applicative m => (to -> m to) -> from -> m from
