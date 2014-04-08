@@ -53,13 +53,13 @@ module Data.Generics.Uniplate.Direct(
     plateProject
     ) where
 
-import Control.Arrow
+import Control.Applicative
 import Data.Generics.Uniplate.Operations
-import Data.Generics.Str
 import Data.Ratio
+import Data.Traversable
 
 
-type Type from to = (Str to, Str to -> from)
+type Type m from to = (to -> m to) -> m from
 
 -- | The main combinator used to start the chain.
 --
@@ -67,8 +67,8 @@ type Type from to = (Str to, Str to -> from)
 --
 -- > plate Ctor |- x == plate (Ctor x)
 {-# INLINE[1] plate #-}
-plate :: from -> Type from to
-plate f = (Zero, \_ -> f)
+plate :: Applicative m => from -> Type m from to
+plate f op = pure f
 
 
 {-# RULES
@@ -78,51 +78,43 @@ plate f = (Zero, \_ -> f)
 
 
 {-# INLINE plateStar #-}
-plateStar :: (to -> from) -> to -> Type from to
-plateStar f x = (One x, \(One x) -> f x)
+plateStar :: Applicative m => (to -> from) -> to -> Type m from to
+plateStar f x op = f <$> op x
 
 {-# INLINE platePlus #-}
-platePlus :: Biplate item to => (item -> from) -> item -> Type from to
-platePlus f x = case biplate x of
-                        (ys,y_) -> (ys, \ys -> f $ y_ ys)
-
+platePlus :: (Applicative m, Biplate item to) => (item -> from) -> item -> Type m from to
+platePlus f x op = f <$> descendBiM op x
 
 -- | The field to the right is the target.
 {-# INLINE[1] (|*) #-}
-(|*) :: Type (to -> from) to -> to -> Type from to
-(|*) (xs,x_) y = (Two xs (One y),\(Two xs (One y)) -> x_ xs y)
-
-
+(|*) :: Applicative m => Type m (to -> from) to -> to -> Type m from to
+(|*) f x op = f op <*> op x
 
 -- | The field to the right may contain the target.
 {-# INLINE[1] (|+) #-}
-(|+) :: Biplate item to => Type (item -> from) to -> item -> Type from to
-(|+) (xs,x_) y = case biplate y of
-                      (ys,y_) -> (Two xs ys, \(Two xs ys) -> x_ xs (y_ ys))
-
+(|+) :: (Applicative m, Biplate item to) => Type m (item -> from) to -> item -> Type m from to
+(|+) f x op = f op <*> descendBiM op x
 
 -- | The field to the right /does not/ contain the target.
 {-# INLINE[1] (|-) #-}
-(|-) :: Type (item -> from) to -> item -> Type from to
-(|-) (xs,x_) y = (xs,\xs -> x_ xs y)
+(|-) :: Applicative m => Type m (item -> from) to -> item -> Type m from to
+(|-) f x op = f op <*> pure x
 
 
 -- | The field to the right is a list of the type of the target
 {-# INLINE (||*) #-}
-(||*) :: Type ([to] -> from) to -> [to] -> Type from to
-(||*) (xs,x_) y = (Two xs (listStr y), \(Two xs ys) -> x_ xs (strList ys))
+(||*) :: Applicative m => Type m ([to] -> from) to -> [to] -> Type m from to
+(||*) f x op = f op <*> traverse op x
 
 
 -- | The field to the right is a list of types which may contain the target
-(||+) :: Biplate item to => Type ([item] -> from) to -> [item] -> Type from to
-(||+) (xs,x_) [] = (xs, \xs -> x_ xs []) -- can eliminate a Two _ Zero in the base case
-(||+) (xs,x_) (y:ys) = case plate (:) |+ y ||+ ys of
-                       (ys,y_) -> (Two xs ys, \(Two xs ys) -> x_ xs (y_ ys))
+(||+) :: (Applicative m, Biplate item to) => Type m ([item] -> from) to -> [item] -> Type m from to
+(||+) f x op = f op <*> traverse (descendBiM op) x
 
 
 -- | Used for 'Biplate' definitions where both types are the same.
-plateSelf :: to -> Type to to
-plateSelf x = (One x, \(One x) -> x)
+plateSelf :: Applicative m => to -> Type m to to
+plateSelf x f = f x
 
 
 -- | Write an instance in terms of a projection/injection pair. Usually used to define instances
@@ -136,8 +128,8 @@ plateSelf x = (One x, \(One x) -> x)
 --
 -- > instance Biplate (Map.Map [Char] Int) Int where
 -- >     biplate = plateProject Map.toAscList Map.fromDistinctAscList
-plateProject :: Biplate item to => (from -> item) -> (item -> from) -> from -> Type from to
-plateProject into outof = second (outof . ) . biplate . into
+plateProject :: (Applicative m, Biplate item to) => (from -> item) -> (item -> from) -> from -> Type m from to
+plateProject into outof x op = outof <$> descendBiM op (into x)
 
 
 instance Uniplate Int where uniplate x = plate x
@@ -166,4 +158,4 @@ instance Biplate (Ratio Integer) (Ratio Integer) where
     biplate = plateSelf
 
 instance Biplate (Ratio Integer) Integer where
-    biplate x = (Two (One (numerator x)) (One (denominator x)), \(Two (One n) (One d)) -> n % d)
+    biplate x f = (%) <$> f (numerator x) <*> f (denominator x)

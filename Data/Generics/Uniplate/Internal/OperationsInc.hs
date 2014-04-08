@@ -1,6 +1,5 @@
 import Control.Applicative
 import Control.Arrow
-import Data.Generics.Str
 import Data.Generics.Uniplate.Internal.Utils
 import Data.Monoid
 
@@ -37,7 +36,7 @@ class Uniplate on where
     -- >     uniplate (Val i  ) = (Zero               , \Zero                  -> Val i  )
     -- >     uniplate (Neg a  ) = (One a              , \(One a)               -> Neg a  )
     -- >     uniplate (Add a b) = (Two (One a) (One b), \(Two (One a) (One b)) -> Add a b)
-    uniplate :: on -> (Str on, Str on -> on)
+    uniplate :: Applicative m => on -> (on -> m on) -> m on
 
     -- | Perform a transformation on all the immediate children, then combine them back.
     --   This operation allows additional information to be passed downwards, and can be
@@ -56,8 +55,7 @@ class Uniplate on where
     -- | Applicative variant of 'descend'
     {-# INLINE descendM #-}
     descendM :: Applicative m => (on -> m on) -> on -> m on
-    descendM f x = case uniplate x of
-        (current, generate) -> generate <$> strMapM f current
+    descendM = flip uniplate
 
 
 
@@ -69,7 +67,7 @@ class Uniplate to => Biplate from to where
     --
     --   If @from == to@ then this function should return the root as the single
     --   child.
-    biplate :: from -> (Str to, Str to -> from)
+    biplate :: Applicative m => from -> (to -> m to) -> m from
 
 
     -- | Like 'descend' but with more general types. If @from == to@ then this
@@ -83,8 +81,7 @@ class Uniplate to => Biplate from to where
 
     {-# INLINE descendBiM #-}
     descendBiM :: Applicative m => (to -> m to) -> from -> m from
-    descendBiM f x = case biplate x of
-        (current, generate) -> generate <$> strMapM f current
+    descendBiM = flip biplate
 
 
 newtype Collect a b = Collect {collected :: a}

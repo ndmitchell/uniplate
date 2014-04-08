@@ -1,4 +1,4 @@
-{-# LANGUAGE MultiParamTypeClasses, FlexibleInstances, UndecidableInstances #-}
+{-# LANGUAGE MultiParamTypeClasses, FlexibleInstances, UndecidableInstances, PatternGuards #-}
 
 {- |
     /RECOMMENDATION:/ Use "Data.Generics.Uniplate.Data" instead - it usually performs
@@ -28,10 +28,10 @@ module Data.Generics.Uniplate.Typeable(
     plate, (|+), (|-), plateProject
     ) where
 
+import Control.Applicative
 import Control.Arrow
 import Data.Generics.Uniplate.Operations
 import Data.Generics.Uniplate.Internal.Utils
-import Data.Generics.Str
 import Data.Typeable
 import Data.Ratio
 
@@ -43,38 +43,35 @@ instance PlateAll a a => Uniplate a where
     uniplate = plateAll
 
 
-type Type from to = (Str to, Str to -> from)
+type Type m from to = (to -> m to) -> m from
 
 
-plateMore :: (Typeable from, Typeable to, PlateAll from to) => from -> Type from to
-plateMore x = res
-    where
-        res = case asTypeOf (cast x) (Just $ strType $ fst res) of
-                  Nothing -> plateAll x
-                  Just y -> (One y, \(One y) -> unsafeCoerce y)
+plateMore :: (Typeable from, Typeable to, PlateAll from to, Applicative m) => from -> Type m from to
+plateMore x op
+    | Just v <- cast x = fmap unsafeCoerce $ op v
+    | otherwise = plateAll x op
 
 
 -- | This class should be defined for each data type of interest.
 class PlateAll from to where
     -- | This method should be defined using 'plate' and '|+', '|-'.
-    plateAll :: from -> Type from to
+    plateAll :: Applicative m => from -> Type m from to
 
 
 -- | The main combinator used to start the chain.
-plate :: from -> Type from to
-plate x = (Zero, \_ -> x)
+plate :: Applicative m => from -> Type m from to
+plate x op = pure x
 
 
 -- | The field to the right may contain the target.
-(|+) :: (Typeable item, Typeable to, PlateAll item to) => Type (item -> from) to -> item -> Type from to
-(|+) (xs,x_) y = case plateMore y of
-                      (ys,y_) -> (Two xs ys,\(Two xs ys) -> x_ xs (y_ ys))
+(|+) :: (Typeable item, Typeable to, PlateAll item to, Applicative m) => Type m (item -> from) to -> item -> Type m from to
+(|+) f x op = f op <*> plateMore x op
 
 -- | The field to the right /does not/ contain the target.
 --   This can be used as either an optimisation, or more commonly for excluding
 --   primitives such as Int.
-(|-) :: Type (item -> from) to -> item -> Type from to
-(|-) (xs,x_) y = (xs,\xs -> x_ xs y)
+(|-) :: Applicative m => Type m (item -> from) to -> item -> Type m from to
+(|-) f x op = f op <*> pure x
 
 
 -- | Write an instance in terms of a projection/injection pair. Usually used to define instances
@@ -83,8 +80,8 @@ plate x = (Zero, \_ -> x)
 -- > instance (Ord a, Typeable a, PlateAll a c, Typeable b, PlateAll b c,
 -- >          Typeable c, PlateAll c c) => PlateAll (Map.Map a b) c where
 -- >     plateAll = plateProject Map.toList Map.fromList
-plateProject :: (Typeable item, Typeable to, PlateAll item to) => (from -> item) -> (item -> from) -> from -> Type from to
-plateProject into outof = second (outof . ) . plateAll . into
+plateProject :: (Typeable item, Typeable to, PlateAll item to, Applicative m) => (from -> item) -> (item -> from) -> from -> Type m from to
+plateProject into outof x op = outof <$> plateAll (into x) op
 
 
 -- * Instances
@@ -145,4 +142,4 @@ instance (PlateAll a to, Typeable a
     plateAll (a,b,c,d,e) = plate (,,,,) |+ a |+ b |+ c |+ d |+ e
 
 instance (Integral a, PlateAll a to, Typeable a, Typeable to, Uniplate to) => PlateAll (Ratio a) to where
-    plateAll = plateProject (\x -> (numerator x, denominator x)) (uncurry (%))
+    plateAll = plateProject (numerator &&& denominator) (uncurry (%))
