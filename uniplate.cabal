@@ -6,6 +6,7 @@ author:             Neil Mitchell <ndmitchell@gmail.com>
 maintainer:         Neil Mitchell <ndmitchell@gmail.com>
 copyright:          Neil Mitchell 2006-2014
 homepage:           http://community.haskell.org/~ndm/uniplate/
+bug-reports:        https://github.com/ndmitchell/uniplate/issues
 license:            BSD3
 license-file:       LICENSE
 synopsis:           Help writing simple, concise and fast generic operations.
@@ -41,9 +42,11 @@ description:
     to avoid getting instance conflicts.
 
 extra-source-files:
+    CHANGES.txt
     README.md
     Data/Generics/Uniplate/Internal/DataInc.hs
     Data/Generics/Uniplate/Internal/OperationsInc.hs
+tested-with:        GHC==7.6.3, GHC==7.4.2, GHC==7.2.2
 
 source-repository head
     type:     git
