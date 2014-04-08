@@ -223,7 +223,7 @@ rewriteBiM f = descendBiM (rewriteM f)
 
 -- ** Others
 
-contextsBi:: Biplate from to => from -> [(to, to -> from)]
+contextsBi :: Biplate from to => from -> [(to, to -> from)]
 contextsBi = f . holesBi
     where
        f xs = [ (y, ctx . context)
@@ -231,7 +231,7 @@ contextsBi = f . holesBi
               , (y, context) <- contexts child]
 
 
-holesBi:: Biplate from to => from -> [(to, to -> from)]
+holesBi :: Biplate from to => from -> [(to, to -> from)]
 holesBi = uncurry f . biplate
   where f Zero _ = []
         f (One i) generate = [(i, generate . One)]
