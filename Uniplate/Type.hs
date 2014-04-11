@@ -2,6 +2,7 @@
 
 module Uniplate.Type where
 
+import Control.DeepSeq
 import Data.Data
 
 data Expr = Val Int
@@ -51,7 +52,66 @@ data Benchmark = Benchmark
     ,bill :: Company -> Integer}
 
 
+instance NFData Expr where
+        rnf (Val x1) = rnf x1 `seq` ()
+        rnf (Var x1) = rnf x1 `seq` ()
+        rnf (Neg x1) = rnf x1 `seq` ()
+        rnf (Add x1 x2) = rnf x1 `seq` rnf x2 `seq` ()
+        rnf (Sub x1 x2) = rnf x1 `seq` rnf x2 `seq` ()
+        rnf (Mul x1 x2) = rnf x1 `seq` rnf x2 `seq` ()
+        rnf (Div x1 x2) = rnf x1 `seq` rnf x2 `seq` ()
+
+instance NFData Stm where
+        rnf (SDecl x1 x2) = rnf x1 `seq` rnf x2 `seq` ()
+        rnf (SAss x1 x2) = rnf x1 `seq` rnf x2 `seq` ()
+        rnf (SBlock x1) = rnf x1 `seq` ()
+        rnf (SReturn x1) = rnf x1 `seq` ()
+
+instance NFData Exp where
+        rnf (EStm x1) = rnf x1 `seq` ()
+        rnf (EAdd x1 x2) = rnf x1 `seq` rnf x2 `seq` ()
+        rnf (EVar x1) = rnf x1 `seq` ()
+        rnf (EInt x1) = rnf x1 `seq` ()
+
+instance NFData Var where
+        rnf (V x1) = rnf x1 `seq` ()
+
+instance NFData Typ where
+        rnf T_int = ()
+        rnf T_float = ()
+
+instance NFData Company where
+        rnf (C x1) = rnf x1 `seq` ()
+
+instance NFData Dept where
+        rnf (D x1 x2 x3) = rnf x1 `seq` rnf x2 `seq` rnf x3 `seq` ()
+
+instance NFData Unt where
+        rnf (PU x1) = rnf x1 `seq` ()
+        rnf (DU x1) = rnf x1 `seq` ()
+
+instance NFData Employee where
+        rnf (E x1 x2) = rnf x1 `seq` rnf x2 `seq` ()
+
+instance NFData Person where
+        rnf (P x1 x2) = rnf x1 `seq` rnf x2 `seq` ()
+
+instance NFData Salary where
+        rnf (S x1) = rnf x1 `seq` ()
+
 {-!
+deriving instance NFData Expr
+deriving instance NFData Stm
+deriving instance NFData Exp
+deriving instance NFData Var
+deriving instance NFData Typ
+deriving instance NFData Company
+deriving instance NFData Dept
+deriving instance NFData Unt
+deriving instance NFData Employee
+deriving instance NFData Person
+deriving instance NFData Salary
+
 deriving instance UniplateTypeable Expr
 deriving instance UniplateTypeable Stm
 deriving instance UniplateTypeable Exp
