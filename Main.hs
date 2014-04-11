@@ -14,7 +14,7 @@ main = do
     case xs of
         ["generate"] -> generate
         ["test"] -> test
-        ["benchmark"] -> benchmark
+        "benchmark":xs -> withArgs xs benchmark
         ["slowdown"] -> slowdown
         ["hse"] -> hse
         ["fusion"] -> fusion
