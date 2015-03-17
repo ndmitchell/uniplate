@@ -182,3 +182,14 @@ For example, you should never have `descendBi` in an inner recursive loop.
 ## Making Uniplate Faster
 
 To make Uniplate faster import `Data.Generics.Uniplate.Direct`, and provide Uniplate instances by generating them with the [Derive tool](http://community.haskell.org/~ndm/derive/).
+
+## Related work
+
+<ul>
+	<li><a href="http://hackage.haskell.org/package/geniplate">Geniplate</a>, by Lennart Augustsson, Uniplate compatible but implemented using Template Haskell.</li>
+    <li><a href="http://www-ps.informatik.uni-kiel.de/~sebf/projects/traversal.html">Refactoring Uniplate</a>, by Sebastian Fischer - proposing a slightly different Uniplate API, but with the same underlying concepts.</li>
+	<li><a href="http://www.informatik.uni-kiel.de/~pakcs/lib/CDOC/Traversal.html">Uniplate for Curry</a>, by Sebastian Fischer - using his revised API as above.</li>
+    <li><a href="http://mlton.org/">Uniplate for ML (in MLton)</a>, it used to be under <tt>mltonlib/trunk/com/ssh/generic/</tt>, but I can't find it anymore.</li>
+	<li><a href="http://tomschrijvers.blogspot.com/2007/11/extension-proposal-for-uniplate.html">Uniplate for data types with embedded monads</a>, by Tom Schrijvers</li>
+	<li><a href="http://hackage.haskell.org/package/multiplate">Multiplate</a>, by Russell O'Connor, similar ideas to Uniplate but with a very different underlying substrate.</li>
+</ul>
