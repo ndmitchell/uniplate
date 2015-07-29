@@ -30,8 +30,9 @@ Thanks to Bj&ouml;rn Bringert for feedback on an earlier version of this documen
 To demonstrate the facilities of Uniplate, we use a simple arithmetic type:
 
 <pre>
-<b>{-# LANGUAGE DerivingDataTypeable #-}</b>
+<b>{-# LANGUAGE DeriveDataTypeable #-}</b>
 module Expr where
+<b>import Data.Data</b>
 <b>import Data.Generics.Uniplate.Data</b>
 
 data Expr = Val Int
