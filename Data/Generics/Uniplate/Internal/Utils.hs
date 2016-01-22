@@ -22,8 +22,11 @@ import GHC.IO(IO(IO))
 #endif
 #endif
 
-#if __GLASGOW_HASKELL__ >= 701
+#if __GLASGOW_HASKELL__ >= 708
+import GHC.Types ( SPEC(..) )
+#elif __GLASGOW_HASKELL__ >= 701
 import GHC.Exts(SpecConstrAnnotation(..))
+data SPEC = SPEC | SPEC2
 {-# ANN type SPEC ForceSpecConstr #-}
 #endif
 
@@ -53,7 +56,3 @@ inlinePerformIO = unsafePerformIO
 -- | Perform concatentation of continuations
 concatCont :: [a -> a] -> a -> a
 concatCont xs rest = foldr ($) rest xs
-
-
--- | Constructor specialisation on newer GHC
-data SPEC = SPEC | SPEC2
