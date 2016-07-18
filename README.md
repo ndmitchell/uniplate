@@ -162,7 +162,15 @@ Lot's of functions which operate over the entire tree also operate over just one
 
 ### Evaluation
 
-Don't use Uniplate! The reasons are that there is little boilerplate, you have to handle every case separately. For example in our language we can write:
+If we need to evaluate an expression in our language, the answer is simple, don't use Uniplate! The reasons are that there is little boilerplate, you have to handle every case separately. For example in our language we can write:
+
+    eval :: Expr -> Int
+    eval (Val i) = i
+    eval (Add a b) = eval a + eval b
+    eval (Sub a b) = eval a - eval b
+    eval (Div a b) = eval a `div` eval b
+    eval (Mul a b) = eval a * eval b
+    eval (Neg a) = negate a
 
 
 ## Using Biplate
