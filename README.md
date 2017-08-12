@@ -48,7 +48,7 @@ In this definition, the Uniplate specific bits are bolded. The three extra parts
 
 * `import Data.Generics.Uniplate.Data`, this module contains all the Uniplate functions and definitions.
 * `deriving (Data,Typeable)`, this deriving clause automatically adds the necessary instances for Uniplate.
-* `{-# LANGUAGE DerivingDataTypeable #-}`, this pragma turns on language support for the deriving line.
+* `{-# LANGUAGE DeriveDataTypeable #-}`, this pragma turns on language support for the deriving line.
 
 This definition makes use of the [Scrap Your Boilerplate (SYB)](http://doi.acm.org/10.1145/604174.604179) based Uniplate implementation. The SYB implementation is compatible with the other implementations, but is slower (between 2 and 8 times) and requires some modest compiler extensions (implemented in [GHC](http://haskell.org/ghc/) for many years). The alternative definition scheme is described towards the end of this document, in "Making Uniplate Faster". I recommend using the SYB implementation to start with, as it requires least work to use.
 
