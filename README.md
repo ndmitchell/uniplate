@@ -1,6 +1,6 @@
 # Boilerplate Removal with Uniplate
 
-Generic transformations and queries are often referred to as boilerplate code - they remain relatively similar as the action performed by the code changes, and can often outnumber the actual intent of the code in terms of lines. While other generic traversal schemes have shown how powerful new features can be added to compilers, and how the type system can be manipulated into accepting these operations, the Uniplate library focuses on a conceptually simpler generic concept. A more complete document on Uniplate was published at the Haskell Workshop 2007, and is available from the [project website](http://community.haskell.org/~ndm/uniplate/), along with a video presentation, and the associated thesis chapter.
+Generic transformations and queries are often referred to as boilerplate code - they remain relatively similar as the action performed by the code changes, and can often outnumber the actual intent of the code in terms of lines. While other generic traversal schemes have shown how powerful new features can be added to compilers, and how the type system can be manipulated into accepting these operations, the Uniplate library focuses on a conceptually simpler generic concept. A more complete document on Uniplate was published at the Haskell Workshop 2007, and is available from [here](https://ndmitchell.com/#uniplate_30_sep_2007), along with a video presentation, and the associated thesis chapter.
 
 Uniplate is a simple, concise and fast generics library. To expand on that sentence:
 
