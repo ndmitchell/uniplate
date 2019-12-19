@@ -63,7 +63,7 @@ When manipulating our little language it may be useful to know which constants h
     constants :: Expr -> [Int]
     constants x = nub [y | Val y <- universe x]
 
-Here the only Uniplate method being used is `universe`, which when given a tree returns all the root of the tree, and all it's subtrees at all levels. This can be used to quickly flatten a tree structure into a list, for quick analysis via list comprehensions, as is done above.
+Here the only Uniplate method being used is `universe`, which when given a tree returns the root of the tree, and all its subtrees at all levels. This can be used to quickly flatten a tree structure into a list, for quick analysis via list comprehensions, as is done above.
 
 _Exercise:_ Write a function to test if an expression performs a division by the literal zero.
 
@@ -80,19 +80,19 @@ If we are negating a literal value, this computation can be performed in advance
 
 Here the Uniplate method being used is `transform`, which applies the given function to all the children of an expression, before applying it to the parent. This function can be thought of as bottom-up traversal of the data structure. The optimise code merely pattern matches on the negation of a literal, and replaces it with the literal.
 
-Now lets add another optimisation into the same pass, just before the `f x = x` line insert:
+Now let's add another optimisation into the same pass, just before the `f x = x` line insert:
 
     f (Add x y) | x == y = Mul x (Val 2)
 
 This takes an addition where two terms are equal and changes it into a multiplication, causing the nested expression to be executed only once.
 
-_Exercise:_ Extend the optimisation to so that adding `x` to `Mul x (Val 2)` produces a multiplication by 3.
+_Exercise:_ Extend the optimisation so that adding `x` to `Mul x (Val 2)` produces a multiplication by 3.
 
 ### Depth of an expression
 
     para :: Uniplate on => (on -> [res] -> res) -> on -> res
 
-Now lets imagine that programmers in your language are paid by the depth of expression they produce, so lets write a function that computes the maximum depth of an expression.
+Now let's imagine that programmers in your language are paid by the depth of expression they produce, so let's write a function that computes the maximum depth of an expression.
 
     depth :: Expr -> Int
     depth = para (\_ cs -> 1 + maximum (0:cs))
@@ -158,7 +158,7 @@ All the transformations have both monadic and non-monadic versions.
     descend :: (on -> on) -> on -> on               -- transform
     holes :: Uniplate on => on -> [(on, on -> on)]  -- contexts
 
-Lot's of functions which operate over the entire tree also operate over just one level. Usually you want to use the multiple level version, but when needing more explicit control the others are handy.
+Lots of functions which operate over the entire tree also operate over just one level. Usually you want to use the multiple level version, but when needing more explicit control the others are handy.
 
 ### Evaluation
 
