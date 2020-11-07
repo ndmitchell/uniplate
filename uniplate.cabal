@@ -5,7 +5,7 @@ version:            1.6.12
 author:             Neil Mitchell <ndmitchell@gmail.com>
 maintainer:         Neil Mitchell <ndmitchell@gmail.com>
 copyright:          Neil Mitchell 2006-2020
-homepage:           http://community.haskell.org/~ndm/uniplate/
+homepage:           https://github.com/ndmitchell/uniplate#readme
 bug-reports:        https://github.com/ndmitchell/uniplate/issues
 license:            BSD3
 license-file:       LICENSE
