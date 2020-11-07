@@ -30,6 +30,11 @@
 - ignore: {name: "Use let"}
 - ignore: {name: "Use uncurry"}
 - ignore: {name: "Use lambda-case"}
+- ignore: {name: "Use pure"}
+- ignore: {name: "Use upper"}
+- ignore: {name: "Use showDP"}
+- ignore: {name: "Use zipFrom"}
+- ignore: {name: "Use headDef"}
 
 
 # Specify additional command line arguments
