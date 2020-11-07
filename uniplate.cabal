@@ -52,26 +52,12 @@ source-repository head
     type:     git
     location: https://github.com/ndmitchell/uniplate.git
 
-flag typeable_fingerprint
-    default: True
-    manual: False
-
-flag separate_syb
-    default: True
-    manual: False
-
 library
     default-language: Haskell2010
-    if flag(typeable_fingerprint)
-        build-depends:
-            base >=4.4 && <5, containers, syb,
-            hashable >= 1.1.2.3,
-            unordered-containers >= 0.2.1
-    else
-        if flag(separate_syb)
-            build-depends: base >=4 && <4.4, containers, syb
-        else
-            build-depends: base >=3 && <4, containers
+    build-depends:
+        base >=4.4 && <5, containers, syb,
+        hashable >= 1.1.2.3,
+        unordered-containers >= 0.2.1
 
     exposed-modules:
         Data.Generics.Str
