@@ -144,7 +144,7 @@ descend f x = generate $ fmap f current
     where (current, generate) = uniplate x
 
 
--- | Monadic variant of 'descend'    
+-- | Monadic variant of 'descend'
 descendM :: (Monad m, Uniplate on) => (on -> m on) -> on -> m on
 descendM f x = liftM generate $ mapM f current
     where (current, generate) = uniplate x

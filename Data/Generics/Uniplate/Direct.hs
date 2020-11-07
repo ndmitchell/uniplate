@@ -4,9 +4,9 @@
     This module supplies a method for writing 'Uniplate' and 'Biplate' instances.
     This moulde gives the highest performance, but requires many instance definitions. The
     instances can be generated using Derive: <http://community.haskell.org/~ndm/derive/>.
-    
+
     To take an example:
-    
+
     > data Expr = Var Int | Pos Expr String | Neg Expr | Add Expr Expr
     > data Stmt = Seq [Stmt] | Sel [Expr] | Let String Expr
     >

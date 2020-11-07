@@ -46,7 +46,7 @@ instance Biplate NExp NVar where
                     (get2,gen2) = biplate y
 
             NEVar x -> (One x, \(One x') -> NEVar x')
-            
+
             _ -> (Zero, \_ -> x)
 
 instance (Biplate y x, Uniplate x) => Biplate [y] x where

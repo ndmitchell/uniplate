@@ -51,7 +51,7 @@ rename_ = f
         f (SAss a b) = SAss (rename_op a) (g b)
         f (SBlock a) = SBlock (map f a)
         f (SReturn a) = SReturn (g a)
-        
+
         g (EStm a) = EStm (f a)
         g (EAdd a b) = EAdd (g a) (g b)
         g (EVar a) = EVar (rename_op a)
@@ -66,7 +66,7 @@ symbols_ = f
         f (SAss a b) = g b
         f (SBlock a) = concatMap f a
         f (SReturn a) = g a
-        
+
         g (EStm a) = f a
         g (EAdd a b) = g a ++ g b
         g x = []
@@ -78,7 +78,7 @@ constFold_ = f
         f (SBlock x) = SBlock (map f x)
         f (SReturn x) = SReturn (g x)
         f x = x
-        
+
         g (EStm x) = EStm (f x)
         g (EAdd x y) = case (g x, g y) of
                             (EInt a, EInt b) -> EInt (a+b)

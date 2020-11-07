@@ -85,7 +85,7 @@ zeros_syb = sybExpr id $ SYB.everything (+) (0 `mkQ` f)
 zeros_comp = compExpr id f
     where
         f :: GExpr a -> Int
-        f (CDiv x (CVal 0)) = 1 + f x 
+        f (CDiv x (CVal 0)) = 1 + f x
         f x = composOpFold 0 (+) f x
 
 
@@ -134,7 +134,7 @@ rename_compos = compStm2 f
         f t = case t of
             CV x -> CV ("_" ++ x)
             _ -> composOp f t
-            
+
 rename_op (NV x) = NV ("_" ++ x)
 
 rename_play = playStm2 $ transformBi rename_op
@@ -147,7 +147,7 @@ rename_raw = rawStm2 f
         f (NSAss a b) = NSAss (rename_op a) (g b)
         f (NSBlock a) = NSBlock (map f a)
         f (NSReturn a) = NSReturn (g a)
-        
+
         g (NEStm a) = NEStm (f a)
         g (NEAdd a b) = NEAdd (g a) (g b)
         g (NEVar a) = NEVar (rename_op a)
@@ -180,7 +180,7 @@ symbols_raw = rawStm rewrapPairN f
         f (NSAss a b) = g b
         f (NSBlock a) = concatMap f a
         f (NSReturn a) = g a
-        
+
         g (NEStm a) = f a
         g (NEAdd a b) = g a ++ g b
         g x = []
@@ -211,7 +211,7 @@ constFold_raw = rawStm2 f
         f (NSBlock x) = NSBlock (map f x)
         f (NSReturn x) = NSReturn (g x)
         f x = x
-        
+
         g (NEStm x) = NEStm (f x)
         g (NEAdd x y) = case (g x, g y) of
                             (NEInt a, NEInt b) -> NEInt (a+b)

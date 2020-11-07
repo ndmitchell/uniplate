@@ -4,9 +4,9 @@
     /DEPRECATED/: Use "Data.Generics.Uniplate.Typeable" instead.
 
     This module supplies a method for writing 'Biplate' instances more easily.
-    
+
     To take an example:
-    
+
     > data Expr = Var Int | Neg Expr | Add Expr Expr
     >
     > instance Typeable Expr where ...
@@ -153,4 +153,3 @@ instance (PlateAll a to, Typeable a
          ,Typeable to, Uniplate to) =>
          PlateAll (a,b,c,d,e) to where
     plateAll (a,b,c,d,e) = plate (,,,,) |+ a |+ b |+ c |+ d |+ e
-

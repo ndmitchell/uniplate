@@ -55,12 +55,12 @@ containsMatch start find = Box query
 containsMatch start find = Box query
     where
         typeInt x = inlinePerformIO $ typeRepKey x
-    
+
         query :: Typeable a => a -> Answer find
         query a = if tifind == tia then Hit (unsafeCoerce a)
                   else if tia `IntSet.member` timatch then Follow else Miss
             where tia = typeInt $ typeOf a
-    
+
         tifind = typeInt tfind
         timatch = IntSet.fromList $ map typeInt tmatch
 
@@ -86,7 +86,7 @@ containsList x = f [] [DataBox x]
 
 -- Ratio is strict and causes bugs with fromConstr in GHC 6.10.1
 -- See bug http://hackage.haskell.org/trac/ghc/ticket/2782
-evilRatio = fst $ splitTyConApp $ typeOf (undefined :: Ratio Int) 
+evilRatio = fst $ splitTyConApp $ typeOf (undefined :: Ratio Int)
 
 contains :: (Data a, Typeable a) => a -> [DataBox]
 contains x | fst (splitTyConApp $ typeOf x) == evilRatio = []

@@ -50,7 +50,7 @@ main2 args = case head norm of
         norm = filter (isAlpha . head) args
         count = head $ [read n | '#':n <- args] ++ [1]
         pick  = head $ [read n | '!':n <- args] ++ [-1]
-    
+
         expr = exec "expr" count pick testsExpr tasksExpr
         stm  = exec "stm"  count pick testsStm  tasksStm
         par  = exec "par"  count pick testsPar  tasksPar

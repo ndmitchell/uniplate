@@ -39,7 +39,7 @@
 -- >     where
 -- >         create x = (Trigger False ks, Trigger False vs, Hide x)
 -- >             where (ks,vs) = unzip $ Map.toAscList x
--- > 
+-- >
 -- >         inv (ks,vs,x)
 -- >             | trigger ks = create $ Map.fromList $ zip (fromTrigger ks) (fromTrigger vs)
 -- >             | trigger vs = create $ Map.fromDistinctAscList $ zip (fromTrigger ks) (fromTrigger vs)

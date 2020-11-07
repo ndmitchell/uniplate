@@ -6,9 +6,9 @@
     This module supplies a method for writing 'Biplate' instances more easily.
     This module requires fewest extensions, highest performance, and most instance
     definitions.
-    
+
     To take an example:
-    
+
     > data Expr = Var Int | Pos Expr String | Neg Expr | Add Expr Expr
     > data Stmt = Seq [Stmt] | Sel [Expr] | Let String Expr
     >
@@ -34,7 +34,7 @@
     >     biplate (Sel x  ) = plate Sel ||* x
     >     biplate (Let x y) = plate Let |-  x |* y
 -}
-    
+
 
 module Data.Generics.PlateDirect
     {-# DEPRECATED "Use Data.Generics.Uniplate.Direct instead" #-}

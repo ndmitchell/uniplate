@@ -107,4 +107,3 @@ uniplateOnList f (x:xs) =
     where
         (a , b ) = f x
         (as, bs) = uniplateOnList f xs
-

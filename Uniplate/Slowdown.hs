@@ -18,7 +18,7 @@ testN i = do
     t <- timer $ evaluate $ sum [s | S s <- universeBi $ genCom $ i * 10000]
     putStrLn $ "Running with n=" ++ show i ++ " takes " ++ dp2 t ++ "s, ratio " ++ dp2 (t / fromIntegral i)
 
-    
+
 genCom i = C $ take i $ cycle
          [D "Research" ralf [PU joost, PU marlow],
           D "Strategy" blair   []]

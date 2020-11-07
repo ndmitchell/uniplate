@@ -36,7 +36,7 @@ class Uniplate on where
     -- > uniplate (Add (Val 1) (Neg (Val 2))) = ([Val 1, Neg (Val 2)], \[a,b] -> Add a b)
     -- > uniplate (Val 1)                     = ([]                  , \[]    -> Val 1  )
     uniplate :: UniplateType on
-    
+
 -- * The Operations
 
 -- ** Queries
@@ -112,7 +112,7 @@ descend f x = generate $ map f current
     where (current, generate) = uniplate x
 
 
--- | Monadic variant of 'descend'    
+-- | Monadic variant of 'descend'
 descendM :: (Monad m, Uniplate on) => (on -> m on) -> on -> m on
 descendM f x = liftM generate $ mapM f current
     where (current, generate) = uniplate x
@@ -148,4 +148,3 @@ holes x = uncurry f (uniplate x)
 --   technically a paramorphism
 para :: Uniplate on => (on -> [r] -> r) -> on -> r
 para op x = op x $ map (para op) $ children x
-
