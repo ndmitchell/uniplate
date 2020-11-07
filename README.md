@@ -227,11 +227,9 @@ To make Uniplate faster import `Data.Generics.Uniplate.Direct` and write your in
 
 ## Related work
 
-<ul>
-	<li><a href="http://hackage.haskell.org/package/geniplate">Geniplate</a>, by Lennart Augustsson, Uniplate compatible but implemented using Template Haskell.</li>
-    <li><a href="http://www-ps.informatik.uni-kiel.de/~sebf/projects/traversal.html">Refactoring Uniplate</a>, by Sebastian Fischer - proposing a slightly different Uniplate API, but with the same underlying concepts.</li>
-	<li><a href="http://www.informatik.uni-kiel.de/~pakcs/lib/CDOC/Traversal.html">Uniplate for Curry</a>, by Sebastian Fischer - using his revised API as above.</li>
-    <li><a href="http://mlton.org/">Uniplate for ML (in MLton)</a>, it used to be under <tt>mltonlib/trunk/com/ssh/generic/</tt>, but I can't find it anymore.</li>
-	<li><a href="http://tomschrijvers.blogspot.com/2007/11/extension-proposal-for-uniplate.html">Uniplate for data types with embedded monads</a>, by Tom Schrijvers</li>
-	<li><a href="http://hackage.haskell.org/package/multiplate">Multiplate</a>, by Russell O'Connor, similar ideas to Uniplate but with a very different underlying substrate.</li>
-</ul>
+* [Geniplate](http://hackage.haskell.org/package/geniplate), by Lennart Augustsson, Uniplate compatible but implemented using Template Haskell.
+* [Refactoring Uniplate](http://www-ps.informatik.uni-kiel.de/~sebf/projects/traversal.html), by Sebastian Fischer - proposing a slightly different Uniplate API, but with the same underlying concepts.
+* [Uniplate for Curry](http://www.informatik.uni-kiel.de/~pakcs/lib/CDOC/Traversal.html), by Sebastian Fischer - using his revised API as above.
+* [Uniplate for ML (in MLton)](http://mlton.org/), it used to be under `mltonlib/trunk/com/ssh/generic/`, but I can't find it anymore.
+* [Uniplate for data types with embedded monads](http://tomschrijvers.blogspot.com/2007/11/extension-proposal-for-uniplate.html), by Tom Schrijvers
+* [Multiplate](http://hackage.haskell.org/package/multiplate), by Russell O'Connor, similar ideas to Uniplate but with a very different underlying substrate.
