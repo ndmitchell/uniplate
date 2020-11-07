@@ -1,5 +1,6 @@
 Changelog for Uniplate
 
+    Change descendM to be applicative, not monadic
 1.6.12
     Allow compilation with clang
 1.6.11
