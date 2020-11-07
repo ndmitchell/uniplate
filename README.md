@@ -230,6 +230,7 @@ To make Uniplate faster import `Data.Generics.Uniplate.Direct` and write your in
 * [Geniplate](http://hackage.haskell.org/package/geniplate), by Lennart Augustsson, Uniplate compatible but implemented using Template Haskell.
 * [Refactoring Uniplate](http://www-ps.informatik.uni-kiel.de/~sebf/projects/traversal.html), by Sebastian Fischer - proposing a slightly different Uniplate API, but with the same underlying concepts.
 * [Uniplate for Curry](http://www.informatik.uni-kiel.de/~pakcs/lib/CDOC/Traversal.html), by Sebastian Fischer - using his revised API as above.
-* [Uniplate for ML (in MLton)](http://mlton.org/), it used to be under `mltonlib/trunk/com/ssh/generic/`, but I can't find it anymore.
+* [Uniplate for ML (in MLton)](https://github.com/MLton/mltonlib/blob/master/com/ssh/generic/unstable/public/value/uniplate.sig), as part of the MLton generics library.
 * [Uniplate for data types with embedded monads](http://tomschrijvers.blogspot.com/2007/11/extension-proposal-for-uniplate.html), by Tom Schrijvers
 * [Multiplate](http://hackage.haskell.org/package/multiplate), by Russell O'Connor, similar ideas to Uniplate but with a very different underlying substrate.
+* [Infer.Toys](https://infers.github.io/Infers/Infers.Toys.html) provides a Uniplate-inspired `Elems` module.
