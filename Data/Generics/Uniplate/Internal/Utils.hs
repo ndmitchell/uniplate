@@ -9,9 +9,8 @@ module Data.Generics.Uniplate.Internal.Utils(
 import System.IO.Unsafe(unsafePerformIO)
 import Unsafe.Coerce(unsafeCoerce)
 
-import GHC.Exts(build, realWorld#)
+import GHC.Exts(build, realWorld#, SpecConstrAnnotation(..))
 import GHC.IO(IO(IO))
-import GHC.Exts(SpecConstrAnnotation(..))
 {-# ANN type SPEC ForceSpecConstr #-}
 
 
