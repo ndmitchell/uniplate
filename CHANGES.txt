@@ -1,5 +1,6 @@
 Changelog for Uniplate
 
+    #31, GHC 9.0 compatibility
     Change descendM to be applicative, not monadic
 1.6.12, released 2013-10-26
     Allow compilation with clang

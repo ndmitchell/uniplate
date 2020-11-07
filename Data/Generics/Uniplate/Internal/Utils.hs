@@ -9,9 +9,9 @@ module Data.Generics.Uniplate.Internal.Utils(
 import System.IO.Unsafe(unsafePerformIO)
 import Unsafe.Coerce(unsafeCoerce)
 
-import GHC.Exts(build, realWorld#, SpecConstrAnnotation(..))
+import GHC.Exts(build, realWorld#)
 import GHC.IO(IO(IO))
-{-# ANN type SPEC ForceSpecConstr #-}
+import GHC.Types(SPEC(..))
 
 
 {-# INLINE builder #-}
@@ -30,7 +30,3 @@ inlinePerformIO (IO m) = case m realWorld# of (# _, r #) -> r
 -- | Perform concatentation of continuations
 concatCont :: [a -> a] -> a -> a
 concatCont xs rest = foldr ($) rest xs
-
-
--- | Constructor specialisation on newer GHC
-data SPEC = SPEC | SPEC2
