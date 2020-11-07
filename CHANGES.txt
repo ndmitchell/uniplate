@@ -1,5 +1,7 @@
 Changelog for Uniplate
 
+1.6.13, released 2020-11-07
+    Remove support from pre-GHC 8.0
     #31, GHC 9.0 compatibility
     Change descendM to be applicative, not monadic
 1.6.12, released 2013-10-26
