@@ -18,10 +18,10 @@ import OperationsAll
 {-
 Command line options are:
 
-gen - do random generation
-expr|stm|par|all - which section to run
-#n - number of tests to run
-!n - which test to execute
+  gen - do random generation
+  expr|stm|par|all - which section to run
+  #n - number of tests to run
+  !n - which test to execute
 -}
 
 confidence = let (*) = (,) in
