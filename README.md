@@ -190,7 +190,7 @@ For example, you should never have `descendBi` in an inner recursive loop.
 
 ## Making Uniplate Faster
 
-To make Uniplate faster import `Data.Generics.Uniplate.Direct`, and provide Uniplate instances by generating them with the [Derive tool](http://community.haskell.org/~ndm/derive/).
+To make Uniplate faster import `Data.Generics.Uniplate.Direct` and write your instances by hand.
 
 ## Related work
 
