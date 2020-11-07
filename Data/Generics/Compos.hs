@@ -15,9 +15,7 @@
 
 module Data.Generics.Compos where
 
-import Control.Applicative
 import Control.Monad
-import Data.Monoid
 import Data.Generics.Uniplate.Operations
 
 

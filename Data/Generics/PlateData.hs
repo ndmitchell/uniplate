@@ -24,13 +24,9 @@ import Data.Ratio
 #endif
 
 
--- | An existential box representing a type which supports SYB
--- operations.
-data DataBox = forall a . (Typeable a, Data a) => DataBox a
-
 data Box find = Box {fromBox :: forall a . Typeable a => a -> Answer find}
 
-data Answer a = Hit {fromHit :: a} -- you just hit the element you were after (here is a cast)
+data Answer a = Hit {_fromHit :: a} -- you just hit the element you were after (here is a cast)
               | Follow -- go forward, you will find something
               | Miss -- you failed to sink my battleship!
 
@@ -52,6 +48,10 @@ containsMatch start find = Box query
 
 #else
 -- GHC 6.6 does contain typeRepKey, so only follow when appropriate
+
+-- | An existential box representing a type which supports SYB
+-- operations.
+data DataBox = forall a . (Typeable a, Data a) => DataBox a
 
 containsMatch start find = Box query
     where

@@ -1,4 +1,5 @@
 {-# LANGUAGE MultiParamTypeClasses, FlexibleInstances, UndecidableInstances #-}
+{-# OPTIONS_GHC -Wno-orphans #-}
 
 {- |
     /DEPRECATED/: Use "Data.Generics.Uniplate.Typeable" instead.

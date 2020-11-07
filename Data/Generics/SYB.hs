@@ -16,7 +16,6 @@
 
 module Data.Generics.SYB where
 
-import Control.Applicative
 import Data.Generics.Uniplate.Operations
 
 
