@@ -1,4 +1,4 @@
-cabal-version:      >= 1.6
+cabal-version:      >= 1.18
 build-type:         Simple
 name:               uniplate
 version:            1.6.12
@@ -42,20 +42,27 @@ description:
     to avoid getting instance conflicts.
 
 extra-source-files:
-    CHANGES.txt
-    README.md
     Data/Generics/Uniplate/Internal/DataInc.hs
     Data/Generics/Uniplate/Internal/OperationsInc.hs
-tested-with:        GHC==7.6.3, GHC==7.4.2, GHC==7.2.2
+extra-doc-files:
+    README.md
+    CHANGES.txt
+tested-with: GHC==8.10, GHC==8.8, GHC==8.6, GHC==8.4, GHC==8.2, GHC==8.0
 
 source-repository head
     type:     git
     location: https://github.com/ndmitchell/uniplate.git
 
 flag typeable_fingerprint
+    default: True
+    manual: False
+
 flag separate_syb
+    default: True
+    manual: False
 
 library
+    default-language: Haskell2010
     if flag(typeable_fingerprint)
         build-depends:
             base >=4.4 && <5, containers, syb,
@@ -93,5 +100,3 @@ library
         Data.Generics.Uniplate.Internal.Data
         Data.Generics.Uniplate.Internal.DataOnlyOperations
         Data.Generics.Uniplate.Internal.Utils
-
-    extensions: CPP
