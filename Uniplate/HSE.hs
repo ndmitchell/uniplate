@@ -5,7 +5,7 @@ module Uniplate.HSE(hse) where
 import Uniplate.Timer
 import Control.Exception
 import Data.Generics.Uniplate.Data
-import Language.Haskell.Exts.Annotated
+import Language.Haskell.Exts
 
 
 hse :: IO ()

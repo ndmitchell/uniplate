@@ -5,7 +5,7 @@ import Control.Exception
 import Data.Char
 import Data.Generics.Uniplate.Data
 import Data.List
-import Language.Haskell.Exts.Annotated
+import Language.Haskell.Exts
 import Uniplate.Timer
 
 
@@ -36,7 +36,7 @@ fusion = do
     putStr "Transforming new... "
     t <- timer $ force new
     putStrLn $ dp2 t ++ "s"
-    
+
     putStr "Transforming old... "
     t <- timer $ force old
     putStrLn $ dp2 t ++ "s"
