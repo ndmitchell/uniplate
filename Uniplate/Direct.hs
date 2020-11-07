@@ -1,4 +1,6 @@
 {-# LANGUAGE CPP, FlexibleInstances, FlexibleContexts, MultiParamTypeClasses #-}
+{-# OPTIONS_GHC -Wno-orphans #-}
+
 module Uniplate.Direct where
 import Data.Generics.Uniplate.Direct
 #include "CommonInc.hs"

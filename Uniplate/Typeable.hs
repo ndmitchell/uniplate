@@ -1,4 +1,5 @@
 {-# LANGUAGE CPP, FlexibleInstances, FlexibleContexts, UndecidableInstances, MultiParamTypeClasses #-}
+{-# OPTIONS_GHC -Wno-orphans -Wno-simplifiable-class-constraints #-}
 module Uniplate.Typeable where
 import Data.Generics.Uniplate.Typeable
 #include "CommonInc.hs"

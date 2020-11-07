@@ -1,4 +1,5 @@
 {-# LANGUAGE MultiParamTypeClasses, FlexibleInstances #-}
+{-# OPTIONS_GHC -Wno-orphans #-}
 
 {- |
     This module supplies a method for writing 'Uniplate' and 'Biplate' instances.

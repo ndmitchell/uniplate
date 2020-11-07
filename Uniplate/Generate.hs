@@ -1,7 +1,7 @@
 
 module Uniplate.Generate where
 
-import System.Cmd
+import System.Process
 import System.Directory
 import Data.List
 

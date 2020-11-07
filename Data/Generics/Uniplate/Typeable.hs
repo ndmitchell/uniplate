@@ -1,4 +1,5 @@
 {-# LANGUAGE MultiParamTypeClasses, FlexibleInstances, UndecidableInstances #-}
+{-# OPTIONS_GHC -Wno-orphans #-}
 
 {- |
     /RECOMMENDATION:/ Use "Data.Generics.Uniplate.Data" instead - it usually performs

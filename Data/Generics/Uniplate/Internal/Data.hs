@@ -1,4 +1,5 @@
 {-# LANGUAGE CPP, Rank2Types, MagicHash, UnboxedTuples, ExistentialQuantification, ScopedTypeVariables #-}
+{-# OPTIONS_GHC -Wno-orphans #-}
 
 {- |
     Internal module, do not import or use.
@@ -13,7 +14,6 @@ import Data.Generics
 import Data.Maybe
 import Data.List
 import Data.IORef
-import Control.Applicative
 import Control.Exception
 import Control.Monad
 import System.Environment(getEnv)

@@ -9,12 +9,6 @@ module Data.Generics.Str where
 
 import Data.Generics.Uniplate.Internal.Utils
 
-import Control.Applicative
-import Data.Foldable
-import Data.Monoid
-import Data.Traversable
-
-
 -- * The Data Type
 
 data Str a = Zero | One a | Two (Str a) (Str a)

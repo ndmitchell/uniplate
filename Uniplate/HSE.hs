@@ -1,4 +1,5 @@
 {-# LANGUAGE FlexibleContexts #-}
+{-# OPTIONS_GHC -Wno-simplifiable-class-constraints #-}
 
 module Uniplate.HSE(hse) where
 
