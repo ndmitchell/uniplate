@@ -1,4 +1,5 @@
 {-# LANGUAGE ScopedTypeVariables, FlexibleInstances, MultiParamTypeClasses, UndecidableInstances, ExistentialQuantification, Rank2Types, CPP #-}
+{-# OPTIONS_GHC -Wno-orphans #-}
 
 {- |
     /DEPRECATED/: Use "Data.Generics.Uniplate.Data" instead.

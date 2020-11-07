@@ -1,5 +1,6 @@
 {-# LANGUAGE ScopedTypeVariables, ExistentialQuantification, Rank2Types, CPP,
     MultiParamTypeClasses, FlexibleInstances, UndecidableInstances #-}
+{-# OPTIONS_GHC -Wno-orphans #-}
 
 {- |
     This module defines 'Uniplate' / 'Biplate' instances for every type with a
