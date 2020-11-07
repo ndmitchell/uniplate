@@ -19,39 +19,6 @@ import Control.Monad
 import System.Environment(getEnv)
 import qualified Data.IntMap as IntMap; import Data.IntMap(IntMap)
 
-
-#if __GLASGOW_HASKELL__ < 606
-
----------------------------------------------------------------------
--- GHC 6.4 and below
-
-import qualified Data.Set as Set
-import qualified Data.Map as Map
-
-type TypeKey = TypeRep
-type TypeSet = Set.Set TypeKey
-type TypeMap = Map.Map TypeKey
-
-typeKey :: Typeable a => a -> TypeKey
-typeKey = typeOf
-
-#elif __GLASGOW_HASKELL__ < 702
-
----------------------------------------------------------------------
--- GHC 6.6 to 7.0 (has typeRepKey)
-
-import qualified Data.IntSet as Set
-import qualified Data.IntMap as Map
-
-type TypeKey = Int
-type TypeSet = Set.IntSet
-type TypeMap = Map.IntMap
-
-typeKey :: Typeable a => a -> TypeKey
-typeKey x = inlinePerformIO $ typeRepKey $ typeOf x
-
-#else
-
 ---------------------------------------------------------------------
 -- GHC 7.2 and above (using fingerprint)
 
@@ -65,28 +32,6 @@ type TypeKey = TypeRep
 typeKey :: Typeable a => a -> TypeKey
 typeKey = typeOf
 
-#endif
-
-
-#if __GLASGOW_HASKELL__ < 702
-
----------------------------------------------------------------------
--- GHC 7.0 and below (using containers API)
-
-(!) = (Map.!)
-map_findWithDefault = Map.findWithDefault
-map_fromAscList = Map.fromAscList
-map_keysSet = Map.keysSet
-map_member = Map.member
-set_partition = Set.partition
-set_toAscList = Set.toAscList
-set_unions = Set.unions
-
-#else
-
----------------------------------------------------------------------
--- GHC 7.2 and above (using unordered-containers API)
-
 (!) mp k = map_findWithDefault (error "Could not find element") k mp
 map_findWithDefault d k mp = fromMaybe d $ Map.lookup k mp -- in 0.2.3.0 lookupDefault is strict in the default :(
 map_fromAscList = Map.fromList
@@ -95,8 +40,6 @@ map_member x xs = isJust $ Map.lookup x xs
 set_partition f x = (Set.filter f x, Set.filter (not . f) x)
 set_toAscList = Set.toList
 set_unions = foldr Set.union Set.empty
-
-#endif
 
 
 {-# NOINLINE uniplateVerbose #-}

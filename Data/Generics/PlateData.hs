@@ -1,4 +1,4 @@
-{-# LANGUAGE ScopedTypeVariables, FlexibleInstances, MultiParamTypeClasses, UndecidableInstances, ExistentialQuantification, Rank2Types, CPP #-}
+{-# LANGUAGE ScopedTypeVariables, FlexibleInstances, MultiParamTypeClasses, UndecidableInstances, ExistentialQuantification, Rank2Types #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
 
 {- |
@@ -17,12 +17,6 @@ import Data.Generics.Biplate
 import Data.Generics.Uniplate.Internal.Utils
 import Data.Generics
 
-#if !(__GLASGOW_HASKELL__ < 606 || __GLASGOW_HASKELL__ >= 702)
-import Data.List
-import qualified Data.IntSet as IntSet
-import Data.Ratio
-#endif
-
 
 data Box find = Box {fromBox :: forall a . Typeable a => a -> Answer find}
 
@@ -36,7 +30,6 @@ containsMatch :: (Data start, Typeable start, Data find, Typeable find) =>
                  start -> find ->
                  Box find
 
-#if __GLASGOW_HASKELL__ < 606 || __GLASGOW_HASKELL__ >= 702
 -- GHC 6.4.2 does not export typeRepKey, so we can't do the trick
 -- as efficiently, so we just give up and revert to always following
 
@@ -45,60 +38,6 @@ containsMatch start find = Box query
         query a = case cast a of
                        Just y -> Hit y
                        Nothing -> Follow
-
-#else
--- GHC 6.6 does contain typeRepKey, so only follow when appropriate
-
--- | An existential box representing a type which supports SYB
--- operations.
-data DataBox = forall a . (Typeable a, Data a) => DataBox a
-
-containsMatch start find = Box query
-    where
-        typeInt x = inlinePerformIO $ typeRepKey x
-
-        query :: Typeable a => a -> Answer find
-        query a = if tifind == tia then Hit (unsafeCoerce a)
-                  else if tia `IntSet.member` timatch then Follow else Miss
-            where tia = typeInt $ typeOf a
-
-        tifind = typeInt tfind
-        timatch = IntSet.fromList $ map typeInt tmatch
-
-        tfind = typeOf find
-        tmatch = f [tfind] (filter ((/=) tfind . fst) $ containsList start)
-
-        f want have = if null want2 then [] else want2 ++ f want2 no
-            where
-                want2 = map fst yes
-                (yes,no) = partition (not . null . intersect want . snd) have
-
-containsList :: (Data a, Typeable a) => a -> [(TypeRep, [TypeRep])]
-containsList x = f [] [DataBox x]
-    where
-        f done [] = []
-        f done (DataBox t:odo)
-            | tt `elem` done = f done odo
-            | otherwise = (tt,map (\(DataBox a) -> typeOf a) xs) : f (tt:done) (xs++odo)
-            where
-                tt = typeOf t
-                xs = contains t
-
-
--- Ratio is strict and causes bugs with fromConstr in GHC 6.10.1
--- See bug http://hackage.haskell.org/trac/ghc/ticket/2782
-evilRatio = fst $ splitTyConApp $ typeOf (undefined :: Ratio Int)
-
-contains :: (Data a, Typeable a) => a -> [DataBox]
-contains x | fst (splitTyConApp $ typeOf x) == evilRatio = []
-           | isAlgType dtyp = concatMap f ctrs
-           | otherwise = []
-    where
-        f ctr = gmapQ DataBox (asTypeOf (fromConstr ctr) x)
-        ctrs = dataTypeConstrs dtyp
-        dtyp = dataTypeOf x
-
-#endif
 
 
 instance (Data a, Typeable a) => Uniplate a where
