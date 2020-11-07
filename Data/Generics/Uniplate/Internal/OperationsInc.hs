@@ -210,24 +210,20 @@ childrenBi x = builder f
 
 {-# INLINE transformBi #-}
 transformBi :: Biplate from to => (to -> to) -> from -> from
-transformBi f x = case biplate x of
-    (current, generate) -> generate $ strMap (transform f) current
+transformBi f = descendBi (transform f)
 
 
 {-# INLINE transformBiM #-}
 transformBiM :: (Monad m, Applicative m, Biplate from to) => (to -> m to) -> from -> m from
-transformBiM f x = case biplate x of
-    (current, generate) -> generate <$> strMapM (transformM f) current
+transformBiM f = descendBiM (transformM f)
 
 
 rewriteBi :: Biplate from to => (to -> Maybe to) -> from -> from
-rewriteBi f x = case biplate x of
-    (current, generate) -> generate $ strMap (rewrite f) current
+rewriteBi f = descendBi (rewrite f)
 
 
 rewriteBiM :: (Monad m, Applicative m, Biplate from to) => (to -> m (Maybe to)) -> from -> m from
-rewriteBiM f x = case biplate x of
-    (current, generate) -> generate <$> strMapM (rewriteM f) current
+rewriteBiM f = descendBiM (rewriteM f)
 
 
 -- ** Others
