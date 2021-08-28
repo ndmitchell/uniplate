@@ -1,0 +1,23 @@
+cff-version: 1.2.0
+message: "If you need to cite Uniplate, this metadata is the paper that introduces Uniplate."
+repository-code: "https://github.com/ndmitchell/uniplate"
+title: Uniplate
+preferred-citation:
+  type: proceedings
+  authors: 
+  - family-names: Mitchell
+    given-names: Neil
+    orcid: "https://orcid.org/0000-0001-5171-9726"
+  - family-names: Runciman
+    given-names: Colin
+    orcid: "https://orcid.org/0000-0002-0151-3233"
+  doi: "10.1145/1291201.1291208"
+  journal: "Haskell '07: Proceedings of the ACM SIGPLAN workshop on Haskell"
+  month: 9
+  day: 30
+  isbn: 978-1-59593-674-5
+  publisher: ACM
+  title: "Uniform Boilerplate and List Processing"
+  year: 2007
+  url: https://ndmitchell.com/downloads/paper-uniform_boilerplate_and_list_processing-30_sep_2007.pdf
+  abstract: "Generic traversals over recursive data structures are often referred to as boilerplate code. The definitions of functions involving such traversals may repeat very similar patterns, but with variations for different data types and different functionality. Libraries of operations abstracting away boilerplate code typically rely on elaborate types to make operations generic. The motivating observation for this paper is that most traversals have value-specific behaviour for just one type. We present the design of a new library exploiting this assumption. Our library allows concise expression of traversals with competitive performance."
