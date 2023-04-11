@@ -4,7 +4,7 @@ name:               uniplate
 version:            1.6.13
 author:             Neil Mitchell <ndmitchell@gmail.com>
 maintainer:         Neil Mitchell <ndmitchell@gmail.com>
-copyright:          Neil Mitchell 2006-2022
+copyright:          Neil Mitchell 2006-2023
 homepage:           https://github.com/ndmitchell/uniplate#readme
 bug-reports:        https://github.com/ndmitchell/uniplate/issues
 license:            BSD3
