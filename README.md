@@ -4,6 +4,8 @@
 
 With data structures code that does queries and transformations follows a repetitive code structure of the data type (boilerplate) that can bury the usefulness - application of particular functions. The library focuses on freeing the code and the programmer of that boilerplate and coupling.
 
+The library eliminates boilerplate by decoupling the queries and transformations code from data type structure specifics.
+
 #### What it does
 
 Uniplate generics library is simple, concise, and fast, and focused on one task:
