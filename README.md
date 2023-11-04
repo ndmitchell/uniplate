@@ -22,8 +22,10 @@ The details on Uniplate were [published at the Haskell Workshop 2007](https://nd
 
 The Uniplate library can be installed with the standard sequence of cabal commands:
 
-    cabal update
-    cabal install uniplate
+```fish
+cabal update
+cabal install uniplate
+```
 
 ## Using Uniplate
 
@@ -51,9 +53,11 @@ Bootstrapping consists of:
 
 This enables the simple ["Scrap Your Boilerplate (SYB)"](http://doi.acm.org/10.1145/604174.604179)-based implementation, transparently compatible with other implementations. But simple implementation is 2-8 times slower to compile while using long supported modest extensions of the GHC compiler. Starting with SYB is recommended for its simplicity. Further faster implementation is presented, which requires a bit of type class instance writing.
 
+### Basics of usage machinery
+
 The Uniplate library defines two classes, `Uniplate` and `Biplate`, along with a number of functions. After importing `Data.Generics.Uniplate.Data` all types which have `Data` instances automatically have the necessary Uniplate instances. In the following subsections we introduce the Uniplate functions, along with examples of using them. The two most commonly used functions are `universe` (used for queries) and `transform` (used for transformations).
 
-### Representing the data types in a general form
+### Representing the data types in the general form
 
 `universe`, given a tree returns the root of the tree, and all its subtrees at all levels, can be used to quickly flatten a tree structure into a list, and to allow quick analysis via list comprehensions.
 ```haskell
@@ -71,32 +75,35 @@ constants x = nub [y | Val y <- universe x]
 
 _Exercise:_ Write a function to test if an expression performs a division by the literal zero.
 
-### Basic optimization
+### Basic transformation/optimization
 
 ```haskell
 transform :: Uniplate on => (on -> on) -> on -> on
 ```
+`transform` applies the given function to all the children of an expression, before applying it to the parent. This function can be thought of as bottom-up traversal of the data structure.
 
-If we are negating a literal value, this computation can be performed in advance, so let's write a function to do this.
+Example of use:
+Computation to negate a literal value can be performed in advance, code for it:
 
 ```haskell
 optimise :: Expr -> Expr
 optimise = transform f
-    where f (Neg (Val i)) = Val (negate i)
-            f x = x
+  where
+   f (Neg (Val i)) = Val (negate i)
+   f x = x
 ```
 
-Here the Uniplate method being used is `transform`, which applies the given function to all the children of an expression, before applying it to the parent. This function can be thought of as bottom-up traversal of the data structure. The optimise code merely pattern matches on the negation of a literal, and replaces it with the literal.
+Code matches the type-level negation, and replaces it with the negated literal.
 
-Now let's add another optimisation into the same pass, just before the `f x = x` line insert:
+Inserting before the `f x = x` line the:
 
 ```haskell
 f (Add x y) | x == y = Mul x (Val 2)
 ```
 
-This takes an addition where two terms are equal and changes it into a multiplication, causing the nested expression to be executed only once.
+adds another optimization into the same pass, optimization takes an addition where two terms are equal and changes it into a multiplication, causing the nested expression to be executed only once.
 
-_Exercise:_ Extend the optimisation so that adding `x` to `Mul x (Val 2)` produces a multiplication by 3.
+_Exercise:_ Extend the optimization so that adding `x` to `Mul x (Val 2)` produces a multiplication by 3.
 
 ### Depth of an expression
 
