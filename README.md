@@ -1,39 +1,37 @@
 # Boilerplate Removal with Uniplate [![Hackage version](https://img.shields.io/hackage/v/uniplate.svg?label=Hackage)](https://hackage.haskell.org/package/uniplate) [![Stackage version](https://www.stackage.org/package/uniplate/badge/nightly?label=Stackage)](https://www.stackage.org/package/uniplate)[![Build status](https://img.shields.io/github/actions/workflow/status/ndmitchell/uniplate/ci.yml?branch=master)](https://github.com/ndmitchell/uniplate/actions)
 
-Generic transformations and queries are often referred to as boilerplate code - they remain relatively similar as the action performed by the code changes, and can often outnumber the actual intent of the code in terms of lines. While other generic traversal schemes have shown how powerful new features can be added to compilers, and how the type system can be manipulated into accepting these operations, the Uniplate library focuses on a conceptually simpler generic concept. A more complete document on Uniplate was published at the Haskell Workshop 2007, and is available from [here](https://ndmitchell.com/#uniplate_30_sep_2007), along with a video presentation, and the associated thesis chapter.
+#### Reason for creation
 
-Uniplate is a simple, concise and fast generics library. To expand on that sentence:
+With data structures code that does queries and transformations follows a repetitive code structure of the data type (boilerplate) that can bury the usefulness - application of particular functions. The library focuses on freeing the code and the programmer of that boilerplate and coupling.
 
-1. A generics library is one which allows you to write functions that operate over a data structure without tying down all aspects of the data structure. In particular, when writing an operation, you don't need to give a case for each constructor, and you don't have to state which fields are recursive.
-2. Uniplate is the simplest generics library. Using Uniplate is within the reach of all Haskell programmers.
-3. Uniplate is more concise than any other generics library.
-4. Uniplate is fast, not always the absolute fastest, but massively faster than many generics libraries.
-5. Uniplate is also less powerful than some other generics libraries, but if it does the job, you should use it.
+#### What it does
+
+Uniplate generics library is simple, concise, and fast, and focused on one task:
+
+1. Simplifies code by decoupling functions from data structure specifics.
+2. Does not require special treatment to recursive fields.
+3. Simplest generics library, accessible to all Haskell programmers.
+4. Is concise.
+5. Is most often faster than most generics libraries.
+
+The details on Uniplate were [published at the Haskell Workshop 2007](https://ndmitchell.com/#uniplate_30_sep_2007) (the video presentation, and the thesis chapter).
+
+## Installation
 
 The Uniplate library can be installed with the standard sequence of cabal commands:
 
     cabal update
     cabal install uniplate
 
-This document proceeds as follows:
-
-1. Using Uniplate
-2. Using Biplate
-3. Making Uniplate Faster
-
-#### Acknowledgements
-
-Thanks to Bj&ouml;rn Bringert for feedback on an earlier version of this document, Eric Mertens for various ideas and code snippets, and to Matt Naylor and Tom Shackell for helpful discussions.
-
 ## Using Uniplate
 
-To demonstrate the facilities of Uniplate, we use a simple arithmetic type:
+Using library on a simple arithmetic type:
 
-<pre>
-<b>{-# LANGUAGE DeriveDataTypeable #-}</b>
+```haskell
+{-# LANGUAGE DeriveDataTypeable #-}
 module Expr where
-<b>import Data.Data</b>
-<b>import Data.Generics.Uniplate.Data</b>
+import Data.Data
+import Data.Generics.Uniplate.Data
 
 data Expr = Val Int
           | Add Expr Expr
@@ -41,18 +39,17 @@ data Expr = Val Int
           | Div Expr Expr
           | Mul Expr Expr
           | Neg Expr
-          deriving (Show, Eq, <b>Data, Typeable</b>)
-</pre>
+          deriving (Show, Eq, Data, Typeable)
+```
 
-In this definition, the Uniplate specific bits are bolded. The three extra parts are:
+Bootstrapping consists of:
+* `{-# LANGUAGE DeriveDataTypeable #-}`, [enables automatic deriving](https://ghc.gitlab.haskell.org/ghc/doc/users_guide/exts/deriving_extra.html#deriving-data-instances) of `Data` and `Typeable` type classes.
+* `Data, Typeable` - automatically derive type classes.
+* `import Data.Generics.Uniplate.Data` - imports Uniplate, which leverages 
 
-* `import Data.Generics.Uniplate.Data`, this module contains all the Uniplate functions and definitions.
-* `deriving (Data,Typeable)`, this deriving clause automatically adds the necessary instances for Uniplate.
-* `{-# LANGUAGE DeriveDataTypeable #-}`, this pragma turns on language support for the deriving line.
+This enables the simple ["Scrap Your Boilerplate (SYB)"](http://doi.acm.org/10.1145/604174.604179)-based implementation, transparently compatible with other implementations. But simple implementation is 2-8 times slower to compile while using long supported modest extensions of the GHC compiler. Starting with SYB is recommended for its simplicity. Further faster implementation is presented, which requires a bit of type class instance writing.
 
-This definition makes use of the [Scrap Your Boilerplate (SYB)](http://doi.acm.org/10.1145/604174.604179) based Uniplate implementation. The SYB implementation is compatible with the other implementations, but is slower (between 2 and 8 times) and requires some modest compiler extensions (implemented in [GHC](http://haskell.org/ghc/) for many years). The alternative definition scheme is described towards the end of this document, in "Making Uniplate Faster". I recommend using the SYB implementation to start with, as it requires least work to use.
-
-The Uniplate library defines two classes, `Uniplate` and `Biplate`, along with a number of functions. After importing `Data.Generics.Uniplate.Data` all types which have `Data`instances automatically have the necessary Uniplate instances. In the following subsections we introduce the Uniplate functions, along with examples of using them. The two most commonly used functions are `universe` (used for queries) and `transform` (used for transformations).
+The Uniplate library defines two classes, `Uniplate` and `Biplate`, along with a number of functions. After importing `Data.Generics.Uniplate.Data` all types which have `Data` instances automatically have the necessary Uniplate instances. In the following subsections we introduce the Uniplate functions, along with examples of using them. The two most commonly used functions are `universe` (used for queries) and `transform` (used for transformations).
 
 ### Finding the constant values
 
@@ -224,6 +221,11 @@ For example, you should never have `descendBi` in an inner recursive loop.
 ## Making Uniplate Faster
 
 To make Uniplate faster import `Data.Generics.Uniplate.Direct` and write your instances by hand.
+
+## Acknowledgements
+
+Thanks to Bj&ouml;rn Bringert for feedback on an earlier version of this document, Eric Mertens for various ideas and code snippets, and to Matt Naylor and Tom Shackell for helpful discussions.
+
 
 ## Related work
 
