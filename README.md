@@ -118,7 +118,7 @@ depth :: Expr -> Int
 depth = para (\_ cs -> 1 + maximum (0:cs))
 ```
 
-This function performs a paramorphism (a bit like a fold) over the data structure. The function simply says that for each iteration, add one to the previous depth.
+The function performs a paramorphism (a bit like a fold) over the data structure. The function simply says that for each iteration, add one to the previous depth.
 
 _Exercise:_ Write a function that counts the maximum depth of addition only.
 
@@ -169,7 +169,7 @@ _Exercise:_ Replace one multiplication with addition, if there are no multiplica
 rewrite :: Uniplate on => (on -> Maybe on) -> on -> on
 ```
 
-When slotting many transformations together, often one optimisation will enable another. For example, the the optimisation to reduce.
+When slotting many transformations together, often one optimisation will enable another.
 
 ### Descend
 
@@ -177,13 +177,13 @@ Do something different in the odd and even cases. Particularly useful if you hav
 
 ### Monadic Variants
 
+All the transformations have both monadic and non-monadic versions.
+
 ```haskell
 descendM :: Monad m => (on -> m on) -> on -> m on                         -- descend
 transformM :: (Monad m, Uniplate on) => (on -> m on) -> on -> m on        -- transform
 rewriteM :: (Monad m, Uniplate on) => (on -> m (Maybe on)) -> on -> m on  -- rewrite
 ```
-
-All the transformations have both monadic and non-monadic versions.
 
 ### Single Depth Varaints
 
