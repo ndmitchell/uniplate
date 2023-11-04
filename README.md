@@ -53,24 +53,25 @@ This enables the simple ["Scrap Your Boilerplate (SYB)"](http://doi.acm.org/10.1
 
 The Uniplate library defines two classes, `Uniplate` and `Biplate`, along with a number of functions. After importing `Data.Generics.Uniplate.Data` all types which have `Data` instances automatically have the necessary Uniplate instances. In the following subsections we introduce the Uniplate functions, along with examples of using them. The two most commonly used functions are `universe` (used for queries) and `transform` (used for transformations).
 
-### Finding the constant values
+### Representing the data types in a general form
 
+`universe`, given a tree returns the root of the tree, and all its subtrees at all levels, can be used to quickly flatten a tree structure into a list, and to allow quick analysis via list comprehensions.
 ```haskell
 universe :: Uniplate on => on -> [on]
 ```
 
-When manipulating our little language it may be useful to know which constants have been used. This can be done with the following code:
+### Finding the constant values
+
+When manipulating data it may be useful to know which constants have been used:
 
 ```haskell
 constants :: Expr -> [Int]
 constants x = nub [y | Val y <- universe x]
 ```
 
-Here the only Uniplate method being used is `universe`, which when given a tree returns the root of the tree, and all its subtrees at all levels. This can be used to quickly flatten a tree structure into a list, for quick analysis via list comprehensions, as is done above.
-
 _Exercise:_ Write a function to test if an expression performs a division by the literal zero.
 
-### Basic optimisation
+### Basic optimization
 
 ```haskell
 transform :: Uniplate on => (on -> on) -> on -> on
