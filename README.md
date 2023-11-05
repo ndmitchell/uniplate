@@ -201,12 +201,16 @@ If we need to evaluate an expression in our language, the answer is simple, don'
 
 ```haskell
 eval :: Expr -> Int
-eval (Val i) = i
-eval (Add a b) = eval a + eval b
-eval (Sub a b) = eval a - eval b
-eval (Div a b) = eval a `div` eval b
-eval (Mul a b) = eval a * eval b
-eval (Neg a) = negate a
+eval exp =
+  case exp of:
+    Val i -> i
+    Neg a -> negate a
+    Add a b -> op (+) a b
+    Sub a b -> op (-) a b
+    Div a b -> op div a b
+    Mul a b -> op (*) a b
+ where
+  op oper = on oper eval
 ```
 
 ## Using Biplate
